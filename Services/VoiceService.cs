@@ -17,7 +17,7 @@ namespace Friday
         public event Action<string> OnMessageReceived;
 
         // Остальная логика вашего VoiceService...
-        private string modelPath = "D:\\projects\\Friday\\model";
+        private string modelPath = "C:\\Users\\Maksim\\Desktop\\Friday\\model";
         private readonly VoskRecognizer _recognizer;
         private readonly string botName = "джарвис"; // Задайте имя бота
         private System.Timers.Timer commandTimer; // Таймер для отслеживания времени

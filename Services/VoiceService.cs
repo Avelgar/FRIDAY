@@ -6,22 +6,22 @@ using NAudio.Wave;
 using Vosk;
 using Newtonsoft.Json;
 using System.Timers;
-using System.Diagnostics;
 using System.Threading;
 
 namespace Friday
 {
     public class VoiceService
     {
-        // Добавьте это событие для передачи сообщений
+        // Добавляем событие для передачи сообщений
         public event Action<string> OnMessageReceived;
 
-        // Остальная логика вашего VoiceService...
         private string modelPath = "C:\\Users\\nikon\\Githup\\FRIDAY\\model";
         private readonly VoskRecognizer _recognizer;
-        private readonly string botName = "пятница"; // Задайте имя бота
+        private readonly string botName = "пятница"; // Имя бота
         private System.Timers.Timer commandTimer; // Таймер для отслеживания времени
         private bool isListening; // Флаг для отслеживания состояния
+        public bool IsListening => isListening; // Свойство для доступа к состоянию прослушивания
+
         public VoiceService()
         {
             Vosk.Vosk.SetLogLevel(-1);
@@ -29,12 +29,16 @@ namespace Friday
             _recognizer = new VoskRecognizer(model, 16000.0f);
             _recognizer.SetMaxAlternatives(1);
             _recognizer.SetWords(true);
-            commandTimer = new System.Timers.Timer(5000); // Устанавливаем таймер на 5 секунд
+            commandTimer = new System.Timers.Timer(50000); // Таймер на 50 секунд
             commandTimer.Elapsed += OnCommandTimerElapsed;
             commandTimer.AutoReset = false; // Таймер не будет перезапускаться автоматически
         }
-        public async Task StartListening() // Убедитесь, что метод возвращает Task
+
+        public async Task StartListening() // Метод для начала прослушивания
         {
+            if (isListening) return; // Если уже слушаем, не начинаем заново
+
+            isListening = true;
 
             using (var waveIn = new WaveInEvent())
             {
@@ -49,9 +53,8 @@ namespace Friday
 
                         if (recognizedText == botName)
                         {
-                            //Console.WriteLine("Слушаю вас");
-
-                            isListening = true; // Устанавливаем флаг
+                            // Когда услышан бот, начинаем слушать команды
+                            OnMessageReceived?.Invoke("Слушаю вас...");
                             commandTimer.Start(); // Запускаем таймер
                         }
                         else if (isListening)
@@ -62,18 +65,20 @@ namespace Friday
                 };
 
                 waveIn.StartRecording();
-
-                // Замените Console.ReadLine() на асинхронное ожидание
-                await Task.Delay(Timeout.Infinite); // Ожидание без блокировки
+                await Task.Delay(Timeout.Infinite); // Ожидание событий
             }
         }
 
-
+        public void StopListening() // Метод для остановки прослушивания
+        {
+            isListening = false;
+            OnMessageReceived?.Invoke("Прослушивание остановлено.");
+        }
 
         private void OnCommandTimerElapsed(object sender, ElapsedEventArgs e)
         {
-            isListening = false; // Сбрасываем флаг, когда таймер истек
-                                 //Console.WriteLine("Время ожидания истекло. Бот больше не слушает команды.");
+            isListening = false; // Таймер истек — останавливаем прослушивание
+            OnMessageReceived?.Invoke("Время ожидания истекло. Бот больше не слушает.");
         }
 
         private void ProcessCommand(string command)
@@ -100,10 +105,7 @@ namespace Friday
                 responseMessage = "Команда не распознана.";
             }
 
-            // Вывод в консоль для отладки
-            Console.WriteLine($"Обработанная команда: {command}, ответ: {responseMessage}");
-
-            // Вызываем событие
+            // Вызываем событие с ответом
             OnMessageReceived?.Invoke(responseMessage);
         }
     }

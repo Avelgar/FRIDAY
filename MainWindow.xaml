@@ -7,8 +7,7 @@
         Background="#4A4459">
 
     <Window.Resources>
-        <!-- Подключение шрифта IntroFriday.ttf -->
-        <FontFamily x:Key="IntroFridayFont">pack:\\FRIDAY\src\IntroFriday.ttf</FontFamily>
+        <FontFamily x:Key="IntroFridayFont">pack://FRIDAY/src/IntroFriday.ttf</FontFamily>
     </Window.Resources>
 
     <Grid>
@@ -21,13 +20,9 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Кнопки управления -->
-                <StackPanel Orientation="Horizontal" Grid.Column="1"
-                            HorizontalAlignment="Right">
-                    <!-- Свернуть -->
+                <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Right">
                     <Button Content="−" Width="20" Foreground="White" Background="#1D192B" Click="Minimize_Click"/>
-                    <!-- Развернуть -->
                     <Button Content="⬜" Width="20" Foreground="White" Background="#1D192B" FontWeight="Bold" Click="Maximize_Click"/>
-                    <!-- Закрыть -->
                     <Button Content="✖" Width="20" Foreground="White" Background="#1D192B" FontWeight="Bold" Click="Close_Click"/>
                 </StackPanel>
             </Grid>
@@ -38,5 +33,15 @@
                    FontSize="100" FontWeight="Bold" Foreground="White"
                    HorizontalAlignment="Left" VerticalAlignment="Top"
                    Margin="10,60,0,0"/>
+
+        <!-- Консольное окно -->
+        <TextBox x:Name="ConsoleTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                 Margin="360,160,10,10" Height="200" FontSize="16" Background="#2D2A39" Foreground="White"
+                 IsReadOnly="True" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
+
+        <!-- Кнопка для включения/выключения прослушивания -->
+        <Button Content="⬜" x:Name="ListenButton" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                Margin="360,0,0,69" Width="50" Height="50" Background="#6A4E86" Foreground="White" FontSize="16" 
+                Click="ListenButton_Click"/>
     </Grid>
 </Window>

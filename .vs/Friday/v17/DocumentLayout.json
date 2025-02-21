@@ -3,20 +3,20 @@
   "WorkspaceRootPath": "C:\\Users\\nikon\\Githup\\FRIDAY\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\services\\voiceservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:services\\voiceservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\app.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
       "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:app.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -26,37 +26,37 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 3,
               "Title": "MainWindow.xaml.cs",
               "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\MainWindow.xaml.cs",
               "RelativeDocumentMoniker": "MainWindow.xaml.cs",
               "ToolTip": "C:\\Users\\nikon\\Githup\\FRIDAY\\MainWindow.xaml.cs",
               "RelativeToolTip": "MainWindow.xaml.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAqwBQAAABFAAAAAAAAAA==",
+              "ViewState": "AgIAAB0AAAAAAAAAAAAgwC8AAAANAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-02-21T12:30:19.824Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "VoiceService.cs",
               "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\VoiceService.cs",
               "RelativeDocumentMoniker": "Services\\VoiceService.cs",
               "ToolTip": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\VoiceService.cs",
               "RelativeToolTip": "Services\\VoiceService.cs",
-              "ViewState": "AgIAADMAAAAAAAAAAAAYwBUAAAAyAAAAAAAAAA==",
+              "ViewState": "AgIAACwAAAAAAAAAAAAgwCgAAAAfAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-02-21T12:13:33.979Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 2,
               "Title": "App.xaml",
               "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\App.xaml",
               "RelativeDocumentMoniker": "App.xaml",
@@ -68,7 +68,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "MainWindow.xaml",
               "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\MainWindow.xaml",
               "RelativeDocumentMoniker": "MainWindow.xaml",

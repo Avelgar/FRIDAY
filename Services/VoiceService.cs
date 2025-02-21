@@ -1,26 +1,32 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using NAudio.Wave;
 using Vosk;
 using Newtonsoft.Json;
-using System.Timers;
+using System.Net.Http;
+using System.Text;
+using System.IO;
 using System.Threading;
+using System.Timers;
+using System.Windows;
 
 namespace Friday
 {
     public class VoiceService
     {
-        // Добавляем событие для передачи сообщений
-        public event Action<string> OnMessageReceived;
-
-        private string modelPath = "C:\\Users\\nikon\\Githup\\FRIDAY\\model";
+        private string modelPath = "C:\\Users\\nikon\\Githup\\FRIDAY\\Friday\\model\\vosk-model-small-ru-0.22";
         private readonly VoskRecognizer _recognizer;
-        private readonly string botName = "пятница"; // Имя бота
-        private System.Timers.Timer commandTimer; // Таймер для отслеживания времени
-        private bool isListening; // Флаг для отслеживания состояния
-        public bool IsListening => isListening; // Свойство для доступа к состоянию прослушивания
+        private readonly string botName = "пятница";
+        private static MusicPlayer musicPlayer = new MusicPlayer();
+        private static readonly HttpClient httpClient = new HttpClient();
+        private static readonly string apiToken = "60bbe7c1-7587-4658-82a4-4ac7481016c4";
+        private static readonly string synthesisUrl = $"https://public.api.voice.steos.io/api/v1/synthesize-controller/synthesis-by-text?authToken={apiToken}";
+        public ListeningState ListeningState { get; private set; }
+
+
+        public event Action<string> OnMessageReceived;
 
         public VoiceService()
         {
@@ -29,21 +35,34 @@ namespace Friday
             _recognizer = new VoskRecognizer(model, 16000.0f);
             _recognizer.SetMaxAlternatives(1);
             _recognizer.SetWords(true);
-            commandTimer = new System.Timers.Timer(50000); // Таймер на 50 секунд
-            commandTimer.Elapsed += OnCommandTimerElapsed;
-            commandTimer.AutoReset = false; // Таймер не будет перезапускаться автоматически
+
+            // Создаем объект ListeningState
+            ListeningState = new ListeningState();
+            ListeningState.OnTimeout += OnListeningTimeout;
         }
 
-        public async Task StartListening() // Метод для начала прослушивания
+        private void OnListeningTimeout()
         {
-            if (isListening) return; // Если уже слушаем, не начинаем заново
+            OnMessageReceived?.Invoke("Время ожидания истекло. Я перестаю слушать команды.");
+            SpeakAsync("Время ожидания истекло.");
+        }
 
-            isListening = true;
-
+        public async Task StartListening()
+        {
             using (var waveIn = new WaveInEvent())
             {
                 waveIn.WaveFormat = new WaveFormat(16000, 1);
-                waveIn.DataAvailable += (sender, e) =>
+
+                // Проверка на доступные устройства
+                if (WaveIn.DeviceCount == 0)
+                {
+                    OnMessageReceived?.Invoke("Нет доступных устройств для записи.");
+                    return;
+                }
+
+                // Присваиваем активное устройство ввода
+                waveIn.DeviceNumber = 0; // Убедитесь, что индекс устройства правильный
+                waveIn.DataAvailable += async (sender, e) =>
                 {
                     if (_recognizer.AcceptWaveform(e.Buffer, e.BytesRecorded))
                     {
@@ -51,35 +70,31 @@ namespace Friday
                         var response = JsonConvert.DeserializeObject<RecognitionResponse>(result);
                         var recognizedText = response?.Alternatives.FirstOrDefault()?.Text;
 
+                        OnMessageReceived?.Invoke($"Распознано: {recognizedText}");
+
                         if (recognizedText == botName)
                         {
-                            // Когда услышан бот, начинаем слушать команды
-                            OnMessageReceived?.Invoke("Слушаю вас...");
-                            commandTimer.Start(); // Запускаем таймер
+                            await SpeakAsync("Слушаю ваши указания");
+                            ListeningState.StartListening(); // Запускаем прослушивание
                         }
-                        else if (isListening)
+                        else if (ListeningState.IsListening()) // Проверяем состояние
                         {
-                            ProcessCommand(recognizedText); // Обработка команды
+                            ProcessCommand(recognizedText); // Обрабатываем команду, если в режиме прослушивания
                         }
                     }
                 };
 
+                // Запускаем запись
                 waveIn.StartRecording();
-                await Task.Delay(Timeout.Infinite); // Ожидание событий
+
+                // Проверка, если запись начала работать
+                OnMessageReceived?.Invoke("Началась запись.");
+
+                await Task.Delay(Timeout.Infinite); // Держим процесс в ожидании
             }
         }
 
-        public void StopListening() // Метод для остановки прослушивания
-        {
-            isListening = false;
-            OnMessageReceived?.Invoke("Прослушивание остановлено.");
-        }
 
-        private void OnCommandTimerElapsed(object sender, ElapsedEventArgs e)
-        {
-            isListening = false; // Таймер истек — останавливаем прослушивание
-            OnMessageReceived?.Invoke("Время ожидания истекло. Бот больше не слушает.");
-        }
 
         private void ProcessCommand(string command)
         {
@@ -87,30 +102,84 @@ namespace Friday
 
             string responseMessage = string.Empty;
 
-            // Логика обработки команд
             if (command.IndexOf("погода", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 responseMessage = "Запрашиваю погоду...";
+                SpeakAsync(responseMessage).Wait();
             }
             else if (command.IndexOf("время", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                responseMessage = $"Текущее время: {DateTime.Now}";
+                responseMessage = $"Текущее время: {DateTime.Now.ToShortTimeString()}";
+                SpeakAsync(responseMessage).Wait();
             }
-            else if (command.IndexOf("Как тебя зовут", StringComparison.OrdinalIgnoreCase) >= 0)
+            else if (command.IndexOf("ящер", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                responseMessage = "Слушай, брат, про ящеров и древних русов!";
+                SpeakAsync(responseMessage).Wait();
+            }
+            else if (command.IndexOf("Имя", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 responseMessage = $"Меня зовут {botName}";
+                SpeakAsync(responseMessage).Wait();
+            }
+            else if (command.IndexOf("включить музыку", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                responseMessage = "Включаю музыку...";
+                SpeakAsync(responseMessage).Wait();
+                musicPlayer.PlayMusic(@"C:\Users\nikon\Downloads\vivaldi_zima_1.mp3");
+            }
+            else if (command.IndexOf("выключить музыку", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                responseMessage = "Выключаю музыку...";
+                SpeakAsync(responseMessage).Wait();
+                musicPlayer.StopMusic();
             }
             else
             {
                 responseMessage = "Команда не распознана.";
+                SpeakAsync(responseMessage).Wait();
             }
 
-            // Вызываем событие с ответом
             OnMessageReceived?.Invoke(responseMessage);
         }
+
+        private async Task SpeakAsync(string text)
+        {
+            // Запрос к API для синтеза речи
+            var response = await httpClient.PostAsync(synthesisUrl,
+                new StringContent(JsonConvert.SerializeObject(new
+                {
+                    voiceId = 100,  // Выбирайте голос по своему предпочтению
+                    text,
+                    format = "mp3"
+                }), Encoding.UTF8, "application/json"));
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var result = JsonConvert.DeserializeObject<SynthesisResponse>(responseContent);
+
+                byte[] audioData = Convert.FromBase64String(result.FileContents);
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "output.mp3");
+
+                // Асинхронная запись в файл
+                await Task.Run(() => File.WriteAllBytes(filePath, audioData));
+
+                // Воспроизводим файл с озвучкой
+                musicPlayer.PlayMusic(filePath);
+            }
+            else
+            {
+                OnMessageReceived?.Invoke("Ошибка синтеза речи.");
+            }
+        }
+
+        
+
     }
 
-    // Классы для десериализации JSON
+
+
     public class RecognitionResponse
     {
         public Alternative[] Alternatives { get; set; }
@@ -118,15 +187,11 @@ namespace Friday
 
     public class Alternative
     {
-        public float Confidence { get; set; }
-        public Result[] Result { get; set; }
         public string Text { get; set; }
     }
 
-    public class Result
+    public class SynthesisResponse
     {
-        public float Start { get; set; }
-        public float End { get; set; }
-        public string Word { get; set; }
+        public string FileContents { get; set; }
     }
 }

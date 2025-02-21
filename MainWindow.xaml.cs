@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows;
-using System.Windows.Input;
 using Friday;
 
 namespace FigmaToWpf
@@ -37,21 +36,32 @@ namespace FigmaToWpf
             Application.Current.Shutdown();
         }
 
-        // Обработчик для кнопки "Начать слушать"
-        private async void ListenButton_Click(object sender, RoutedEventArgs e)
+        private void ListenButton_Click(object sender, RoutedEventArgs e)
         {
-            // Переключаем состояние
-            if (_voiceService.IsListening)
+            // Логика переключения состояния прослушивания
+            if (_voiceService.ListeningState.IsListening())
             {
-                _voiceService.StopListening();
+                _voiceService.ListeningState.StopListening();
                 ListenButton.Content = "Начать слушать";
+                // Выводим сообщение в консоль о том, что слушание остановлено
+                ConsoleTextBox.AppendText("Слушание остановлено." + Environment.NewLine);
+                ConsoleTextBox.ScrollToEnd();
             }
             else
             {
-                await _voiceService.StartListening();
+                _voiceService.ListeningState.StartListening();
                 ListenButton.Content = "Остановить слушать";
+
+                // Запускаем прослушивание речи в VoiceService
+                _voiceService.StartListening(); // Важно запустить процесс прослушивания
+
+                // Выводим сообщение в консоль о начале прослушивания
+                ConsoleTextBox.AppendText("Начинаю слушать..." + Environment.NewLine);
+                ConsoleTextBox.ScrollToEnd();
             }
         }
+
+
 
         // Обработчик события получения сообщения от VoiceService
         private void OnMessageReceived(string message)

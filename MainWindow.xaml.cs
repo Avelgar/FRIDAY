@@ -1,46 +1,35 @@
-﻿using System.Text;
+﻿using System;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
-namespace Friday
+namespace FigmaToWpf
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
-        private VoiceService voiceService;
         public MainWindow()
         {
-            try
-            {
-                InitializeComponent();
-                voiceService = new VoiceService();
-                voiceService.OnMessageReceived += UpdateOutputTextBox;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при инициализации: {ex.Message}");
-            }
+            InitializeComponent();
         }
-        private void UpdateOutputTextBox(string message)
+
+        // Свернуть окно
+        private void Minimize_Click(object sender, RoutedEventArgs e)
         {
-            // Используем Dispatcher для обновления UI
-            Dispatcher.Invoke(() =>
-            {
-                outputTextBox.AppendText(message + Environment.NewLine);
-            });
+            WindowState = WindowState.Minimized;
         }
-        private async void startButton_Click(object sender, RoutedEventArgs e)
+
+        // Развернуть/Восстановить окно
+        private void Maximize_Click(object sender, RoutedEventArgs e)
         {
-            await voiceService.StartListening();
+            if (WindowState == WindowState.Maximized)
+                WindowState = WindowState.Normal;
+            else
+                WindowState = WindowState.Maximized;
+        }
+
+        // Закрыть приложение
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
         }
     }
 }

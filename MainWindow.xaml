@@ -1,13 +1,42 @@
-﻿<Window x:Class="Friday.MainWindow"
+﻿<Window x:Class="FigmaToWpf.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Friday"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Custom Window" 
+        Height="500" Width="800"
+        WindowStyle="None"
+        Background="#4A4459">
+
+    <Window.Resources>
+        <!-- Подключение шрифта IntroFriday.ttf -->
+        <FontFamily x:Key="IntroFridayFont">pack:\\FRIDAY\src\IntroFriday.ttf</FontFamily>
+    </Window.Resources>
+
     <Grid>
-        <TextBox Name="outputTextBox" VerticalAlignment="Top" Height="200" Margin="10" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True" />
-        <Button Name="startButton" Content="Начать слушать" VerticalAlignment="Bottom" Margin="10" Click="startButton_Click"/>
+        <!-- Хедер -->
+        <Border Background="#1D192B" Height="40" VerticalAlignment="Top">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="150"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Кнопки управления -->
+                <StackPanel Orientation="Horizontal" Grid.Column="1"
+                            HorizontalAlignment="Right">
+                    <!-- Свернуть -->
+                    <Button Content="−" Width="20" Foreground="White" Background="#1D192B" Click="Minimize_Click"/>
+                    <!-- Развернуть -->
+                    <Button Content="⬜" Width="20" Foreground="White" Background="#1D192B" FontWeight="Bold" Click="Maximize_Click"/>
+                    <!-- Закрыть -->
+                    <Button Content="✖" Width="20" Foreground="White" Background="#1D192B" FontWeight="Bold" Click="Close_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Логотип "FRIDAY" -->
+        <TextBlock Text="FRIDAY" FontFamily="{StaticResource IntroFridayFont}" 
+                   FontSize="100" FontWeight="Bold" Foreground="White"
+                   HorizontalAlignment="Left" VerticalAlignment="Top"
+                   Margin="10,60,0,0"/>
     </Grid>
 </Window>

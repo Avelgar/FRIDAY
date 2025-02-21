@@ -16,10 +16,10 @@ namespace Friday
 {
     public class VoiceService
     {
-        private string modelPath = "C:\\Users\\nikon\\Githup\\FRIDAY\\Friday\\model\\vosk-model-small-ru-0.22";
+        private string modelPath = "";
         private readonly VoskRecognizer _recognizer;
         private readonly string botName = "пятница";
-        private static MusicPlayer musicPlayer = new MusicPlayer();
+        private static MusicService musicService = new MusicService();
         private static readonly HttpClient httpClient = new HttpClient();
         private static readonly string apiToken = "60bbe7c1-7587-4658-82a4-4ac7481016c4";
         private static readonly string synthesisUrl = $"https://public.api.voice.steos.io/api/v1/synthesize-controller/synthesis-by-text?authToken={apiToken}";
@@ -126,13 +126,13 @@ namespace Friday
             {
                 responseMessage = "Включаю музыку...";
                 SpeakAsync(responseMessage).Wait();
-                musicPlayer.PlayMusic(@"C:\Users\nikon\Downloads\vivaldi_zima_1.mp3");
+                musicService.PlayMusic(@"C:\Users\nikon\Downloads\vivaldi_zima_1.mp3");
             }
             else if (command.IndexOf("выключить музыку", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 responseMessage = "Выключаю музыку...";
                 SpeakAsync(responseMessage).Wait();
-                musicPlayer.StopMusic();
+                musicService.StopMusic();
             }
             else
             {
@@ -166,7 +166,7 @@ namespace Friday
                 await Task.Run(() => File.WriteAllBytes(filePath, audioData));
 
                 // Воспроизводим файл с озвучкой
-                musicPlayer.PlayMusic(filePath);
+                musicService.PlayMusic(filePath);
             }
             else
             {

@@ -16,7 +16,7 @@ namespace Friday
 {
     public class VoiceService
     {
-        private string modelPath = "";
+        private string modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\model"));
         private readonly VoskRecognizer _recognizer;
         private readonly string botName = "пятница";
         private static MusicService musicService = new MusicService();

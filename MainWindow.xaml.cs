@@ -11,17 +11,18 @@ namespace FigmaToWpf
         public MainWindow()
         {
             InitializeComponent();
-            _voiceService = new VoiceService();
-            _voiceService.OnMessageReceived += OnMessageReceived; // Подключаем обработчик
+            // Создаем экземпляр RenameService
+            RenameService renameService = new RenameService();
+            // Передаем его в конструктор VoiceService
+            _voiceService = new VoiceService(renameService);
+            _voiceService.OnMessageReceived += OnMessageReceived;
         }
 
-        // Свернуть окно
         private void Minimize_Click(object sender, RoutedEventArgs e)
         {
             WindowState = WindowState.Minimized;
         }
 
-        // Развернуть/Восстановить окно
         private void Maximize_Click(object sender, RoutedEventArgs e)
         {
             if (WindowState == WindowState.Maximized)
@@ -30,7 +31,6 @@ namespace FigmaToWpf
                 WindowState = WindowState.Maximized;
         }
 
-        // Закрыть приложение
         private void Close_Click(object sender, RoutedEventArgs e)
         {
             Application.Current.Shutdown();
@@ -38,12 +38,10 @@ namespace FigmaToWpf
 
         private void ListenButton_Click(object sender, RoutedEventArgs e)
         {
-            // Логика переключения состояния прослушивания
             if (_voiceService.ListeningState.IsListening())
             {
                 _voiceService.ListeningState.StopListening();
                 ListenButton.Content = "Начать слушать";
-                // Выводим сообщение в консоль о том, что слушание остановлено
                 ConsoleTextBox.AppendText("Слушание остановлено." + Environment.NewLine);
                 ConsoleTextBox.ScrollToEnd();
             }
@@ -51,22 +49,14 @@ namespace FigmaToWpf
             {
                 _voiceService.ListeningState.StartListening();
                 ListenButton.Content = "Остановить слушать";
-
-                // Запускаем прослушивание речи в VoiceService
-                _voiceService.StartListening(); // Важно запустить процесс прослушивания
-
-                // Выводим сообщение в консоль о начале прослушивания
+                _voiceService.StartListening();
                 ConsoleTextBox.AppendText("Начинаю слушать..." + Environment.NewLine);
                 ConsoleTextBox.ScrollToEnd();
             }
         }
 
-
-
-        // Обработчик события получения сообщения от VoiceService
         private void OnMessageReceived(string message)
         {
-            // Выводим сообщение в консольное окно
             Dispatcher.Invoke(() =>
             {
                 ConsoleTextBox.AppendText(message + Environment.NewLine);

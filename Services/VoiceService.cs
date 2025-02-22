@@ -159,7 +159,7 @@ namespace Friday
             }
             else
             {
-                responseMessage = "Команда не распознана.";
+                responseMessage = "Кома+нда не распо+знана.";
                 SpeakAsync(responseMessage).Wait();
             }
 
@@ -171,7 +171,7 @@ namespace Friday
             var response = await httpClient.PostAsync(synthesisUrl,
                 new StringContent(JsonConvert.SerializeObject(new
                 {
-                    voiceId = 100,
+                    voiceId = 359,
                     text,
                     format = "mp3"
                 }), Encoding.UTF8, "application/json"));

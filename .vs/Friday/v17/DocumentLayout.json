@@ -3,20 +3,16 @@
   "WorkspaceRootPath": "C:\\Users\\nikon\\Githup\\FRIDAY\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+      "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\services\\voiceservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:services\\voiceservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\services\\voiceservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:services\\voiceservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\services\\weatherservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:services\\weatherservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\services\\geminiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:services\\geminiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\services\\renameservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -25,14 +21,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\services\\musicservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:services\\musicservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\services\\listeningstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:services\\listeningstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\app.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:app.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     }
   ],
   "DocumentGroupContainers": [
@@ -42,11 +30,24 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 5,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 2,
+              "Title": "GeminiService.cs",
+              "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\GeminiService.cs",
+              "RelativeDocumentMoniker": "Services\\GeminiService.cs",
+              "ToolTip": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\GeminiService.cs",
+              "RelativeToolTip": "Services\\GeminiService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABkAAAAvAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-22T09:59:24.298Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
               "Title": "MusicService.cs",
               "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\MusicService.cs",
               "RelativeDocumentMoniker": "Services\\MusicService.cs",
@@ -54,25 +55,24 @@
               "RelativeToolTip": "Services\\MusicService.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAqAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-22T06:22:50.236Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-22T06:22:50.236Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "VoiceService.cs",
               "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\VoiceService.cs",
               "RelativeDocumentMoniker": "Services\\VoiceService.cs",
               "ToolTip": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\VoiceService.cs",
               "RelativeToolTip": "Services\\VoiceService.cs",
-              "ViewState": "AgIAAB0AAAAAAAAAAAArwHoAAAAIAAAAAAAAAA==",
+              "ViewState": "AgIAAJAAAAAAAAAAAAAmwKEAAAA4AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-02-21T12:13:33.979Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 3,
               "Title": "RenameService.cs",
               "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\RenameService.cs",
               "RelativeDocumentMoniker": "Services\\RenameService.cs",
@@ -80,58 +80,7 @@
               "RelativeToolTip": "Services\\RenameService.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-22T07:18:24.127Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "WeatherService.cs",
-              "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\WeatherService.cs",
-              "RelativeDocumentMoniker": "Services\\WeatherService.cs",
-              "ToolTip": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\WeatherService.cs",
-              "RelativeToolTip": "Services\\WeatherService.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB0AAAApAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-22T07:22:00.802Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "App.xaml",
-              "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\App.xaml",
-              "RelativeDocumentMoniker": "App.xaml",
-              "ToolTip": "C:\\Users\\nikon\\Githup\\FRIDAY\\App.xaml",
-              "RelativeToolTip": "App.xaml",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-02-21T12:12:53.628Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "MainWindow.xaml",
-              "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\MainWindow.xaml",
-              "RelativeDocumentMoniker": "MainWindow.xaml",
-              "ToolTip": "C:\\Users\\nikon\\Githup\\FRIDAY\\MainWindow.xaml",
-              "RelativeToolTip": "MainWindow.xaml",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-02-21T12:12:35.499Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "ListeningState.cs",
-              "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\ListeningState.cs",
-              "RelativeDocumentMoniker": "Services\\ListeningState.cs",
-              "ToolTip": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\ListeningState.cs",
-              "RelativeToolTip": "Services\\ListeningState.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAABIAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-21T14:29:28.026Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-22T07:18:24.127Z"
             },
             {
               "$type": "Document",
@@ -141,7 +90,7 @@
               "RelativeDocumentMoniker": "MainWindow.xaml.cs",
               "ToolTip": "C:\\Users\\nikon\\Githup\\FRIDAY\\MainWindow.xaml.cs",
               "RelativeToolTip": "MainWindow.xaml.cs",
-              "ViewState": "AgIAAB0AAAAAAAAAAAAgwEMAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAACMAAAAAAAAAAAAqwEMAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-02-21T12:30:19.824Z",
               "EditorCaption": ""

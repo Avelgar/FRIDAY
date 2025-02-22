@@ -36,8 +36,9 @@
 
         <!-- Консольное окно -->
         <TextBox x:Name="ConsoleTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                 Margin="360,160,10,10" Height="200" FontSize="16" Background="#2D2A39" Foreground="White"
-                 IsReadOnly="True" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
+             Margin="360,160,10,10" Height="200" FontSize="16" Background="#2D2A39" Foreground="White"
+             IsReadOnly="True" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+             Visibility="Collapsed"/>
 
         <!-- Кнопка для включения/выключения прослушивания -->
         <Button Content="⬜" x:Name="ListenButton" HorizontalAlignment="Left" VerticalAlignment="Bottom"

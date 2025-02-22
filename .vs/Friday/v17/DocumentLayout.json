@@ -7,16 +7,16 @@
       "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:services\\voiceservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\services\\musicservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:services\\musicservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
       "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\services\\listeningstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:services\\listeningstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\services\\musicplayer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|solutionrelative:services\\musicplayer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{824E711D-AC68-4210-B768-C45F522C97CC}|Friday.csproj|c:\\users\\nikon\\githup\\friday\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -34,8 +34,21 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MusicService.cs",
+              "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\MusicService.cs",
+              "RelativeDocumentMoniker": "Services\\MusicService.cs",
+              "ToolTip": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\MusicService.cs",
+              "RelativeToolTip": "Services\\MusicService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-22T06:22:50.236Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
@@ -44,22 +57,9 @@
               "RelativeDocumentMoniker": "Services\\VoiceService.cs",
               "ToolTip": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\VoiceService.cs",
               "RelativeToolTip": "Services\\VoiceService.cs",
-              "ViewState": "AgIAADAAAAAAAAAAAAAEwDoAAABJAAAAAAAAAA==",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAcwBwAAAA2AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-02-21T12:13:33.979Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "MusicPlayer.cs",
-              "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\MusicPlayer.cs",
-              "RelativeDocumentMoniker": "Services\\MusicPlayer.cs",
-              "ToolTip": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\MusicPlayer.cs",
-              "RelativeToolTip": "Services\\MusicPlayer.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAiAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-21T14:21:38.788Z",
               "EditorCaption": ""
             },
             {
@@ -71,24 +71,22 @@
               "ToolTip": "C:\\Users\\nikon\\Githup\\FRIDAY\\App.xaml",
               "RelativeToolTip": "App.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-02-21T12:12:53.628Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-21T12:12:53.628Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "MainWindow.xaml",
               "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\MainWindow.xaml",
               "RelativeDocumentMoniker": "MainWindow.xaml",
               "ToolTip": "C:\\Users\\nikon\\Githup\\FRIDAY\\MainWindow.xaml",
               "RelativeToolTip": "MainWindow.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-02-21T12:12:35.499Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-21T12:12:35.499Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "ListeningState.cs",
               "DocumentMoniker": "C:\\Users\\nikon\\Githup\\FRIDAY\\Services\\ListeningState.cs",
               "RelativeDocumentMoniker": "Services\\ListeningState.cs",
@@ -96,8 +94,7 @@
               "RelativeToolTip": "Services\\ListeningState.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAABIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-21T14:29:28.026Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-21T14:29:28.026Z"
             },
             {
               "$type": "Document",
@@ -109,8 +106,7 @@
               "RelativeToolTip": "MainWindow.xaml.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAD4AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-21T12:30:19.824Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-21T12:30:19.824Z"
             }
           ]
         }

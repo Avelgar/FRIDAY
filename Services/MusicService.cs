@@ -1,6 +1,6 @@
 ﻿using NAudio.Wave;
 
-public class MusicPlayer
+public class MusicService
 {
     private IWavePlayer _wavePlayer;
     private AudioFileReader _audioFileReader;

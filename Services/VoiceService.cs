@@ -149,13 +149,20 @@ namespace Friday
             {
                 responseMessage = "Включаю музыку...";
                 SpeakAsync(responseMessage).Wait();
-                musicService.PlayMusic(@"C:\Users\nikon\Downloads\vivaldi_zima_1.mp3");
+                musicService.Play();
             }
             else if (command.IndexOf("выключить музыку", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 responseMessage = "Выключаю музыку...";
                 SpeakAsync(responseMessage).Wait();
-                musicService.StopMusic();
+                Thread.Sleep(1500);
+                musicService.Stop();
+            }
+            else if (command.IndexOf("следующий трек", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                responseMessage = "Переключаю...";
+                SpeakAsync(responseMessage).Wait();
+                musicService.NextTrack();
             }
             else
             {
@@ -168,29 +175,61 @@ namespace Friday
 
         private async Task SpeakAsync(string text)
         {
-            var response = await httpClient.PostAsync(synthesisUrl,
-                new StringContent(JsonConvert.SerializeObject(new
-                {
-                    voiceId = 359,
-                    text,
-                    format = "mp3"
-                }), Encoding.UTF8, "application/json"));
-
-            if (response.IsSuccessStatusCode)
+            bool wasMusicPlaying = musicService.IsPlaying();
+            if (wasMusicPlaying)
             {
-                var responseContent = await response.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject<SynthesisResponse>(responseContent);
-
-                byte[] audioData = Convert.FromBase64String(result.FileContents);
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "output.mp3");
-
-                await Task.Run(() => File.WriteAllBytes(filePath, audioData));
-
-                musicService.PlayMusic(filePath);
+                musicService.Pause();
             }
-            else
+
+            try
             {
-                OnMessageReceived?.Invoke("Ошибка синтеза речи.");
+                var response = await httpClient.PostAsync(synthesisUrl,
+                    new StringContent(JsonConvert.SerializeObject(new
+                    {
+                        voiceId = 359,
+                        text,
+                        format = "mp3"
+                    }), Encoding.UTF8, "application/json"));
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var result = JsonConvert.DeserializeObject<SynthesisResponse>(responseContent);
+
+                    byte[] audioData = Convert.FromBase64String(result.FileContents);
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "output.mp3");
+
+                    await Task.Run(() => File.WriteAllBytes(filePath, audioData));
+
+                    using (var audioFile = new AudioFileReader(filePath))
+                    using (var waveOut = new WaveOutEvent())
+                    {
+                        waveOut.Init(audioFile);
+                        waveOut.Play();
+
+                        while (waveOut.PlaybackState == PlaybackState.Playing)
+                        {
+                            await Task.Delay(100);
+                        }
+                    }
+
+                    File.Delete(filePath);
+                }
+                else
+                {
+                    OnMessageReceived?.Invoke("Ошибка синтеза речи.");
+                }
+            }
+            catch (Exception ex)
+            {
+                OnMessageReceived?.Invoke($"Ошибка: {ex.Message}");
+            }
+            finally
+            {
+                if (wasMusicPlaying)
+                {
+                    musicService.Resume();
+                }
             }
         }
     }

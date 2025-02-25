@@ -1,48 +1,131 @@
 ﻿<Window x:Class="FigmaToWpf.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Custom Window" 
+        Title="Custom Window"
         Height="500" Width="800"
         WindowStyle="None"
-        Background="#4A4459">
+        Background="#1D192B">
 
-    <Window.Resources>
-        <FontFamily x:Key="IntroFridayFont">pack://FRIDAY//src//IntroFriday.ttf</FontFamily>
-        
-    </Window.Resources>
+	<Window.Resources>
+		<FontFamily x:Key="IntroFridayFont">pack://FRIDAY//src//IntroFriday.ttf</FontFamily>
 
-    <Grid>
-        <!-- Хедер -->
-        <Border Background="#1D192B" Height="40" VerticalAlignment="Top">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="150"/>
-                </Grid.ColumnDefinitions>
+		<Style TargetType="{x:Type TabItem}">
+			<Setter Property="OverridesDefaultStyle" Value="True"/>
+			<Setter Property="SnapsToDevicePixels" Value="True"/>
+			<Setter Property="Foreground" Value="White"/>
+			<Setter Property="Background" Value="#625B71"/>
+			<Setter Property="BorderBrush" Value="#4A4459"/>
+			<Setter Property="Height" Value="32"/>
+			<Setter Property="Template">
+				<Setter.Value>
+					<ControlTemplate TargetType="{x:Type TabItem}">
+						<Border x:Name="Border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0" Margin="15,4,-5,-1" CornerRadius="5,5,0,0">
+							<Grid>
+								<Rectangle x:Name="interactive" Opacity="0.3"/>
+								<ContentPresenter HorizontalAlignment="Center" Margin="12,2,12,2" x:Name="ContentSite" VerticalAlignment="Center" RecognizesAccessKey="True" ContentSource="Header" />
+							</Grid>
+						</Border>
+						<ControlTemplate.Triggers>
+							<Trigger Property="IsSelected" Value="True">
+								<Setter Property="Panel.ZIndex" Value="100"/>
+								<Setter Property="Background" Value="#4A4459" />
+							</Trigger>
+							<MultiTrigger>
+								<MultiTrigger.Conditions>
+									<Condition Property="IsMouseOver" Value="True"/>
+									<Condition Property="Selector.IsSelected" Value="False"/>
+								</MultiTrigger.Conditions>
+								<Setter Property="Fill" Value="#4A4459" TargetName="interactive"/>
+							</MultiTrigger>
+							<Trigger Property="IsEnabled" Value="False">
+								<Setter Property="Opacity" Value="0.5" TargetName="interactive" />
+								<Setter Property="Fill" Value="#4A4459" TargetName="interactive" />
+								<Setter Property="Background" Value="White"/>
+								<Setter Property="Foreground" Value="DarkGray"/>
+							</Trigger>
+						</ControlTemplate.Triggers>
+					</ControlTemplate>
+				</Setter.Value>
+			</Setter>
+		</Style>
 
-                <!-- Кнопки управления -->
-                <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Right">
-                    <Button Content="−" Width="20" Foreground="White" Background="#1D192B" Click="Minimize_Click"/>
-                    <Button Content="⬜" Width="20" Foreground="White" Background="#1D192B" FontWeight="Bold" Click="Maximize_Click"/>
-                    <Button Content="✖" Width="20" Foreground="White" Background="#1D192B" FontWeight="Bold" Click="Close_Click"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-        <!-- Логотип "FRIDAY" -->
-        <TextBlock Text="FRIDAY" FontFamily="{StaticResource IntroFridayFont}" 
-                   FontSize="100" FontWeight="Bold" Foreground="White"
-                   HorizontalAlignment="Left" VerticalAlignment="Top"
-                   Margin="10,60,0,0"/>
+		<Style TargetType="{x:Type TabControl}">
+			<Setter Property="Background" Value="#4A4459"/>
+			<Setter Property="Template">
+				<Setter.Value>
+					<ControlTemplate TargetType="{x:Type TabControl}">
+						<Grid KeyboardNavigation.TabNavigation="Local">
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
+							<TabPanel Grid.Row="0" IsItemsHost="True" Panel.ZIndex="1" KeyboardNavigation.TabIndex="1"/>
+							<Border Padding="12" Background="{TemplateBinding Background}"
+                                    Grid.Row="1" KeyboardNavigation.DirectionalNavigation="Contained" KeyboardNavigation.TabNavigation="Local" KeyboardNavigation.TabIndex="2">
+								<ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent"/>
+							</Border>
+						</Grid>
+					</ControlTemplate>
+				</Setter.Value>
+			</Setter>
+		</Style>
+	</Window.Resources>
 
-        <!-- Консольное окно -->
-        <TextBox x:Name="ConsoleTextBox" HorizontalAlignment="Stretch" VerticalAlignment="Top"
-             Margin="360,160,10,10" Height="200" FontSize="16" Background="#2D2A39" Foreground="White"
-             IsReadOnly="True" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
-             Visibility="Collapsed"/>
+	<Grid>
+		<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="1">
+			<Button Content="−" Width="20" Height="20" VerticalAlignment="Top" Foreground="White" Click="Minimize_Click"/>
+			<Button Content="⬜️" Width="20" Height="20" VerticalAlignment="Top" Foreground="White" FontWeight="Bold" Click="Maximize_Click"/>
+			<Button Content="✖️" Width="20" Height="20" VerticalAlignment="Top" Foreground="White" FontWeight="Bold" Click="Close_Click"/>
+		</StackPanel>
 
-        <!-- Кнопка для включения/выключения прослушивания -->
-        <Button Content="⬜" x:Name="ListenButton" HorizontalAlignment="Left" VerticalAlignment="Bottom"
-                Margin="360,0,0,69" Width="50" Height="50" Background="#6A4E86" Foreground="White" FontSize="16" 
-                Click="ListenButton_Click"/>
-    </Grid>
+		<TabControl Margin="10">
+			<TabItem Header="Home">
+				<StackPanel Width="755" Height="424">
+
+					<TextBlock Text="FRIDAY" FontFamily="{StaticResource IntroFridayFont}"
+                               FontSize="100" FontWeight="Bold" Foreground="White"/>
+					<TextBox x:Name="ConsoleTextBox" Height="142" FontSize="16" Background="White" Foreground="Black"
+                             IsReadOnly="True" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                             Visibility="Visible" Width="325"/>
+					<Button Content="⬜️" x:Name="ListenButton" Width="150" Height="50" Background="#6A4E86" Foreground="White" FontSize="16"
+                            Click="ListenButton_Click"/>
+				</StackPanel>
+			</TabItem>
+
+			<TabItem Header="Commands">
+				<StackPanel>
+					<StackPanel Orientation="Horizontal" Margin="10">
+						<Button Content="Add command" Margin="0,0,10,0" />
+						<TextBox Width="200" Text="Search" />
+						<Button Content="Sort and filter" Margin="10,0,0,0" />
+					</StackPanel>
+					<ItemsControl Margin="10">
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<Border BorderBrush="Gray" BorderThickness="1" Margin="0,5,0,0" Background="#3E3E4B">
+									<StackPanel Margin="10">
+										<TextBlock Text="Command name" Foreground="White" FontWeight="Bold" />
+										<TextBlock Text="Command description command description command description" Foreground="LightGray" />
+										<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+											<Button Content="Edit" Margin="5,0" />
+											<Button Content="Delete" Margin="5,0" />
+										</StackPanel>
+									</StackPanel>
+								</Border>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+						<TextBlock Text="Command name" />
+						<TextBlock Text="Command name" />
+						<TextBlock Text="Command name" />
+					</ItemsControl>
+				</StackPanel>
+			</TabItem>
+
+			<TabItem Header="Settings">
+				<StackPanel>
+					<TextBlock Text="Settings Page" Foreground="White" FontSize="24" />
+				</StackPanel>
+			</TabItem>
+		</TabControl>
+	</Grid>
 </Window>

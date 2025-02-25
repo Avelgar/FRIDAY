@@ -10,7 +10,7 @@ namespace Friday
 {
     public class CommandManager
     {
-        private string _filePath = "C:\\Users\\Maksim\\Documents\\GitHub\\FRIDAY\\commands.txt";
+        private string _filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\commands.txt"));
         private List<Command> _commands;
 
         public CommandManager()

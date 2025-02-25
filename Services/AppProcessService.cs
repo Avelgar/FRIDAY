@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Windows;
 
 namespace Friday
 {
@@ -25,7 +27,10 @@ namespace Friday
             }
             return isKilled;
         }
-
+        public void OpenFile(string filePath)
+        {
+            MessageBox.Show(filePath);
+        }
         public bool IsProcessRunning(string processName)
         {
             return Process.GetProcessesByName(processName).Any();

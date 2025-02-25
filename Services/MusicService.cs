@@ -7,7 +7,7 @@ public class MusicService
     private AudioFileReader _audioFileReader;
     private string[] _musicFiles;
     private int _currentTrackIndex;
-    private readonly string _musicFolderPath = "C:\\Users\\Maksim\\Documents\\GitHub\\FRIDAY\\music";
+    private readonly string _musicFolderPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\music"));
 
     public MusicService()
     {

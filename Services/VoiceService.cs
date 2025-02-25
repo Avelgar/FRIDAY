@@ -8,6 +8,8 @@ using Newtonsoft.Json;
 using System.Net.Http;
 using System.IO;
 using System.Threading;
+using System.Windows.Input;
+using System.Windows.Forms;
 
 namespace Friday
 {
@@ -166,8 +168,17 @@ namespace Friday
             }
             else
             {
-                responseMessage = "Кома+нда не распо+знана.";
-                SpeakAsync(responseMessage).Wait();
+                CommandManager commandManager = new CommandManager();
+                var customCommand = commandManager.FindCommandByTrigger(command);
+                if (customCommand != null)
+                {
+                    CustomCommandService.ExecuteCommand(customCommand);
+                }
+                else
+                {
+                    responseMessage = "Кома+нда не распо+знана.";
+                    SpeakAsync(responseMessage).Wait();
+                }
             }
 
             OnMessageReceived?.Invoke(responseMessage);

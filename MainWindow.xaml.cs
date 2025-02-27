@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Windows;
+using System.Windows.Controls;
 using Friday;
+using Friday.Managers;
+using System.Windows.Media;
 
 namespace FigmaToWpf
 {
@@ -63,5 +66,81 @@ namespace FigmaToWpf
                 ConsoleTextBox.ScrollToEnd();
             });
         }
+
+        private void AddCommandButton_Click(object sender, RoutedEventArgs e)
+        {
+            AddCommandWindow addCommandWindow = new AddCommandWindow();
+            addCommandWindow.CommandAdded += AddCommandToList; // Подписываемся на событие
+            addCommandWindow.ShowDialog();
+        }
+
+        private void AddCommandToList(Command command)
+        {
+            // Добавляем команду в ItemsControl
+            var commandPanel = new StackPanel { Margin = new Thickness(10) };
+            commandPanel.Children.Add(new TextBlock { Text = $"ID: {command.Id}", Foreground = Brushes.LightGray });
+            commandPanel.Children.Add(new TextBlock { Text = command.Name, Foreground = Brushes.White, FontWeight = FontWeights.Bold });
+            commandPanel.Children.Add(new TextBlock { Text = command.Description, Foreground = Brushes.LightGray });
+
+            // Добавляем действия
+            foreach (var action in command.Actions)
+            {
+                commandPanel.Children.Add(new TextBlock { Text = action, Foreground = Brushes.LightGray });
+            }
+
+            // Кнопка редактирования
+            var editButton = new Button { Content = "Редактировать", Margin = new Thickness(5), Width = 100 };
+            editButton.Click += (s, e) => EditCommand(command, commandPanel);
+            commandPanel.Children.Add(editButton);
+
+            // Кнопка удаления
+            var deleteButton = new Button { Content = "Удалить", Margin = new Thickness(5), Width = 100 };
+            deleteButton.Click += (s, e) => CommandsItemsControl.Items.Remove(commandPanel);
+            commandPanel.Children.Add(deleteButton);
+
+            // Добавляем команду в ItemsControl
+            CommandsItemsControl.Items.Add(commandPanel);
+        }
+
+        private void EditCommand(Command command, StackPanel commandPanel)
+        {
+            // Открываем окно редактирования с заполненными данными
+            var addCommandWindow = new AddCommandWindow(command); // Передаем текущую команду
+
+            addCommandWindow.CommandAdded += (editedCommand) =>
+            {
+                // Обновляем команду в списке
+                command.Name = editedCommand.Name;
+                command.Description = editedCommand.Description;
+                command.Actions = editedCommand.Actions;
+
+                // Обновляем текст в commandPanel
+                ((TextBlock)commandPanel.Children[1]).Text = command.Name;
+                ((TextBlock)commandPanel.Children[2]).Text = command.Description;
+                commandPanel.Children.Clear(); // Очищаем старые элементы
+                commandPanel.Children.Add(new TextBlock { Text = $"ID: {command.Id}", Foreground = Brushes.LightGray });
+                commandPanel.Children.Add(new TextBlock { Text = command.Name, Foreground = Brushes.White, FontWeight = FontWeights.Bold });
+                commandPanel.Children.Add(new TextBlock { Text = command.Description, Foreground = Brushes.LightGray });
+
+                // Добавляем обновленные действия
+                foreach (var action in command.Actions)
+                {
+                    commandPanel.Children.Add(new TextBlock { Text = action, Foreground = Brushes.LightGray });
+                }
+
+                // Создаем кнопки редактирования и удаления
+                var editButton = new Button { Content = "Редактировать", Margin = new Thickness(5), Width = 100 };
+                editButton.Click += (s, e) => EditCommand(command, commandPanel);
+                commandPanel.Children.Add(editButton);
+
+                var deleteButton = new Button { Content = "Удалить", Margin = new Thickness(5), Width = 100 };
+                deleteButton.Click += (s, e) => CommandsItemsControl.Items.Remove(commandPanel);
+                commandPanel.Children.Add(deleteButton);
+            };
+
+            addCommandWindow.ShowDialog();
+        }
+
+
     }
 }

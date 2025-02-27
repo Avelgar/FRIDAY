@@ -1,27 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace Friday.Managers
 {
     public class Command
     {
+        public int Id { get; set; }  // Добавим Id
         public string Name { get; set; }
         public string Description { get; set; }
-        public string Trigger { get; set; }
-        public string ExecutionType { get; set; }
-        public string Action { get; set; }
+        public List<string> Actions { get; set; } = new List<string>(); // Список действий
+
         public Command() { }
 
-        public Command(string name, string description, string trigger, string executionType, string action)
+        public Command(int id, string name, string description, List<string> actions)
         {
+            Id = id;
             Name = name;
             Description = description;
-            Trigger = trigger;
-            ExecutionType = executionType;
-            Action = action;
+            Actions = actions;
         }
     }
 }

@@ -20,7 +20,7 @@ namespace Friday
         private readonly RenameService _renameService; // Добавляем поле для RenameService
         private static MusicService musicService = new MusicService();
         private static readonly HttpClient httpClient = new HttpClient();
-        private static readonly string apiToken = "60bbe7c1-7587-4658-82a4-4ac7481016c4";
+        private static readonly string apiToken = "c83ecc77-ec9d-4055-b2ae-a16b09991421";
         private static readonly string synthesisUrl = $"https://public.api.voice.steos.io/api/v1/synthesize-controller/synthesis-by-text?authToken={apiToken}";
         public ListeningState ListeningState { get; private set; }
 

@@ -95,29 +95,33 @@
 			<TabItem Header="Commands">
 				<StackPanel>
 					<StackPanel Orientation="Horizontal" Margin="10">
-						<Button Content="Add command" Margin="0,0,10,0" />
+						<Button Content="Add command" Margin="0,0,10,0" Click="AddCommandButton_Click" />
 						<TextBox Width="200" Text="Search" />
 						<Button Content="Sort and filter" Margin="10,0,0,0" />
 					</StackPanel>
 					<ItemsControl Margin="10">
-						<ItemsControl.ItemTemplate>
-							<DataTemplate>
-								<Border BorderBrush="Gray" BorderThickness="1" Margin="0,5,0,0" Background="#3E3E4B">
-									<StackPanel Margin="10">
-										<TextBlock Text="Command name" Foreground="White" FontWeight="Bold" />
-										<TextBlock Text="Command description command description command description" Foreground="LightGray" />
-										<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-											<Button Content="Edit" Margin="5,0" />
-											<Button Content="Delete" Margin="5,0" />
-										</StackPanel>
-									</StackPanel>
-								</Border>
-							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-						<TextBlock Text="Command name" />
-						<TextBlock Text="Command name" />
-						<TextBlock Text="Command name" />
-					</ItemsControl>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="Gray" BorderThickness="1" Margin="0,5,0,0" Background="#3E3E4B">
+                                    <StackPanel Margin="10">
+                                        <TextBlock Text="Command name" Foreground="White" FontWeight="Bold" />
+                                        <TextBlock Text="Command description command description command description" Foreground="LightGray" />
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <Button Content="Edit" Margin="5,0" />
+                                            <Button Content="Delete" Margin="5,0" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                        <ItemsControl x:Name="CommandsItemsControl" Margin="10">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <!-- Здесь будет ваш шаблон для отображения команд -->
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ItemsControl>
 				</StackPanel>
 			</TabItem>
 

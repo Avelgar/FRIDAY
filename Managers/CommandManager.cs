@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Friday
 {
@@ -17,6 +15,7 @@ namespace Friday
         {
             _commands = LoadCommands();
         }
+
         private List<Command> LoadCommands()
         {
             var commands = new List<Command>();
@@ -27,15 +26,21 @@ namespace Friday
                 foreach (var line in lines)
                 {
                     var parts = line.Split('|');
-                    if (parts.Length == 5)
+                    if (parts.Length >= 3) // Изменено для работы с новыми свойствами
                     {
+                        var actions = new List<string>();
+                        // Предполагаем, что действия могут быть перечислены через запятую
+                        if (parts.Length > 3)
+                        {
+                            actions = parts[3].Split(',').ToList(); // Разделяем действия
+                        }
+
                         commands.Add(new Command
                         {
+                            Id = commands.Count + 1, // Генерируем ID на основе текущего количества команд
                             Name = parts[0],
                             Description = parts[1],
-                            Trigger = parts[2],
-                            ExecutionType = parts[3],
-                            Action = parts[4]
+                            Actions = actions
                         });
                     }
                 }
@@ -43,16 +48,19 @@ namespace Friday
 
             return commands;
         }
+
         private void SaveCommands()
         {
-            var lines = _commands.Select(c => $"{c.Name}:{c.Description}:{c.Trigger}:{c.ExecutionType}:{c.Action}");
+            var lines = _commands.Select(c => $"{c.Name}|{c.Description}|{string.Join(",", c.Actions)}");
             File.WriteAllLines(_filePath, lines);
         }
+
         public void AddCommand(Command command)
         {
             _commands.Add(command);
             SaveCommands();
         }
+
         public void EditCommand(string name, Command newCommand)
         {
             var command = _commands.FirstOrDefault(c => c.Name == name);
@@ -60,9 +68,7 @@ namespace Friday
             {
                 command.Name = newCommand.Name;
                 command.Description = newCommand.Description;
-                command.Trigger = newCommand.Trigger;
-                command.ExecutionType = newCommand.ExecutionType;
-                command.Action = newCommand.Action;
+                command.Actions = newCommand.Actions; // Обновляем действия
                 SaveCommands();
             }
         }
@@ -84,7 +90,7 @@ namespace Friday
 
         public Command FindCommandByTrigger(string trigger)
         {
-            return _commands.FirstOrDefault(c => c.Trigger.Equals(trigger, StringComparison.OrdinalIgnoreCase));
+            return _commands.FirstOrDefault(c => c.Name.Equals(trigger, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

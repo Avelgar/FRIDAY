@@ -11,12 +11,11 @@ namespace FigmaToWpf
     public partial class MainWindow : Window
     {
         private VoiceService _voiceService;
-        private Friday.Managers.CommandManager _commandManager; // Добавляем экземпляр CommandManager
+        public static Friday.CommandManager _commandManager = new Friday.CommandManager();
 
         public MainWindow()
         {
             InitializeComponent();
-            _commandManager = new Friday.Managers.CommandManager();
             RenameService renameService = new RenameService();
             _voiceService = new VoiceService(renameService);
             _voiceService.OnMessageReceived += OnMessageReceived;

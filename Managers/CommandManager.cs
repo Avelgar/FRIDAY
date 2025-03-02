@@ -54,46 +54,53 @@ namespace Friday.Managers
 
         private void LoadCommands()
         {
-            if (File.Exists(FilePath))
+            // Проверка, существует ли файл
+            if (!File.Exists(FilePath))
             {
-                var lines = File.ReadAllLines(FilePath);
-                _commands = new List<Command>();
+                // Создание пустого файла, если он не существует
+                using (File.Create(FilePath)) { }
+                _commands = new List<Command>(); // Инициализация пустого списка команд
+                return; // Завершение метода, так как файл пуст
+            }
 
-                foreach (var line in lines)
+            var lines = File.ReadAllLines(FilePath);
+            _commands = new List<Command>();
+
+            foreach (var line in lines)
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                var parts = line.Split(',');
+
+                if (parts.Length < 4)
+                    continue;
+
+                int commandId = int.Parse(parts[0]);
+                string name = parts[1];
+                string description = parts[2];
+                bool isPassword = bool.Parse(parts[3]);
+
+                List<ActionItem> actions = new List<ActionItem>();
+                if (parts.Length > 4)
                 {
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue;
-
-                    var parts = line.Split(',');
-
-                    if (parts.Length < 4)
-                        continue;
-
-                    int commandId = int.Parse(parts[0]);
-                    string name = parts[1];
-                    string description = parts[2];
-                    bool isPassword = bool.Parse(parts[3]);
-
-                    List<ActionItem> actions = new List<ActionItem>();
-                    if (parts.Length > 4)
+                    var actionsParts = parts[4].Split(';');
+                    for (int i = 0; i < actionsParts.Length; i++)
                     {
-                        var actionsParts = parts[4].Split(';');
-                        for (int i = 0; i < actionsParts.Length; i++)
+                        var actionDetails = actionsParts[i].Split(':');
+                        if (actionDetails.Length == 3) // Теперь ожидаем 3 элемента: ID, тип и текст
                         {
-                            var actionDetails = actionsParts[i].Split(':');
-                            if (actionDetails.Length == 3) // Теперь ожидаем 3 элемента: ID, тип и текст
-                            {
-                                int actionId = int.Parse(actionDetails[0]);
-                                actions.Add(new ActionItem(actionId, actionDetails[1], actionDetails[2]));
-                            }
+                            int actionId = int.Parse(actionDetails[0]);
+                            actions.Add(new ActionItem(actionId, actionDetails[1], actionDetails[2]));
                         }
                     }
-
-                    var command = new Command(commandId, name, description, actions, isPassword);
-                    _commands.Add(command);
                 }
+
+                var command = new Command(commandId, name, description, actions, isPassword);
+                _commands.Add(command);
             }
         }
+
 
 
 

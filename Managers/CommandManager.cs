@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Friday.Managers;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Friday.Managers
+namespace Friday
 {
     public class CommandManager
     {
@@ -46,21 +47,23 @@ namespace Friday.Managers
             }
         }
 
-
         public List<Command> GetCommands()
         {
             return _commands;
         }
 
+        public Command FindCommandByTrigger(string trigger)
+        {
+            return _commands.FirstOrDefault(c => c.Name.Equals(trigger, StringComparison.OrdinalIgnoreCase));
+        }
+
         private void LoadCommands()
         {
-            // Проверка, существует ли файл
             if (!File.Exists(FilePath))
             {
-                // Создание пустого файла, если он не существует
                 using (File.Create(FilePath)) { }
-                _commands = new List<Command>(); // Инициализация пустого списка команд
-                return; // Завершение метода, так как файл пуст
+                _commands = new List<Command>();
+                return;
             }
 
             var lines = File.ReadAllLines(FilePath);
@@ -88,7 +91,7 @@ namespace Friday.Managers
                     for (int i = 0; i < actionsParts.Length; i++)
                     {
                         var actionDetails = actionsParts[i].Split(':');
-                        if (actionDetails.Length == 3) // Теперь ожидаем 3 элемента: ID, тип и текст
+                        if (actionDetails.Length == 3)
                         {
                             int actionId = int.Parse(actionDetails[0]);
                             actions.Add(new ActionItem(actionId, actionDetails[1], actionDetails[2]));
@@ -101,10 +104,7 @@ namespace Friday.Managers
             }
         }
 
-
-
-
-        public void SaveCommands()
+        private void SaveCommands()
         {
             using (var writer = new StreamWriter(FilePath))
             {

@@ -7,7 +7,7 @@ namespace Friday.Managers
 {
     public class CommandManager
     {
-        private const string FilePath = "commands.txt"; // Путь к файлу
+        private string FilePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\commands.txt"));
         private List<Command> _commands;
 
         public CommandManager()
@@ -116,7 +116,5 @@ namespace Friday.Managers
                 }
             }
         }
-
-
     }
 }

@@ -1,96 +1,115 @@
-﻿using Friday.Managers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Friday
+namespace Friday.Managers
 {
     public class CommandManager
     {
-        private string _filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\commands.txt"));
+        private const string FilePath = "commands.txt"; // Путь к файлу
         private List<Command> _commands;
 
         public CommandManager()
         {
-            _commands = LoadCommands();
+            LoadCommands();
         }
 
-        private List<Command> LoadCommands()
+        public void AddCommand(string name, string description, List<ActionItem> actions, bool isPassword)
         {
-            var commands = new List<Command>();
-
-            if (File.Exists(_filePath))
-            {
-                var lines = File.ReadAllLines(_filePath);
-                foreach (var line in lines)
-                {
-                    var parts = line.Split('|');
-                    if (parts.Length >= 3) // Изменено для работы с новыми свойствами
-                    {
-                        var actions = new List<string>();
-                        // Предполагаем, что действия могут быть перечислены через запятую
-                        if (parts.Length > 3)
-                        {
-                            actions = parts[3].Split(',').ToList(); // Разделяем действия
-                        }
-
-                        commands.Add(new Command
-                        {
-                            Id = commands.Count + 1, // Генерируем ID на основе текущего количества команд
-                            Name = parts[0],
-                            Description = parts[1],
-                            Actions = actions
-                        });
-                    }
-                }
-            }
-
-            return commands;
-        }
-
-        private void SaveCommands()
-        {
-            var lines = _commands.Select(c => $"{c.Name}|{c.Description}|{string.Join(",", c.Actions)}");
-            File.WriteAllLines(_filePath, lines);
-        }
-
-        public void AddCommand(Command command)
-        {
+            int id = _commands.Count > 0 ? _commands.Max(c => c.Id) + 1 : 1; // Генерация уникального ID
+            var command = new Command(id, name, description, actions, isPassword);
             _commands.Add(command);
             SaveCommands();
         }
 
-        public void EditCommand(string name, Command newCommand)
+        public void DeleteCommand(string commandName)
         {
-            var command = _commands.FirstOrDefault(c => c.Name == name);
-            if (command != null)
+            var commandToRemove = _commands.FirstOrDefault(c => c.Name == commandName);
+            if (commandToRemove != null)
             {
-                command.Name = newCommand.Name;
-                command.Description = newCommand.Description;
-                command.Actions = newCommand.Actions; // Обновляем действия
+                _commands.Remove(commandToRemove);
                 SaveCommands();
             }
         }
 
-        public void DeleteCommand(string name)
+        public void EditCommand(int id, string newName, string newDescription, List<ActionItem> newActions, bool isPassword)
         {
-            var command = _commands.FirstOrDefault(c => c.Name == name);
-            if (command != null)
+            var commandToEdit = _commands.FirstOrDefault(c => c.Id == id);
+            if (commandToEdit != null)
             {
-                _commands.Remove(command);
+                commandToEdit.Name = newName;
+                commandToEdit.Description = newDescription;
+                commandToEdit.Actions = newActions;
+                commandToEdit.IsPassword = isPassword;
                 SaveCommands();
             }
         }
 
-        public List<Command> GetAllCommands()
+
+        public List<Command> GetCommands()
         {
             return _commands;
         }
 
-        public Command FindCommandByTrigger(string trigger)
+        private void LoadCommands()
         {
-            return _commands.FirstOrDefault(c => c.Name.Equals(trigger, StringComparison.OrdinalIgnoreCase));
+            if (File.Exists(FilePath))
+            {
+                var lines = File.ReadAllLines(FilePath);
+                _commands = new List<Command>();
+
+                foreach (var line in lines)
+                {
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
+
+                    var parts = line.Split(',');
+
+                    if (parts.Length < 4)
+                        continue;
+
+                    int commandId = int.Parse(parts[0]);
+                    string name = parts[1];
+                    string description = parts[2];
+                    bool isPassword = bool.Parse(parts[3]);
+
+                    List<ActionItem> actions = new List<ActionItem>();
+                    if (parts.Length > 4)
+                    {
+                        var actionsParts = parts[4].Split(';');
+                        for (int i = 0; i < actionsParts.Length; i++)
+                        {
+                            var actionDetails = actionsParts[i].Split(':');
+                            if (actionDetails.Length == 3) // Теперь ожидаем 3 элемента: ID, тип и текст
+                            {
+                                int actionId = int.Parse(actionDetails[0]);
+                                actions.Add(new ActionItem(actionId, actionDetails[1], actionDetails[2]));
+                            }
+                        }
+                    }
+
+                    var command = new Command(commandId, name, description, actions, isPassword);
+                    _commands.Add(command);
+                }
+            }
         }
+
+
+
+        public void SaveCommands()
+        {
+            using (var writer = new StreamWriter(FilePath))
+            {
+                foreach (var command in _commands)
+                {
+                    var actions = string.Join(";", command.Actions.Select(a => $"{a.Id}:{a.ActionType}:{a.ActionText}"));
+                    var line = $"{command.Id},{command.Name},{command.Description},{command.IsPassword},{actions}";
+                    writer.WriteLine(line);
+                }
+            }
+        }
+
+
     }
 }

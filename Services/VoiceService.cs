@@ -168,17 +168,17 @@ namespace Friday
             }
             else
             {
-                CommandManager commandManager = new CommandManager();
-                var customCommand = commandManager.FindCommandByTrigger(command);
-                if (customCommand != null)
-                {
-                    CustomCommandService.ExecuteCommand(customCommand);
-                }
-                else
-                {
-                    responseMessage = "Кома+нда не распо+знана.";
-                    SpeakAsync(responseMessage).Wait();
-                }
+                //CommandManager commandManager = new CommandManager();
+                //var customCommand = commandManager.FindCommandByTrigger(command);
+                //if (customCommand != null)
+                //{
+                //    CustomCommandService.ExecuteCommand(customCommand);
+                //}
+                //else
+                //{
+                //    responseMessage = "Кома+нда не распо+знана.";
+                //    SpeakAsync(responseMessage).Wait();
+                //}
             }
 
             OnMessageReceived?.Invoke(responseMessage);

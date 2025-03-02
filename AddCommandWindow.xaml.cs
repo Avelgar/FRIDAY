@@ -1,49 +1,153 @@
-﻿using System.Collections.Generic;
-using System.Windows;
+﻿using System.Windows;
+using Friday.Managers; // Убедитесь, что это пространство имен соответствует вашему проекту
+using System.Collections.Generic;
 using System.Windows.Controls;
-using Friday.Managers;
 using System.Windows.Media;
+using System.Linq; // Добавлено для использования LINQ
+using System;
+using static System.Windows.Forms.Design.AxImporter;
 
 namespace FigmaToWpf
 {
     public partial class AddCommandWindow : Window
     {
-        public event Action<Command> CommandAdded; // Событие для передачи команды
-        private static int _nextId = 1;
-        private Command _currentCommand;
+        public string CommandName { get; set; }
+        public string Description { get; set; }
+        public List<ActionItem> Actions { get; set; }
+        public bool IsPasswordSet { get; set; }
 
-        public AddCommandWindow(Command command = null)
+        private bool isEditing;
+
+        public AddCommandWindow()
         {
             InitializeComponent();
-            _currentCommand = command;
+            Actions = new List<ActionItem>(); // Инициализация списка действий
+        }
 
-            if (_currentCommand != null)
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close(); // Закрытие окна
+        }
+
+        public void Initialize(string commandName, string description, List<ActionItem> actions, bool isPassword)
+        {
+            CommandNameTextBox.Text = commandName;
+            DescriptionTextBox.Text = description;
+            Actions = actions ?? new List<ActionItem>(); // Инициализация, если actions равно null
+            IsPasswordSet = isPassword;
+            SetPasswordCheckBox.IsChecked = isPassword;
+
+            // Обновляем ItemsControl с действиями
+            ActionsItemsControl.Items.Clear();
+            foreach (var action in Actions)
             {
-                // Заполняем поля значениями текущей команды
-                CommandNameTextBox.Text = _currentCommand.Name;
-                DescriptionTextBox.Text = _currentCommand.Description;
+                ActionsItemsControl.Items.Add($"{action.ActionType}: {action.ActionText}");
+            }
 
-                // Заполняем ActionsItemsControl
-                foreach (var action in _currentCommand.Actions)
+            isEditing = true; // Устанавливаем флаг редактирования
+        }
+
+        private void AddActionButton_Click(object sender, RoutedEventArgs e)
+        {
+            string title = "Добавить действие";
+            var inputDialog = new InputDialog(title, "", "");
+
+            if (inputDialog.ShowDialog() == true)
+            {
+                string newActionText = $"{inputDialog.ActionType}: {inputDialog.InputText}"; // Формат "тип: действие"
+                ActionsItemsControl.Items.Add(newActionText);
+
+                int actionId = Actions.Count + 1; // Генерация ID для действия
+                var newAction = new ActionItem(actionId, inputDialog.ActionType, inputDialog.InputText);
+                Actions.Add(newAction); // Добавляем действие в список
+            }
+        }
+
+
+        private void EditButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Parent is StackPanel stackPanel)
+            {
+                TextBlock actionTextBlock = stackPanel.Children.OfType<TextBlock>().FirstOrDefault();
+                if (actionTextBlock != null)
                 {
-                    AddAction(action);
+                    string title = "Редактировать действие";
+                    string currentActionText = actionTextBlock.Text;
+
+                    var parts = currentActionText.Split(new[] { ": " }, StringSplitOptions.None);
+                    if (parts.Length == 2)
+                    {
+                        string currentActionType = parts[0];
+                        string currentAction = parts[1];
+
+                        var inputDialog = new InputDialog(title, currentAction, currentActionType);
+                        if (inputDialog.ShowDialog() == true)
+                        {
+                            string newActionText = $"{inputDialog.ActionType}: {inputDialog.InputText}";
+                            actionTextBlock.Text = newActionText; // Обновляем текст в интерфейсе
+
+                            // Обновляем действие в списке Actions
+                            var actionToEdit = Actions.FirstOrDefault(a => a.ActionType == currentActionType && a.ActionText == currentAction);
+                            if (actionToEdit != null)
+                            {
+                                actionToEdit.ActionType = inputDialog.ActionType;
+                                actionToEdit.ActionText = inputDialog.InputText;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Parent is StackPanel stackPanel)
+            {
+                TextBlock actionTextBlock = stackPanel.Children.OfType<TextBlock>().FirstOrDefault();
+                if (actionTextBlock != null)
+                {
+                    var actionToRemove = Actions.FirstOrDefault(a => $"{a.ActionType}: {a.ActionText}" == actionTextBlock.Text);
+                    if (actionToRemove != null)
+                    {
+                        Actions.Remove(actionToRemove); // Удаляем действие из списка
+                    }
+                    ActionsItemsControl.Items.Remove(actionTextBlock.Text); // Удаляем из интерфейса
                 }
             }
         }
 
 
+        private void CommandNameTextBox_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        {
+            // Проверяем, что вводимый символ является русским строчным символом или пробелом
+            char inputChar = e.Text[0];
+            if (!IsValidInput(inputChar))
+            {
+                e.Handled = true; // Отменяем ввод, если символ недопустим
+            }
+        }
+
+        private bool IsValidInput(char c)
+        {
+            // Проверяем, является ли символ русской строчной буквой или пробелом
+            return (c >= 'а' && c <= 'я') || c == 'ё' || c == ' ';
+        }
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
+            CommandName = CommandNameTextBox.Text.Trim();
+            Description = DescriptionTextBox.Text.Trim();
+            IsPasswordSet = SetPasswordCheckBox.IsChecked ?? false;
+
             // Проверка на заполненность полей
-            if (string.IsNullOrWhiteSpace(CommandNameTextBox.Text))
+            if (string.IsNullOrEmpty(CommandName))
             {
                 MessageBox.Show("Пожалуйста, введите имя команды.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(DescriptionTextBox.Text))
+            if (string.IsNullOrEmpty(Description))
             {
-                MessageBox.Show("Пожалуйста, введите описание.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Пожалуйста, введите описание команды.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -53,74 +157,22 @@ namespace FigmaToWpf
                 return;
             }
 
-            var command = new Command
+            // Если редактируем, устанавливаем флаг для обновления
+            if (isEditing)
             {
-                Id = _currentCommand?.Id ?? _nextId++, // Используем существующий ID или создаем новый
-                Name = CommandNameTextBox.Text,
-                Description = DescriptionTextBox.Text,
-                Actions = ActionsItemsControl.Items.Cast<StackPanel>().Select(sp => ((TextBlock)sp.Children[0]).Text).ToList()
-            };
-
-            CommandAdded?.Invoke(command); // Вызываем событие
-
-            CommandNameTextBox.Clear();
-            DescriptionTextBox.Clear();
-            ActionsItemsControl.Items.Clear();
-            Close();
-        }
-        private void Close_Click(object sender, RoutedEventArgs e)
-        {
-            this.Close(); // Закрываем окно
-        }
-
-        private void VoiceResponseButton_Click(object sender, RoutedEventArgs e)
-        {
-            var inputDialog = new InputDialog();
-            if (inputDialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(inputDialog.InputText))
-            {
-                AddAction($"Голосовой ответ: {inputDialog.InputText}");
+                // Здесь вы можете обновить данные команды
+                MessageBox.Show("Команда обновлена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
-        }
-
-        private void OpenLinkButton_Click(object sender, RoutedEventArgs e)
-        {
-            var inputDialog = new InputDialog();
-            if (inputDialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(inputDialog.InputText))
+            else
             {
-                AddAction($"Открытие ссылки: {inputDialog.InputText}");
+                // Здесь вы можете обработать добавление новой команды
+                MessageBox.Show("Команда добавлена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+
+            this.DialogResult = true; // Устанавливаем результат диалога как успешный
+            this.Close(); // Закрытие окна после добавления или редактирования команды
         }
 
-        private void AddAction(string actionText)
-        {
-            // Создаем плашку для действия
-            var actionPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 0) };
-            var actionLabel = new TextBlock { Text = actionText, Foreground = Brushes.White, Margin = new Thickness(0, 0, 5, 0) };
-            var editButton = new Button { Content = "✏️", Width = 20, Height = 20, Background = Brushes.Transparent, Foreground = Brushes.White };
-            var removeButton = new Button { Content = "✖️", Width = 20, Height = 20, Background = Brushes.Transparent, Foreground = Brushes.White };
-
-            // Обработчик для редактирования действия
-            editButton.Click += (s, e) =>
-            {
-                // Получаем текст после двоеточия
-                string[] parts = actionText.Split(new[] { ": " }, 2, StringSplitOptions.None);
-                if (parts.Length > 1)
-                {
-                    var inputDialog = new InputDialog();
-                    inputDialog.InputText = parts[1]; // Передаем текст для редактирования
-                    if (inputDialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(inputDialog.InputText))
-                    {
-                        actionLabel.Text = $"{parts[0]}: {inputDialog.InputText}"; // Обновляем текст действия
-                    }
-                }
-            };
-
-            removeButton.Click += (s, e) => ActionsItemsControl.Items.Remove(actionPanel); // Удаляем плашку при нажатии
-
-            actionPanel.Children.Add(actionLabel);
-            actionPanel.Children.Add(editButton);
-            actionPanel.Children.Add(removeButton);
-            ActionsItemsControl.Items.Add(actionPanel); // Добавляем плашку в ItemsControl
-        }
     }
 }
+

@@ -4,21 +4,26 @@ using System.Windows.Controls;
 using Friday;
 using Friday.Managers;
 using System.Windows.Media;
+using System.Windows.Input;
 
 namespace FigmaToWpf
 {
     public partial class MainWindow : Window
     {
         private VoiceService _voiceService;
+        private Friday.Managers.CommandManager _commandManager; // Добавляем экземпляр CommandManager
 
         public MainWindow()
         {
             InitializeComponent();
-            // Создаем экземпляр RenameService
+            _commandManager = new Friday.Managers.CommandManager();
             RenameService renameService = new RenameService();
-            // Передаем его в конструктор VoiceService
             _voiceService = new VoiceService(renameService);
             _voiceService.OnMessageReceived += OnMessageReceived;
+
+            // Инициализируем список команд при старте приложения
+            UpdateCommandsList();
+
         }
 
         private void Minimize_Click(object sender, RoutedEventArgs e)
@@ -69,78 +74,142 @@ namespace FigmaToWpf
 
         private void AddCommandButton_Click(object sender, RoutedEventArgs e)
         {
-            AddCommandWindow addCommandWindow = new AddCommandWindow();
-            addCommandWindow.CommandAdded += AddCommandToList; // Подписываемся на событие
-            addCommandWindow.ShowDialog();
+            var addCommandWindow = new AddCommandWindow();
+
+            if (addCommandWindow.ShowDialog() == true)
+            {
+                // Получаем значения из открытого окна
+                string name = addCommandWindow.CommandName;
+                string description = addCommandWindow.Description;
+                var actions = addCommandWindow.Actions; // Убедитесь, что это List<ActionItem>
+                bool isPasswordSet = addCommandWindow.IsPasswordSet;
+
+                // Добавляем команду в CommandManager
+                _commandManager.AddCommand(name, description, actions, isPasswordSet);
+
+                UpdateCommandsList(); // Обновляем список команд на интерфейсе
+            }
         }
 
-        private void AddCommandToList(Command command)
-        {
-            // Добавляем команду в ItemsControl
-            var commandPanel = new StackPanel { Margin = new Thickness(10) };
-            commandPanel.Children.Add(new TextBlock { Text = $"ID: {command.Id}", Foreground = Brushes.LightGray });
-            commandPanel.Children.Add(new TextBlock { Text = command.Name, Foreground = Brushes.White, FontWeight = FontWeights.Bold });
-            commandPanel.Children.Add(new TextBlock { Text = command.Description, Foreground = Brushes.LightGray });
 
-            // Добавляем действия
-            foreach (var action in command.Actions)
+        private void UpdateCommandsList()
+        {
+            CommandsItemsControl.ItemsSource = null; // Сбрасываем источник данных
+            CommandsItemsControl.ItemsSource = _commandManager.GetCommands(); // Устанавливаем новый источник данных
+        }
+        private void EditCommandButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null)
             {
-                commandPanel.Children.Add(new TextBlock { Text = action, Foreground = Brushes.LightGray });
+                var border = FindParent<Border>(button);
+                if (border != null)
+                {
+                    var nameTextBlock = FindChild<TextBlock>(border, "NameTextBlock");
+                    if (nameTextBlock != null)
+                    {
+                        string commandName = nameTextBlock.Text.Trim();
+                        var commandToEdit = _commandManager.GetCommands().FirstOrDefault(c => c.Name == commandName);
+
+                        if (commandToEdit != null)
+                        {
+                            var addCommandWindow = new AddCommandWindow();
+                            addCommandWindow.Initialize(commandToEdit.Name, commandToEdit.Description, commandToEdit.Actions, commandToEdit.IsPassword);
+
+                            if (addCommandWindow.ShowDialog() == true)
+                            {
+                                // Получаем обновленные значения из окна
+                                string newName = addCommandWindow.CommandName;
+                                string newDescription = addCommandWindow.Description;
+                                var newActions = addCommandWindow.Actions; // Убедитесь, что это List<ActionItem>
+                                bool isPasswordSet = addCommandWindow.IsPasswordSet;
+
+                                // Обновляем команду в CommandManager
+                                _commandManager.EditCommand(commandToEdit.Id, newName, newDescription, newActions, isPasswordSet);
+
+                                UpdateCommandsList(); // Обновляем список команд на интерфейсе
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+        private void DeleteCommandButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                // Находим родительский Border, который содержит StackPanel
+                var border = FindParent<Border>(button);
+                if (border != null)
+                {
+                    // Находим TextBlock с именем команды внутри Border
+                    var nameTextBlock = FindChild<TextBlock>(border, "NameTextBlock");
+                    if (nameTextBlock != null)
+                    {
+                        string commandName = nameTextBlock.Text.Trim();
+                        MessageBoxResult result = MessageBox.Show($"Вы уверены, что хотите удалить команду: {commandName}?", "Подтверждение удаления", MessageBoxButton.YesNo);
+
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            // Удаляем команду через CommandManager
+                            _commandManager.DeleteCommand(commandName); // Используем уже созданный экземпляр
+
+                            // Обновляем интерфейс, чтобы отобразить изменения
+                            UpdateCommandsList(); // Метод для обновления интерфейса
+                        }
+                    }
+                }
+            }
+        }
+
+
+        // Метод для поиска родительского элемента определенного типа
+        private T FindParent<T>(DependencyObject child) where T : DependencyObject
+        {
+            DependencyObject parentObject = VisualTreeHelper.GetParent(child);
+            if (parentObject == null) return null;
+
+            T parent = parentObject as T;
+            return parent != null ? parent : FindParent<T>(parentObject);
+        }
+
+        // Метод для поиска дочернего элемента определенного типа
+        private T FindChild<T>(DependencyObject parent, string childName) where T : DependencyObject
+        {
+            // Проверяем, есть ли у родителя дочерние элементы
+            if (parent == null) return null;
+
+            T foundChild = null;
+
+            int childrenCount = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < childrenCount; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                // Проверяем, является ли дочерний элемент нужного типа
+                T childType = child as T;
+                if (childType != null && !string.IsNullOrEmpty(childName))
+                {
+                    // Если у дочернего элемента есть имя, сравниваем его с искомым
+                    var frameworkElement = child as FrameworkElement;
+                    if (frameworkElement != null && frameworkElement.Name == childName)
+                    {
+                        foundChild = (T)child;
+                        break;
+                    }
+                }
+                else
+                {
+                    // Рекурсивно ищем в дочерних элементах
+                    foundChild = FindChild<T>(child, childName);
+                    if (foundChild != null) break;
+                }
             }
 
-            // Кнопка редактирования
-            var editButton = new Button { Content = "Редактировать", Margin = new Thickness(5), Width = 100 };
-            editButton.Click += (s, e) => EditCommand(command, commandPanel);
-            commandPanel.Children.Add(editButton);
-
-            // Кнопка удаления
-            var deleteButton = new Button { Content = "Удалить", Margin = new Thickness(5), Width = 100 };
-            deleteButton.Click += (s, e) => CommandsItemsControl.Items.Remove(commandPanel);
-            commandPanel.Children.Add(deleteButton);
-
-            // Добавляем команду в ItemsControl
-            CommandsItemsControl.Items.Add(commandPanel);
+            return foundChild;
         }
-
-        private void EditCommand(Command command, StackPanel commandPanel)
-        {
-            // Открываем окно редактирования с заполненными данными
-            var addCommandWindow = new AddCommandWindow(command); // Передаем текущую команду
-
-            addCommandWindow.CommandAdded += (editedCommand) =>
-            {
-                // Обновляем команду в списке
-                command.Name = editedCommand.Name;
-                command.Description = editedCommand.Description;
-                command.Actions = editedCommand.Actions;
-
-                // Обновляем текст в commandPanel
-                ((TextBlock)commandPanel.Children[1]).Text = command.Name;
-                ((TextBlock)commandPanel.Children[2]).Text = command.Description;
-                commandPanel.Children.Clear(); // Очищаем старые элементы
-                commandPanel.Children.Add(new TextBlock { Text = $"ID: {command.Id}", Foreground = Brushes.LightGray });
-                commandPanel.Children.Add(new TextBlock { Text = command.Name, Foreground = Brushes.White, FontWeight = FontWeights.Bold });
-                commandPanel.Children.Add(new TextBlock { Text = command.Description, Foreground = Brushes.LightGray });
-
-                // Добавляем обновленные действия
-                foreach (var action in command.Actions)
-                {
-                    commandPanel.Children.Add(new TextBlock { Text = action, Foreground = Brushes.LightGray });
-                }
-
-                // Создаем кнопки редактирования и удаления
-                var editButton = new Button { Content = "Редактировать", Margin = new Thickness(5), Width = 100 };
-                editButton.Click += (s, e) => EditCommand(command, commandPanel);
-                commandPanel.Children.Add(editButton);
-
-                var deleteButton = new Button { Content = "Удалить", Margin = new Thickness(5), Width = 100 };
-                deleteButton.Click += (s, e) => CommandsItemsControl.Items.Remove(commandPanel);
-                commandPanel.Children.Add(deleteButton);
-            };
-
-            addCommandWindow.ShowDialog();
-        }
-
 
     }
 }

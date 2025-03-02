@@ -4,10 +4,11 @@
         Title="Custom Window"
         Height="500" Width="800"
         WindowStyle="None"
-        Background="#1D192B">
+        Background="#1D192B"
+        MouseDown="Window_MouseDown">
 
 	<Window.Resources>
-		<FontFamily x:Key="IntroFridayFont">pack://FRIDAY//src//IntroFriday.ttf</FontFamily>
+		<FontFamily x:Key="IntroFridayFont">pack://FRIDAY//Assets//IntroFriday.ttf</FontFamily>
 
 		<Style TargetType="{x:Type TabItem}">
 			<Setter Property="OverridesDefaultStyle" Value="True"/>

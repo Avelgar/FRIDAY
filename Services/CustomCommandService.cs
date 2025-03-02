@@ -15,7 +15,6 @@ namespace Friday
 
             var appProcessService = new AppProcessService();
 
-            // Обрабатываем действия команды
             foreach (var action in command.Actions)
             {
                 switch (action.ActionType.ToLower())

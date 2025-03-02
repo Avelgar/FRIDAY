@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="src\IntroFriday.ttf" />
+    <None Remove="Assets\IntroFriday.ttf" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="src\IntroFriday.ttf" />
+    <Resource Include="Assets\IntroFriday.ttf" />
   </ItemGroup>
 
 </Project>

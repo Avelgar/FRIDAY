@@ -7,10 +7,10 @@
     </ApplicationDefinition>
   </ItemGroup>
   <ItemGroup>
-    <Compile Update="AddCommandWindow.xaml.cs">
+    <Compile Update="Windows\AddCommandWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="InputDialog.xaml.cs">
+    <Compile Update="Windows\InputDialog.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

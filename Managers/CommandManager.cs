@@ -8,7 +8,7 @@ namespace Friday
 {
     public class CommandManager
     {
-        private string FilePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\commands.txt"));
+        private string FilePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\commands.txt"));
         private List<Command> _commands;
 
         public CommandManager()

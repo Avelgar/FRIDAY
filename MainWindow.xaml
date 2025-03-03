@@ -4,113 +4,152 @@
         Title="Custom Window"
         Height="500" Width="800"
         WindowStyle="None"
-        Background="#1D192B"
+        Background="#302B3D"
         MouseDown="Window_MouseDown">
 
-	<Window.Resources>
-		<FontFamily x:Key="IntroFridayFont">pack://FRIDAY//Assets//IntroFriday.ttf</FontFamily>
+    <Window.Resources>
+        <FontFamily x:Key="IntroFridayFont">pack://FRIDAY//Assets//IntroFriday.ttf</FontFamily>
+        
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#625B71"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="5" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#625B71"/>
+            <Setter Property="BorderBrush" Value="#625B71"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border CornerRadius="5" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                            <ScrollViewer x:Name="PART_ContentHost" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="{x:Type TabItem}">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#625B71"/>
+            <Setter Property="BorderBrush" Value="#4A4459"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="FontFamily" Value="Intro Friday"/>
+            <Setter Property="FontWeight" Value="Light"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TabItem}">
+                        <Border x:Name="Border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0" Margin="15,4,-5,-1" CornerRadius="5,5,0,0">
+                            <Grid>
+                                <Rectangle x:Name="interactive" Opacity="0.3"/>
+                                <ContentPresenter HorizontalAlignment="Center" Margin="12,2,12,2" x:Name="ContentSite" VerticalAlignment="Center" RecognizesAccessKey="True" ContentSource="Header" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Panel.ZIndex" Value="100"/>
+                                <Setter Property="Background" Value="#4A4459" />
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="Selector.IsSelected" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Fill" Value="#4A4459" TargetName="interactive"/>
+                            </MultiTrigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" TargetName="interactive" />
+                                <Setter Property="Fill" Value="#4A4459" TargetName="interactive" />
+                                <Setter Property="Background" Value="White"/>
+                                <Setter Property="Foreground" Value="DarkGray"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-		<Style TargetType="{x:Type TabItem}">
-			<Setter Property="OverridesDefaultStyle" Value="True"/>
-			<Setter Property="SnapsToDevicePixels" Value="True"/>
-			<Setter Property="Foreground" Value="White"/>
-			<Setter Property="Background" Value="#625B71"/>
-			<Setter Property="BorderBrush" Value="#4A4459"/>
-			<Setter Property="Height" Value="32"/>
-			<Setter Property="Template">
-				<Setter.Value>
-					<ControlTemplate TargetType="{x:Type TabItem}">
-						<Border x:Name="Border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0" Margin="15,4,-5,-1" CornerRadius="5,5,0,0">
-							<Grid>
-								<Rectangle x:Name="interactive" Opacity="0.3"/>
-								<ContentPresenter HorizontalAlignment="Center" Margin="12,2,12,2" x:Name="ContentSite" VerticalAlignment="Center" RecognizesAccessKey="True" ContentSource="Header" />
-							</Grid>
-						</Border>
-						<ControlTemplate.Triggers>
-							<Trigger Property="IsSelected" Value="True">
-								<Setter Property="Panel.ZIndex" Value="100"/>
-								<Setter Property="Background" Value="#4A4459" />
-							</Trigger>
-							<MultiTrigger>
-								<MultiTrigger.Conditions>
-									<Condition Property="IsMouseOver" Value="True"/>
-									<Condition Property="Selector.IsSelected" Value="False"/>
-								</MultiTrigger.Conditions>
-								<Setter Property="Fill" Value="#4A4459" TargetName="interactive"/>
-							</MultiTrigger>
-							<Trigger Property="IsEnabled" Value="False">
-								<Setter Property="Opacity" Value="0.5" TargetName="interactive" />
-								<Setter Property="Fill" Value="#4A4459" TargetName="interactive" />
-								<Setter Property="Background" Value="White"/>
-								<Setter Property="Foreground" Value="DarkGray"/>
-							</Trigger>
-						</ControlTemplate.Triggers>
-					</ControlTemplate>
-				</Setter.Value>
-			</Setter>
-		</Style>
-
-		<Style TargetType="{x:Type TabControl}">
-			<Setter Property="Background" Value="#4A4459"/>
-			<Setter Property="Template">
-				<Setter.Value>
-					<ControlTemplate TargetType="{x:Type TabControl}">
-						<Grid KeyboardNavigation.TabNavigation="Local">
-							<Grid.RowDefinitions>
-								<RowDefinition Height="Auto"/>
-								<RowDefinition Height="*"/>
-							</Grid.RowDefinitions>
-							<TabPanel Grid.Row="0" IsItemsHost="True" Panel.ZIndex="1" KeyboardNavigation.TabIndex="1"/>
-							<Border Padding="12" Background="{TemplateBinding Background}"
+        <Style TargetType="{x:Type TabControl}">
+            <Setter Property="Background" Value="#4A4459"/>
+            <Setter Property="FontFamily" Value="Intro Friday"/>
+            <Setter Property="FontWeight" Value="Light"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TabControl}">
+                        <Grid KeyboardNavigation.TabNavigation="Local">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TabPanel Grid.Row="0" IsItemsHost="True" Panel.ZIndex="1" KeyboardNavigation.TabIndex="1"/>
+                            <Border Padding="12" Background="{TemplateBinding Background}"
                                     Grid.Row="1" KeyboardNavigation.DirectionalNavigation="Contained" KeyboardNavigation.TabNavigation="Local" KeyboardNavigation.TabIndex="2">
-								<ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent"/>
-							</Border>
-						</Grid>
-					</ControlTemplate>
-				</Setter.Value>
-			</Setter>
-		</Style>
-	</Window.Resources>
+                                <ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 
-	<Grid>
-		<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="1">
-			<Button Content="−" Width="20" Height="20" VerticalAlignment="Top" Foreground="White" Click="Minimize_Click"/>
-			<Button Content="⬜️" Width="20" Height="20" VerticalAlignment="Top" Foreground="White" FontWeight="Bold" Click="Maximize_Click"/>
-			<Button Content="✖️" Width="20" Height="20" VerticalAlignment="Top" Foreground="White" FontWeight="Bold" Click="Close_Click"/>
-		</StackPanel>
+    <Grid>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="7">
+            <Button Content="−" Width="20" Height="20" VerticalAlignment="Top" Foreground="White" Click="Minimize_Click" Background="{x:Null}" BorderBrush="{x:Null}"/>
+            <Button Content="⬜️" Width="20" Height="20" VerticalAlignment="Top" Foreground="White" FontWeight="Bold" Click="Maximize_Click" Background="{x:Null}" BorderBrush="{x:Null}"/>
+            <Button Content="✖️" Width="20" Height="20" VerticalAlignment="Top" Foreground="White" FontWeight="Bold" Click="Close_Click" Background="{x:Null}" BorderBrush="{x:Null}"/>
+        </StackPanel>
 
-		<TabControl Margin="10">
-			<TabItem Header="Home">
-				<StackPanel Width="755" Height="424">
-
-					<TextBlock Text="FRIDAY" FontFamily="{StaticResource IntroFridayFont}"
-                               FontSize="100" FontWeight="Bold" Foreground="White"/>
-					<TextBox x:Name="ConsoleTextBox" Height="142" FontSize="16" Background="White" Foreground="Black"
-                             IsReadOnly="True" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
-                             Visibility="Visible" Width="325"/>
-					<Button Content="⬜️" x:Name="ListenButton" Width="150" Height="50" Background="#6A4E86" Foreground="White" FontSize="16"
-                            Click="ListenButton_Click"/>
-				</StackPanel>
-			</TabItem>
-
-            <TabItem Header="Commands">
-                <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="10">
-                        <Button Content="Add command" Margin="0,0,10,0" Click="AddCommandButton_Click" />
-                        <TextBox Width="200" Text="Search" />
-                        <Button Content="Sort and filter" Margin="10,0,0,0" />
+        <TabControl Margin="0">
+            <TabItem Header="Home">
+                <StackPanel Width="776" Height="444">
+                    <StackPanel HorizontalAlignment="Left" Orientation="Horizontal" Width="769" Margin="10,0,0,0" Height="133">
+                        <TextBlock Text="FRIDAY" FontSize="120" Foreground="White" HorizontalAlignment="Left" FontWeight="Bold" FontFamily="Intro Friday"/>
+                        <Button Content="√" x:Name="ListenButton" Width="50" Height="50" Background="#6A4E86" Foreground="White" BorderBrush="{x:Null}" FontSize="16" Click="ListenButton_Click" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Button.Effect>
+                                <DropShadowEffect BlurRadius="40" Color="#FF6B3B79" Direction="1" Opacity="0.5" RenderingBias="Performance" ShadowDepth="0"/>
+                                
+                            </Button.Effect>
+                        </Button>
                     </StackPanel>
-                    <ItemsControl Margin="10">
+
+                    <TextBox x:Name="ConsoleTextBox" Height="286" FontSize="16" Background="White" Foreground="White"
+                             IsReadOnly="True" AcceptsReturn="True"
+                             Visibility="Visible" Width="744" HorizontalScrollBarVisibility="Disabled"/>
+
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Команды">
+                <StackPanel Width="772" Height="auto">
+                    <StackPanel Orientation="Horizontal" Margin="10" HorizontalAlignment="Center">
+                        <Button Content="Add command" Margin="0,0,5,0" Click="AddCommandButton_Click" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="104" Height="31" />
+                        <TextBox Width="519" Text="Search" Background="#FF625B71" Height="31" VerticalAlignment="Center" VerticalContentAlignment="Center" />
+                        <Button Content="Sort and filter" Margin="5,0,0,0" Width="113" />
+                    </StackPanel>
+                    <ItemsControl Margin="10" Height="auto">
                         <ItemsControl x:Name="CommandsItemsControl" Margin="10">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border BorderBrush="Gray" BorderThickness="1" Margin="0,5,0,0" Background="#3E3E4B">
+                                    <Border BorderBrush="{x:Null}" BorderThickness="1" CornerRadius="5" Margin="0,5,0,0" Background="#625B71">
                                         <StackPanel Margin="10">
                                             <TextBlock x:Name="NameTextBlock" Text="{Binding Name}" Foreground="White" FontWeight="Bold" />
                                             <TextBlock Text="{Binding Description}" Foreground="LightGray" />
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                                <Button Content="Изменить" Click="EditCommandButton_Click" />
-                                                <Button Content="Delete" Margin="5,0" Click="DeleteCommandButton_Click" />
+                                                <Button Content="Изменить" Click="EditCommandButton_Click" Background="#4A4459" Height="25" Width="80"/>
+                                                <Button Content="Удалить" Margin="5,0" Click="DeleteCommandButton_Click" Background="#4A4459" Height="25" Width="65"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
@@ -121,11 +160,23 @@
                     </ItemsControl>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Settings">
-				<StackPanel>
-					<TextBlock Text="Settings Page" Foreground="White" FontSize="24" />
-				</StackPanel>
-			</TabItem>
-		</TabControl>
-	</Grid>
+            <TabItem Header="Настройки">
+                <StackPanel>
+                    <TextBlock Text="Настройки" Foreground="White" FontSize="24" />
+                    <StackPanel Margin="0,10,0,10" >
+                        <TextBlock Text="Имя помощника:" Margin="0,0,0,5"/>
+                        <TextBox x:Name="FridayNameTextBox"/>
+                    </StackPanel>
+                    <StackPanel Margin="0,10,0,10">
+                        <TextBlock Text="Озвучка:" Margin="0,0,0,5"/>
+                        <TextBlock Text="здесь будет выпадающий список"/>
+                    </StackPanel>
+                    
+                    
+                   
+                    
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+    </Grid>
 </Window>

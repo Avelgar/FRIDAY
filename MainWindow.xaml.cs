@@ -48,14 +48,14 @@ namespace FigmaToWpf
             if (_voiceService.ListeningState.IsListening())
             {
                 _voiceService.ListeningState.StopListening();
-                ListenButton.Content = "Начать слушать";
+                //ListenButton.Content = "Начать слушать";
                 ConsoleTextBox.AppendText("Слушание остановлено." + Environment.NewLine);
                 ConsoleTextBox.ScrollToEnd();
             }
             else
             {
                 _voiceService.ListeningState.StartListening();
-                ListenButton.Content = "Остановить слушать";
+                //ListenButton.Content = "Остановить слушать";
                 _voiceService.StartListening();
                 ConsoleTextBox.AppendText("Начинаю слушать..." + Environment.NewLine);
                 ConsoleTextBox.ScrollToEnd();

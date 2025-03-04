@@ -166,10 +166,10 @@
                     <StackPanel Margin="0,10,0,10" >
                         <TextBlock Text="Имя помощника:" Margin="0,0,0,5"/>
                         <TextBox x:Name="FridayNameTextBox" Height="24" Margin="0,5,0,5"/>
-                        <Button Content="Сохранить" Margin="0,5,5,0" Click="AddCommandButton_Click" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="85" Height="23" HorizontalAlignment="Left" />
+                        <Button Content="Сохранить" Margin="0,5,5,0" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="85" Height="23" HorizontalAlignment="Left" />
                         <TextBlock Text="Пароль:" Margin="0,15,0,5"/>
                         <TextBox x:Name="PasswordTextBox" Height="24" Margin="0,5,0,5"/>
-                        <Button Content="Сохранить" Margin="0,5,5,0" Click="AddCommandButton_Click" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="85" Height="23" HorizontalAlignment="Left" />
+                        <Button Content="Сохранить" Margin="0,5,5,0" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="85" Height="23" HorizontalAlignment="Left" />
                     </StackPanel>
                     <StackPanel Margin="0,10,0,10">
                         <TextBlock Text="Озвучка:" Margin="0,0,0,10"/>
@@ -179,7 +179,7 @@
                             <ComboBoxItem Content="Voice3"/>
                             <ComboBoxItem Content="Voice4"/>
                         </ComboBox>
-                        <Button Content="Сохранить" Margin="0,5,5,0" Click="AddCommandButton_Click" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="85" Height="23" HorizontalAlignment="Left" />
+                        <Button Content="Сохранить" Margin="0,5,5,0" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="85" Height="23" HorizontalAlignment="Left" />
                     </StackPanel>
 
 

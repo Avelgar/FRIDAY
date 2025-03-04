@@ -173,7 +173,7 @@
                     </StackPanel>
                     <StackPanel Margin="0,10,0,10">
                         <TextBlock Text="Озвучка:" Margin="0,0,0,10"/>
-                        <ComboBox x:Name="VoiceTypeComboBox" SelectionChanged="VoiceTypeComboBox_SelectionChanged" Margin="0,0,0,10" Background="#FF4A4459" BorderBrush="#FF4A4459" Foreground="White">
+                        <ComboBox x:Name="VoiceTypeComboBox" Margin="0,0,0,10" Background="#FF4A4459" BorderBrush="#FF4A4459" Foreground="Black">
                             <ComboBoxItem Content="Voice1"/>
                             <ComboBoxItem Content="Voice2"/>
                             <ComboBoxItem Content="Voice3"/>

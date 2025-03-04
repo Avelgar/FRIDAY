@@ -65,25 +65,18 @@
             <StackPanel Margin="10">
                 <TextBlock Text="Выберите действие:"/>
                 <ComboBox x:Name="ActionTypeComboBox" SelectionChanged="ActionTypeComboBox_SelectionChanged" Margin="0,0,0,10" Background="#FF4A4459" BorderBrush="#FF4A4459" Foreground="Black">
-                    <ComboBoxItem Content="Запуск приложения"/>
-                    <ComboBoxItem Content="Закрытие приложения"/>
-                    <ComboBoxItem Content="Копирование файла"/>
-                    <ComboBoxItem Content="Перемещение файла"/>
-                    <ComboBoxItem Content="Удаление файла"/>
-                    <ComboBoxItem Content="Создание папки"/>
-                    <ComboBoxItem Content="Изменение настроек экрана"/>
-                    <ComboBoxItem Content="Изменение громкости"/>
-                    <ComboBoxItem Content="Получение информации о процессах"/>
-                    <ComboBoxItem Content="Управление сетевыми подключениями"/>
-                    <ComboBoxItem Content="Запуск/остановка службы"/>
-                    <ComboBoxItem Content="Работа с реестром"/>
-                    <ComboBoxItem Content="Создание уведомления"/>
+                    <ComboBoxItem Content="Открытие файла"/>
                     <ComboBoxItem Content="Голосовой ответ"/>
                 </ComboBox>
 
                 <TextBlock Text="Введите данные:"/>
-                <TextBox x:Name="InputTextBox" Margin="0,0,0,5" Height="154" />
-                <Button Content="OK" HorizontalAlignment="Right" Margin="10,5,10,5" Click="OkButton_Click" Width="29" Height="22"/>
+                <Button x:Name="FileButton" Content="Выбрать файл" Click="FileButton_Click" Margin="0,0,0,10" Height="22" Visibility="Collapsed"/>
+                <TextBox x:Name="InputTextBox" Margin="0,0,0,5" Height="113" />
+                <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Orientation="Horizontal">
+                    <Button Content="OK" HorizontalAlignment="Right" Margin="10,5,5,5" Click="OkButton_Click" Width="29" Height="30"/>
+                    <Button Content="✖️" Width="30" Height="30" Click="Close_Click"/>
+                </StackPanel>
+                
             </StackPanel>
         </Grid>
     </Border>

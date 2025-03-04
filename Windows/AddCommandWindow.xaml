@@ -11,20 +11,20 @@
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontFamily" Value="Intro Friday"/>
-            <Setter Property="FontWeight" Value="Light"/>
+            <Setter Property="FontFamily" Value="Century Gothic"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
 
         <Style TargetType="TextBox">
-            <Setter Property="Background" Value="#3E3E4B"/>
+            <Setter Property="Background" Value="#4A4459"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderBrush" Value="#4A4459"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="5"/>
             <Setter Property="Margin" Value="0,10,0,10"/>
             <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontFamily" Value="Intro Friday"/>
-            <Setter Property="FontWeight" Value="Light"/>
+            <Setter Property="FontFamily" Value="Century Gothic"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
@@ -43,8 +43,8 @@
             <Setter Property="Padding" Value="10,5"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="FontFamily" Value="Intro Friday"/>
-            <Setter Property="FontWeight" Value="Light"/>
+            <Setter Property="FontFamily" Value="Century Gothic"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
@@ -61,8 +61,8 @@
         <Style TargetType="CheckBox">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontFamily" Value="Intro Friday"/>
-            <Setter Property="FontWeight" Value="Light"/>
+            <Setter Property="FontFamily" Value="Century Gothic"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
     </Window.Resources>
 
@@ -82,7 +82,7 @@
 
                 <!-- Первая колонка -->
                 <StackPanel Grid.Column="0" Margin="0,0,50,0">
-                    <TextBlock Text="Изменить команду" Margin="0,0,0,10" FontSize="30" FontWeight="Bold" FontFamily="Intro Friday" />
+                    <TextBlock Text="Изменить команду" Margin="0,0,0,10" FontSize="30" FontWeight="ExtraBold" FontFamily="Century Gothic" />
                     <TextBlock Text="Имя команды:"/>
                     <TextBox x:Name="CommandNameTextBox" PreviewTextInput="CommandNameTextBox_PreviewTextInput"/>
 

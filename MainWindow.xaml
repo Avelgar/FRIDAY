@@ -9,7 +9,7 @@
 
     <Window.Resources>
         <FontFamily x:Key="IntroFridayFont">pack://FRIDAY//Assets//IntroFriday.ttf</FontFamily>
-        
+
         <Style TargetType="Button">
             <Setter Property="Background" Value="#625B71"/>
             <Setter Property="BorderBrush" Value="{x:Null}"/>
@@ -46,8 +46,8 @@
             <Setter Property="Background" Value="#625B71"/>
             <Setter Property="BorderBrush" Value="#4A4459"/>
             <Setter Property="Height" Value="32"/>
-            <Setter Property="FontFamily" Value="Intro Friday"/>
-            <Setter Property="FontWeight" Value="Light"/>
+            <Setter Property="FontFamily" Value="Century Gothic"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type TabItem}">
@@ -83,8 +83,8 @@
 
         <Style TargetType="{x:Type TabControl}">
             <Setter Property="Background" Value="#4A4459"/>
-            <Setter Property="FontFamily" Value="Intro Friday"/>
-            <Setter Property="FontWeight" Value="Light"/>
+            <Setter Property="FontFamily" Value="Century Gothic"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type TabControl}">
@@ -120,7 +120,7 @@
                         <Button Content="√" x:Name="ListenButton" Width="50" Height="50" Background="#6A4E86" Foreground="White" BorderBrush="{x:Null}" FontSize="16" Click="ListenButton_Click" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <Button.Effect>
                                 <DropShadowEffect BlurRadius="40" Color="#FF6B3B79" Direction="1" Opacity="0.5" RenderingBias="Performance" ShadowDepth="0"/>
-                                
+
                             </Button.Effect>
                         </Button>
                     </StackPanel>
@@ -165,16 +165,17 @@
                     <TextBlock Text="Настройки" Foreground="White" FontSize="24" />
                     <StackPanel Margin="0,10,0,10" >
                         <TextBlock Text="Имя помощника:" Margin="0,0,0,5"/>
-                        <TextBox x:Name="FridayNameTextBox"/>
+                        <TextBox x:Name="FridayNameTextBox" Height="24"/>
+                        <Button Content="Сохранить" Margin="0,5,5,0" Click="AddCommandButton_Click" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="85" Height="23" HorizontalAlignment="Left" />
                     </StackPanel>
                     <StackPanel Margin="0,10,0,10">
                         <TextBlock Text="Озвучка:" Margin="0,0,0,5"/>
                         <TextBlock Text="здесь будет выпадающий список"/>
                     </StackPanel>
-                    
-                    
-                   
-                    
+
+
+
+
                 </StackPanel>
             </TabItem>
         </TabControl>

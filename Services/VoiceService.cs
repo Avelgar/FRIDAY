@@ -18,6 +18,7 @@ namespace Friday
         private string modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\model"));
         private readonly VoskRecognizer _recognizer;
         private readonly RenameService _renameService; // Добавляем поле для RenameService
+        private WaveInEvent _waveIn;
         private static MusicService musicService = new MusicService();
         private static readonly HttpClient httpClient = new HttpClient();
         private static readonly string apiToken = "c83ecc77-ec9d-4055-b2ae-a16b09991421";
@@ -38,9 +39,10 @@ namespace Friday
         }
         public async Task StartListening()
         {
-            using (var waveIn = new WaveInEvent())
+            try
             {
-                waveIn.WaveFormat = new WaveFormat(16000, 1);
+                _waveIn = new WaveInEvent();
+                _waveIn.WaveFormat = new WaveFormat(16000, 1);
 
                 if (WaveIn.DeviceCount == 0)
                 {
@@ -48,43 +50,72 @@ namespace Friday
                     return;
                 }
 
-                waveIn.DeviceNumber = 0;
-                string lastRecognizedText = string.Empty; // Переменная для хранения последней распознанной команды
+                _waveIn.DeviceNumber = 0;
+                string lastRecognizedText = string.Empty;
                 bool isListeningForCommands = false;
 
-                waveIn.DataAvailable += async (sender, e) =>
+                _waveIn.DataAvailable += async (sender, e) =>
                 {
-                    if (_recognizer.AcceptWaveform(e.Buffer, e.BytesRecorded))
+                    try
                     {
-                        var result = _recognizer.Result();
-                        var response = JsonConvert.DeserializeObject<RecognitionResponse>(result);
-                        var recognizedText = response?.Alternatives.FirstOrDefault()?.Text;
-                        // Проверяем, распознано ли имя бота
-                        if (recognizedText == _renameService.BotName)
+                        if (_recognizer.AcceptWaveform(e.Buffer, e.BytesRecorded))
                         {
-                            OnMessageReceived?.Invoke($"Распознано: {recognizedText}");
-                            await SpeakAsync("Слушаю ваши указания");
-                            ListeningState.StartListening();
-                            isListeningForCommands = true; // Начинаем слушать команды
-                            lastRecognizedText = string.Empty; // Сбрасываем последнюю команду
-                        }
-                        else if (isListeningForCommands && !string.IsNullOrEmpty(recognizedText) && recognizedText != lastRecognizedText)
-                        {
-                            var commandResult = ProcessCommand(recognizedText); // Предполагается, что ProcessCommand возвращает результат выполнения команды
+                            var result = _recognizer.Result();
+                            var response = JsonConvert.DeserializeObject<RecognitionResponse>(result);
+                            var recognizedText = response?.Alternatives.FirstOrDefault()?.Text;
 
-                            if (commandResult != null) // Проверяем, была ли команда успешно выполнена
+                            if (recognizedText == _renameService.BotName)
                             {
-                                await SpeakAsync(commandResult); // Сообщаем результат выполнения команды
-                                isListeningForCommands = false; // Останавливаем прослушивание команд
+                                OnMessageReceived?.Invoke($"Распознано: {recognizedText}");
+                                await SpeakAsync("Слушаю ваши указания");
+                                ListeningState.StartListening();
+                                isListeningForCommands = true;
+                                lastRecognizedText = string.Empty;
                             }
-                            lastRecognizedText = recognizedText; // Запоминаем последнюю распознанную команду
+                            else if (isListeningForCommands && !string.IsNullOrEmpty(recognizedText) && recognizedText != lastRecognizedText)
+                            {
+                                var commandResult = ProcessCommand(recognizedText);
+
+                                if (commandResult != null)
+                                {
+                                    await SpeakAsync(commandResult);
+                                    isListeningForCommands = false;
+                                }
+                                lastRecognizedText = recognizedText;
+                            }
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        OnMessageReceived?.Invoke($"Ошибка при обработке аудиоданных: {ex.Message}");
                     }
                 };
 
-                waveIn.StartRecording();
+                _waveIn.StartRecording();
                 OnMessageReceived?.Invoke("Началась запись.");
                 await Task.Delay(Timeout.Infinite);
+            }
+            catch (Exception ex)
+            {
+                OnMessageReceived?.Invoke($"Ошибка при запуске записи: {ex.Message}");
+            }
+        }
+
+        public void StopListening()
+        {
+            try
+            {
+                if (_waveIn != null)
+                {
+                    _waveIn.StopRecording();
+                    _waveIn.Dispose();
+                    _waveIn = null;
+                    OnMessageReceived?.Invoke("Запись остановлена.");
+                }
+            }
+            catch (Exception ex)
+            {
+                OnMessageReceived?.Invoke($"Ошибка при остановке записи: {ex.Message}");
             }
         }
 
@@ -160,7 +191,6 @@ namespace Friday
                 if (customCommand != null)
                 {
                     CustomCommandService.ExecuteCommand(customCommand);
-                    responseMessage = "Я что-то сделал";
                 }
                 else
                 {

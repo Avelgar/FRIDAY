@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -25,8 +25,6 @@ namespace Friday
         public ListeningState ListeningState { get; private set; }
 
         public event Action<string> OnMessageReceived;
-
-        // Конструктор принимает объект RenameService и сохраняет его в поле _renameService
         public VoiceService(RenameService renameService)
         {
             _renameService = renameService;
@@ -37,15 +35,7 @@ namespace Friday
             _recognizer.SetWords(true);
 
             ListeningState = new ListeningState();
-            ListeningState.OnTimeout += OnListeningTimeout;
         }
-
-        private void OnListeningTimeout()
-        {
-            OnMessageReceived?.Invoke("Время ожидания истекло. Я перестаю слушать команды.");
-            SpeakAsync("Время ожидания истекло.");
-        }
-
         public async Task StartListening()
         {
             using (var waveIn = new WaveInEvent())
@@ -59,6 +49,9 @@ namespace Friday
                 }
 
                 waveIn.DeviceNumber = 0;
+                string lastRecognizedText = string.Empty; // Переменная для хранения последней распознанной команды
+                bool isListeningForCommands = false;
+
                 waveIn.DataAvailable += async (sender, e) =>
                 {
                     if (_recognizer.AcceptWaveform(e.Buffer, e.BytesRecorded))
@@ -67,39 +60,53 @@ namespace Friday
                         var response = JsonConvert.DeserializeObject<RecognitionResponse>(result);
                         var recognizedText = response?.Alternatives.FirstOrDefault()?.Text;
 
-                        OnMessageReceived?.Invoke($"Распознано: {recognizedText}");
-
+                        // Проверяем, распознано ли имя бота
                         if (recognizedText == _renameService.BotName)
                         {
+                            OnMessageReceived?.Invoke($"Распознано: {recognizedText}");
                             await SpeakAsync("Слушаю ваши указания");
                             ListeningState.StartListening();
+                            isListeningForCommands = true; // Начинаем слушать команды
+                            lastRecognizedText = string.Empty; // Сбрасываем последнюю команду
                         }
-                        else if (ListeningState.IsListening())
+                        else if (isListeningForCommands && !string.IsNullOrEmpty(recognizedText) && recognizedText != lastRecognizedText)
                         {
-                            ProcessCommand(recognizedText);
+                            var commandResult = ProcessCommand(recognizedText); // Предполагается, что ProcessCommand возвращает результат выполнения команды
+
+                            if (commandResult != null) // Проверяем, была ли команда успешно выполнена
+                            {
+                                await SpeakAsync(commandResult); // Сообщаем результат выполнения команды
+                                isListeningForCommands = false; // Останавливаем прослушивание команд
+                            }
+                            lastRecognizedText = recognizedText; // Запоминаем последнюю распознанную команду
                         }
                     }
                 };
 
                 waveIn.StartRecording();
-
                 OnMessageReceived?.Invoke("Началась запись.");
-
                 await Task.Delay(Timeout.Infinite);
             }
         }
 
-        private void ProcessCommand(string command)
+        private string ProcessCommand(string command)
         {
-            if (string.IsNullOrEmpty(command)) return;
+            OnMessageReceived?.Invoke($"Распознано: {command}");
 
             string responseMessage = string.Empty;
 
-            if (command.IndexOf("погода", StringComparison.OrdinalIgnoreCase) >= 0)
+            // Добавьте дополнительные условия для обработки команд
+            if (command.IndexOf("время", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                responseMessage = $"Текущее время: {DateTime.Now.ToShortTimeString()}";
+            }
+            else if (command.IndexOf("имя", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                responseMessage = $"Меня зовут {_renameService.BotName}";
+            }
+            else if (command.IndexOf("погода", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 WeatherService weatherService = new WeatherService();
-
-                // Проверяем, есть ли указание на конкретный день
                 int dayOffset = 0; // По умолчанию прогноз на сегодня
                 if (command.IndexOf("завтра", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
@@ -111,59 +118,40 @@ namespace Friday
                 }
 
                 responseMessage = weatherService.GetWeatherForecast(dayOffset);
-                SpeakAsync(responseMessage).Wait();
             }
-
-            else if (command.IndexOf("время", StringComparison.OrdinalIgnoreCase) >= 0)
+            else if (command.IndexOf("браво", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                responseMessage = $"Текущее время: {DateTime.Now.ToShortTimeString()}";
-                SpeakAsync(responseMessage).Wait();
-            }
-            else if (command.IndexOf("ящер", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                responseMessage = "Слушай, брат, про ящеров и древних русов!";
-                SpeakAsync(responseMessage).Wait();
-            }
-            else if (command.IndexOf("Имя", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                responseMessage = $"Меня зовут {_renameService.BotName}";
-                SpeakAsync(responseMessage).Wait();
+                responseMessage = "Спасибо! Я рад, что вам нравится!";
             }
             else if (command.IndexOf("смена имени", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                // Извлекаем новое имя после команды "смена имени"
                 int index = command.IndexOf("смена имени", StringComparison.OrdinalIgnoreCase);
                 string newName = command.Substring(index + "смена имени".Length).Trim();
 
                 if (string.IsNullOrEmpty(newName))
                 {
                     responseMessage = "Пожалуйста, укажите новое имя после команды 'смена имени'";
-                    SpeakAsync(responseMessage).Wait();
                 }
                 else
                 {
                     _renameService.BotName = newName;
                     responseMessage = $"Имя успешно изменено на {newName}";
-                    SpeakAsync(responseMessage).Wait();
                 }
             }
             else if (command.IndexOf("включить музыку", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 responseMessage = "Включаю музыку...";
-                SpeakAsync(responseMessage).Wait();
                 musicService.Play();
             }
             else if (command.IndexOf("выключить музыку", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 responseMessage = "Выключаю музыку...";
-                SpeakAsync(responseMessage).Wait();
                 Thread.Sleep(1500);
                 musicService.Stop();
             }
             else if (command.IndexOf("следующий трек", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 responseMessage = "Переключаю...";
-                SpeakAsync(responseMessage).Wait();
                 musicService.NextTrack();
             }
             else
@@ -173,16 +161,20 @@ namespace Friday
                 if (customCommand != null)
                 {
                     CustomCommandService.ExecuteCommand(customCommand);
+                    responseMessage = "Я что-то сделал";
                 }
                 else
                 {
                     responseMessage = "Команда не распознана.";
-                    SpeakAsync(responseMessage).Wait();
                 }
             }
 
-            OnMessageReceived?.Invoke(responseMessage);
+            // Логируем ответ
+            OnMessageReceived?.Invoke($"Ответ: {responseMessage}");
+
+            return responseMessage; // Возвращаем ответ
         }
+
 
         private async Task SpeakAsync(string text)
         {
@@ -197,10 +189,14 @@ namespace Friday
                 var response = await httpClient.PostAsync(synthesisUrl,
                     new StringContent(JsonConvert.SerializeObject(new
                     {
-                        voiceId = 359,
-                        text,
-                        format = "mp3"
+                        voiceId = 1,
+                        text
                     }), Encoding.UTF8, "application/json"));
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    OnMessageReceived?.Invoke($"Ошибка синтеза речи: {errorContent}");
+                }
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -209,6 +205,7 @@ namespace Friday
 
                     byte[] audioData = Convert.FromBase64String(result.FileContents);
                     var filePath = Path.Combine(Directory.GetCurrentDirectory(), "output.mp3");
+
 
                     await Task.Run(() => File.WriteAllBytes(filePath, audioData));
 
@@ -249,6 +246,7 @@ namespace Friday
     {
         public Alternative[] Alternatives { get; set; }
     }
+
 
     public class Alternative
     {

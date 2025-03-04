@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Microsoft.Win32; // Для открытия диалогового окна выбора файла
 
 namespace FigmaToWpf
@@ -29,6 +30,14 @@ namespace FigmaToWpf
         }
 
         private bool isFirstLoad = true; // Флаг для отслеживания первого открытия окна
+
+        private void Window_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left)
+            {
+                this.DragMove();
+            }
+        }
 
         private void ActionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

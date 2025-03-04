@@ -4,7 +4,8 @@
         Title="Введите данные" Height="300" Width="400"
         WindowStyle="None"
         Background="Transparent"
-        AllowsTransparency="True">
+        AllowsTransparency="True"
+        MouseDown="Window_MouseDown">
 
     <Window.Resources>
 

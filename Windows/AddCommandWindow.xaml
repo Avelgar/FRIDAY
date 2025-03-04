@@ -4,7 +4,9 @@
         Title="Add Command"
         Height="500" Width="900"
         WindowStyle="None"
-        Background="Transparent" AllowsTransparency="True">
+        Background="Transparent" AllowsTransparency="True"
+        MouseDown="Window_MouseDown">
+
     <Window.Resources>
         <FontFamily x:Key="IntroFridayFont">pack://FRIDAY//Assets//IntroFriday.ttf</FontFamily>
 

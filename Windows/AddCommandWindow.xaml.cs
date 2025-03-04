@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Linq; // Добавлено для использования LINQ
 using System;
 using static System.Windows.Forms.Design.AxImporter;
+using System.Windows.Input;
 
 namespace FigmaToWpf
 {
@@ -27,6 +28,14 @@ namespace FigmaToWpf
         private void Close_Click(object sender, RoutedEventArgs e)
         {
             this.Close(); // Закрытие окна
+        }
+
+        private void Window_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left)
+            {
+                this.DragMove();
+            }
         }
 
         public void Initialize(string commandName, string description, List<ActionItem> actions, bool isPassword)

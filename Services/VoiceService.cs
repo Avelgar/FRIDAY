@@ -59,7 +59,6 @@ namespace Friday
                         var result = _recognizer.Result();
                         var response = JsonConvert.DeserializeObject<RecognitionResponse>(result);
                         var recognizedText = response?.Alternatives.FirstOrDefault()?.Text;
-
                         // Проверяем, распознано ли имя бота
                         if (recognizedText == _renameService.BotName)
                         {

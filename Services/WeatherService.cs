@@ -29,9 +29,15 @@ namespace Friday
                 var weatherData = data["list"][index];
                 string description = weatherData["weather"][0]["description"].ToString();
                 double temp = (double)weatherData["main"]["temp"];
-                string date = weatherData["dt_txt"].ToString();
+                string dayText = dayOffset switch
+                {
+                    0 => "сегодня",
+                    1 => "завтра",
+                    2 => "послезавтра",
+                    _ => "указанный день"
+                };
 
-                return $"Погода в {city} на {date}: {description}, {temp}°C";
+                return $"Погода в {city} на {dayText}: {description}, {temp}°C";
             }
         }
     }

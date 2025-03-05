@@ -10,6 +10,7 @@ using System.IO;
 using System.Threading;
 using System.Windows.Input;
 using System.Windows.Forms;
+using Friday.Managers;
 
 namespace Friday
 {
@@ -74,13 +75,9 @@ namespace Friday
                             }
                             else if (isListeningForCommands && !string.IsNullOrEmpty(recognizedText) && recognizedText != lastRecognizedText)
                             {
-                                var commandResult = ProcessCommand(recognizedText);
-
-                                if (commandResult != null)
-                                {
-                                    await SpeakAsync(commandResult);
-                                    isListeningForCommands = false;
-                                }
+                                // Вызываем ProcessCommand, не ожидая результат
+                                ProcessCommand(recognizedText);
+                                isListeningForCommands = false; // Сбрасываем флаг после обработки команды
                                 lastRecognizedText = recognizedText;
                             }
                         }
@@ -119,20 +116,18 @@ namespace Friday
             }
         }
 
-        private string ProcessCommand(string command)
+        private async void ProcessCommand(string command) // Изменяем на async void
         {
             OnMessageReceived?.Invoke($"Распознано: {command}");
 
-            string responseMessage = string.Empty;
-
-            // Добавьте дополнительные условия для обработки команд
+            // Логика обработки команд
             if (command.IndexOf("время", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                responseMessage = $"Текущее время: {DateTime.Now.ToShortTimeString()}";
+                await SpeakAsync($"Текущее время: {DateTime.Now.ToShortTimeString()}");
             }
             else if (command.IndexOf("имя", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                responseMessage = $"Меня зовут {_renameService.BotName}";
+                await SpeakAsync($"Меня зовут {_renameService.BotName}");
             }
             else if (command.IndexOf("погода", StringComparison.OrdinalIgnoreCase) >= 0)
             {
@@ -147,11 +142,11 @@ namespace Friday
                     dayOffset = 2;
                 }
 
-                responseMessage = weatherService.GetWeatherForecast(dayOffset);
+                await SpeakAsync(weatherService.GetWeatherForecast(dayOffset));
             }
             else if (command.IndexOf("браво", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                responseMessage = "Спасибо! Я рад, что вам нравится!";
+                await SpeakAsync("Спасибо! Я рад, что вам нравится!");
             }
             else if (command.IndexOf("смена имени", StringComparison.OrdinalIgnoreCase) >= 0)
             {
@@ -160,53 +155,50 @@ namespace Friday
 
                 if (string.IsNullOrEmpty(newName))
                 {
-                    responseMessage = "Пожалуйста, укажите новое имя после команды 'смена имени'";
+                    await SpeakAsync("Пожалуйста, укажите новое имя после команды 'смена имени'");
                 }
                 else
                 {
                     _renameService.BotName = newName;
-                    responseMessage = $"Имя успешно изменено на {newName}";
+                    await SpeakAsync($"Имя успешно изменено на {newName}");
                 }
             }
             else if (command.IndexOf("включить музыку", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                responseMessage = "Включаю музыку...";
+                await SpeakAsync("Включаю музыку...");
                 musicService.Play();
             }
             else if (command.IndexOf("выключить музыку", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                responseMessage = "Выключаю музыку...";
+                await SpeakAsync("Выключаю музыку...");
                 Thread.Sleep(1500);
                 musicService.Stop();
             }
             else if (command.IndexOf("следующий трек", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                responseMessage = "Переключаю...";
+                await SpeakAsync("Переключаю...");
                 musicService.NextTrack();
             }
             else
             {
+                // Если команда не распознана, обращаемся к CustomCommandService
                 CommandManager commandManager = new CommandManager();
                 var customCommand = commandManager.FindCommandByTrigger(command);
                 if (customCommand != null)
                 {
-                    CustomCommandService.ExecuteCommand(customCommand);
+                    await CustomCommandService.ExecuteCommand(customCommand);
                 }
                 else
                 {
-                    responseMessage = "Команда не распознана.";
+                    await SpeakAsync("Команда не распознана.");
                 }
             }
-
-            // Логируем ответ
-            OnMessageReceived?.Invoke($"Ответ: {responseMessage}");
-
-            return responseMessage; // Возвращаем ответ
         }
 
 
-        private async Task SpeakAsync(string text)
+        public async Task SpeakAsync(string text)
         {
+            OnMessageReceived?.Invoke($"Ответ: {text}");
             bool wasMusicPlaying = musicService.IsPlaying();
             if (wasMusicPlaying)
             {

@@ -20,7 +20,7 @@ namespace FigmaToWpf
             RenameService renameService = new RenameService();
             _voiceService = new VoiceService(renameService);
             _voiceService.OnMessageReceived += OnMessageReceived;
-
+            CustomCommandService.Initialize(_voiceService);
             // Инициализируем список команд при старте приложения
             UpdateCommandsList();
 

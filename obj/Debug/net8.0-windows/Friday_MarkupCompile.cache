@@ -4,17 +4,17 @@
 winexe
 C#
 .cs
-C:\Users\nikon\Githup\FRIDAY\obj\Debug\net8.0-windows\
+D:\projects\FRIDAY\obj\Debug\net8.0-windows\
 Friday
 none
 false
 TRACE;DEBUG;NET;NET8_0;NETCOREAPP
-C:\Users\nikon\Githup\FRIDAY\App.xaml
-11407045341
+D:\projects\FRIDAY\App.xaml
+32074015394
 
-12-213399986
-215-287450244
-MainWindow.xaml;
+20-517150333
+215-1109455115
+MainWindow.xaml;Windows\AddCommandWindow.xaml;Windows\InputDialog.xaml;
 
 False
 

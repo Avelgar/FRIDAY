@@ -88,9 +88,9 @@ namespace Friday
                 if (parts.Length > 4)
                 {
                     var actionsParts = parts[4].Split(';');
-                    for (int i = 0; i < actionsParts.Length; i++)
+                    foreach (var actionPart in actionsParts)
                     {
-                        var actionDetails = actionsParts[i].Split(':');
+                        var actionDetails = actionPart.Split('|');
                         if (actionDetails.Length == 3)
                         {
                             int actionId = int.Parse(actionDetails[0]);
@@ -104,17 +104,22 @@ namespace Friday
             }
         }
 
+
         private void SaveCommands()
         {
             using (var writer = new StreamWriter(FilePath))
             {
                 foreach (var command in _commands)
                 {
-                    var actions = string.Join(";", command.Actions.Select(a => $"{a.Id}:{a.ActionType}:{a.ActionText}"));
+                    // Формируем строку для записи
+                    var actions = string.Join(";", command.Actions.Select(a => $"{a.Id}|{a.ActionType}|{a.ActionText}"));
+                    // Записываем команду в нужном формате
                     var line = $"{command.Id},{command.Name},{command.Description},{command.IsPassword},{actions}";
                     writer.WriteLine(line);
                 }
             }
         }
+
+
     }
 }

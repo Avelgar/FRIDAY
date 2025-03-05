@@ -12,7 +12,7 @@ namespace FigmaToWpf
         public string InputText { get; private set; }
         public string ActionType { get; private set; } // Свойство для типа действия
 
-        
+
         // Конструктор с параметрами
         public InputDialog(string title, string commandText, string actionType)
         {

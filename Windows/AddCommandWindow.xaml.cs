@@ -80,7 +80,6 @@ namespace FigmaToWpf
                 TextBlock actionTextBlock = stackPanel.Children.OfType<TextBlock>().FirstOrDefault();
                 if (actionTextBlock != null)
                 {
-                    string title = "Редактировать действие";
                     string currentActionText = actionTextBlock.Text;
 
                     var parts = currentActionText.Split(new[] { ": " }, StringSplitOptions.None);
@@ -89,11 +88,11 @@ namespace FigmaToWpf
                         string currentActionType = parts[0];
                         string currentAction = parts[1];
 
-                        var inputDialog = new InputDialog(title, currentAction, currentActionType);
+                        var inputDialog = new InputDialog("Редактировать действие", currentAction, currentActionType);
                         if (inputDialog.ShowDialog() == true)
                         {
-                            string newActionText = $"{inputDialog.ActionType}: {inputDialog.InputText}";
-                            actionTextBlock.Text = newActionText; // Обновляем текст в интерфейсе
+                            // Обновляем текст в интерфейсе
+                            actionTextBlock.Text = $"{inputDialog.ActionType}: {inputDialog.InputText}";
 
                             // Обновляем действие в списке Actions
                             var actionToEdit = Actions.FirstOrDefault(a => a.ActionType == currentActionType && a.ActionText == currentAction);
@@ -108,6 +107,7 @@ namespace FigmaToWpf
             }
         }
 
+
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Parent is StackPanel stackPanel)
@@ -119,12 +119,11 @@ namespace FigmaToWpf
                     if (actionToRemove != null)
                     {
                         Actions.Remove(actionToRemove); // Удаляем действие из списка
+                        ActionsItemsControl.Items.Remove(actionTextBlock.Text); // Удаляем из интерфейса
                     }
-                    ActionsItemsControl.Items.Remove(actionTextBlock.Text); // Удаляем из интерфейса
                 }
             }
         }
-
 
         private void CommandNameTextBox_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
         {
@@ -160,27 +159,20 @@ namespace FigmaToWpf
                 return;
             }
 
-            if (ActionsItemsControl.Items.Count == 0)
+            // Убираем проверку на наличие действий, если это редактирование
+            if (Actions.Count == 0 && !isEditing) // Проверяем, есть ли действия только если не редактируем
             {
                 MessageBox.Show("Пожалуйста, добавьте хотя бы одно действие.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            // Если редактируем, устанавливаем флаг для обновления
-            if (isEditing)
-            {
-                // Здесь вы можете обновить данные команды
-                MessageBox.Show("Команда обновлена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                // Здесь вы можете обработать добавление новой команды
-                MessageBox.Show("Команда добавлена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-
+            // Логика для добавления команды
+            MessageBox.Show("Команда добавлена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             this.DialogResult = true; // Устанавливаем результат диалога как успешный
-            this.Close(); // Закрытие окна после добавления или редактирования команды
+            this.Close(); // Закрытие окна после добавления команды
         }
+
+
 
     }
 }

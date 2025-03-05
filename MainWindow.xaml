@@ -176,8 +176,8 @@
                             <ComboBoxItem Content="Voice4"/>
                         </ComboBox>
                         <TextBlock Text="Громкость:" Margin="0,5,0,10"/>
-                        <Slider x:Name="VolumeSlider" Minimum="0" Maximum="10" />
-                        <Button Content="Сохранить" Margin="0,20,5,0" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="85" Height="23" HorizontalAlignment="Left" />
+                        <Slider x:Name="VolumeSlider" Minimum="0" Maximum="10" SmallChange="1" />
+                        <Button Content="Сохранить" Margin="0,20,5,0" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="85" Height="23" HorizontalAlignment="Left" Click="Save_Button_Click" />
 
                     </StackPanel>
                 </StackPanel>

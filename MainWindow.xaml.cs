@@ -12,10 +12,11 @@ namespace FigmaToWpf
     {
         private VoiceService _voiceService;
         public static Friday.CommandManager _commandManager = new Friday.CommandManager();
-
+        private static SettingManager _settingManager = new SettingManager();
         public MainWindow()
         {
             InitializeComponent();
+            LoadSettings();
             RenameService renameService = new RenameService();
             _voiceService = new VoiceService(renameService);
             _voiceService.OnMessageReceived += OnMessageReceived;
@@ -217,6 +218,33 @@ namespace FigmaToWpf
 
             return foundChild;
         }
-
+        private void LoadSettings()
+        {
+            FridayNameTextBox.Text = _settingManager.Setting.AssistantName;
+            foreach (ComboBoxItem item in VoiceTypeComboBox.Items)
+            {
+                if (item.Content.ToString() == _settingManager.Setting.VoiceType)
+                {
+                    VoiceTypeComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+            VolumeSlider.Value = _settingManager.Setting.Volume;
+        }
+        private void Save_Button_Click(object sender, RoutedEventArgs e)
+        {
+            string assistantName = FridayNameTextBox.Text;
+            string password = PasswordTextBox.Text;
+            string voiceType = VoiceTypeComboBox.Text;
+            int volume = Convert.ToInt32(VolumeSlider.Value);
+            if (string.IsNullOrEmpty(assistantName) || string.IsNullOrEmpty(voiceType)) 
+            { 
+                MessageBox.Show("Поля не могут быть пустыми", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (string.IsNullOrEmpty(password)){ password = _settingManager.Setting.Password; }
+            _settingManager.UpdateSettings(assistantName, password, voiceType, volume);
+            MessageBox.Show("Настройки успешно обновлены!", "Успех!", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
 }

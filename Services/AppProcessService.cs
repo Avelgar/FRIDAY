@@ -29,7 +29,28 @@ namespace Friday
         }
         public void OpenFile(string filePath)
         {
-            MessageBox.Show(filePath);
+            try
+            {
+                // Проверяем, существует ли файл
+                if (File.Exists(filePath))
+                {
+                    // Создаем новый процесс для открытия файла
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = filePath,
+                        UseShellExecute = true // Используем оболочку для открытия файла
+                    });
+                }
+                else
+                {
+                    MessageBox.Show($"Файл не найден: {filePath}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Обработка ошибок, если файл не может быть открыт
+                MessageBox.Show($"Не удалось открыть файл: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
         public bool IsProcessRunning(string processName)
         {

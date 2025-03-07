@@ -50,6 +50,16 @@ namespace Friday
                         appProcessService.KillProcess(action.ActionText);
                         break;
 
+                    case "открытие ссылки":
+                        var browserService = new BrowserService();
+                        browserService.OpenLink(action.ActionText);
+                        break;
+
+                    case "напечатать текст":
+                        var keyboardService = new KeyboardService();
+                        keyboardService.TypeText(action.ActionText);
+                        break;
+
                     default:
                         Console.WriteLine($"Неизвестное действие: {action.ActionType}");
                         break;

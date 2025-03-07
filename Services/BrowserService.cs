@@ -1,10 +1,12 @@
-﻿namespace Friday
+﻿using System.Diagnostics;
+
+namespace Friday
 {
     public class BrowserService
     {
         public void OpenLink(string url)
         {
-            System.Diagnostics.Process.Start(url);
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
     }
 }

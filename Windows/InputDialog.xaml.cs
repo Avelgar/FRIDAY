@@ -27,6 +27,8 @@ namespace FigmaToWpf
                     .Cast<ComboBoxItem>()
                     .FirstOrDefault(item => item.Content.ToString() == actionType);
             }
+
+            ProcessComboBox.SelectionChanged += ProcessComboBox_SelectionChanged;
         }
 
         private bool isFirstLoad = true; // Флаг для отслеживания первого открытия окна
@@ -48,12 +50,22 @@ namespace FigmaToWpf
             }
         }
 
+        private void ProcessComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ProcessComboBox.SelectedItem != null)
+            {
+                string selectedProcessName = ProcessComboBox.SelectedItem.ToString();
+                InputTextBox.Text = selectedProcessName;
+            }
+        }
+
         private void UpdateInputField(string actionType)
         {
             // Устанавливаем ограничения на ввод в зависимости от типа действия
             InputTextBox.MaxLength = actionType switch
             {
                 "Голосовой ответ" => 100,
+                "Завершение процесса" => 0, // Здесь не нужно ограничение для завершения процесса
                 _ => 100 // Ограничение по умолчанию
             };
 
@@ -68,10 +80,15 @@ namespace FigmaToWpf
 
             // Обновляем видимость кнопки выбора файла
             FileButton.Visibility = actionType == "Открытие файла" ? Visibility.Visible : Visibility.Collapsed;
-
+            ProcessComboBox.Visibility = actionType == "Завершение процесса" ? Visibility.Visible : Visibility.Collapsed;
             // Устанавливаем обработчик ввода в зависимости от типа действия
             InputTextBox.PreviewTextInput -= TextBox_PreviewTextInput_Numbers;
             InputTextBox.PreviewTextInput -= TextBox_PreviewTextInput_Russian;
+
+            if (actionType == "Завершение процесса")
+            {
+                LoadProcesses();
+            }
 
             if (actionType == "Голосовой ответ")
             {
@@ -80,6 +97,34 @@ namespace FigmaToWpf
             else
             {
                 InputTextBox.PreviewTextInput += TextBox_PreviewTextInput_Numbers; // Разрешаем только цифры для других типов
+            }
+        }
+
+        private void LoadProcesses()
+        {
+            //ProcessComboBox.Items.Clear();
+            //var processes = System.Diagnostics.Process.GetProcesses();
+            //foreach (var process in processes)
+            //{
+            //    ProcessComboBox.Items.Add(process.ProcessName);
+            //}
+            ProcessComboBox.Items.Clear(); // Очищаем предыдущие элементы
+            var processes = System.Diagnostics.Process.GetProcesses(); // Получаем все запущенные процессы
+
+            foreach (var process in processes)
+            {
+                try
+                {
+                    // Проверяем, что у процесса есть окно и оно отображается
+                    if (!string.IsNullOrEmpty(process.MainWindowTitle))
+                    {
+                        ProcessComboBox.Items.Add(process.ProcessName); // Добавляем имя процесса в ComboBox
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
             }
         }
 
@@ -92,7 +137,6 @@ namespace FigmaToWpf
         {
             e.Handled = !Regex.IsMatch(e.Text, @"^[а-яё\s]+$"); // Разрешаем только русские строчные символы
         }
-
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {

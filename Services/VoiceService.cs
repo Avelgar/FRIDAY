@@ -38,6 +38,12 @@ namespace Friday
 
             ListeningState = new ListeningState();
         }
+        public static RenameService CreateRenameServiceFromSettings()
+        {
+            SettingManager settingManager = new SettingManager();
+            return new RenameService(settingManager.Setting.AssistantName);
+        }
+
         public async Task StartListening()
         {
             try

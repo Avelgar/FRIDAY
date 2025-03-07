@@ -17,8 +17,10 @@ namespace FigmaToWpf
         {
             InitializeComponent();
             LoadSettings();
-            RenameService renameService = new RenameService();
+
+            RenameService renameService = new RenameService(_settingManager.Setting.AssistantName);
             _voiceService = new VoiceService(renameService);
+
             _voiceService.OnMessageReceived += OnMessageReceived;
             CustomCommandService.Initialize(_voiceService);
             // Инициализируем список команд при старте приложения

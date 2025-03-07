@@ -8,7 +8,7 @@ namespace Friday
 {
     public class RenameService
     {
-        private string _botName = "пятница";
+        private string _botName;
 
         public string BotName
         {
@@ -20,6 +20,11 @@ namespace Friday
                     _botName = value;
                 }
             }
+        }
+
+        public RenameService(string initialName)
+        {
+            _botName = initialName;
         }
     }
 }

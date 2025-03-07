@@ -46,6 +46,9 @@ namespace Friday
                         appProcessService.OpenFile(action.ActionText);
                         break;
 
+                    case "завершение процесса":
+                        appProcessService.KillProcess(action.ActionText);
+                        break;
 
                     default:
                         Console.WriteLine($"Неизвестное действие: {action.ActionType}");

@@ -71,7 +71,11 @@
                 <ComboBox x:Name="ActionTypeComboBox" SelectionChanged="ActionTypeComboBox_SelectionChanged" Margin="0,0,0,10" Background="#FF4A4459" BorderBrush="#FF4A4459" Foreground="Black">
                     <ComboBoxItem Content="Открытие файла"/>
                     <ComboBoxItem Content="Голосовой ответ"/>
+                    <ComboBoxItem Content="Завершение процесса"/>
+                    <!-- Новое действие -->
                 </ComboBox>
+                <ComboBox x:Name="ProcessComboBox" Margin="0,0,0,10" Visibility="Collapsed" Background="#FF4A4459" BorderBrush="#FF4A4459" Foreground="Black"/>
+
 
                 <TextBlock Text="Введите данные:"/>
                 <Button x:Name="FileButton" Content="Выбрать файл" Click="FileButton_Click" Margin="0,0,0,10" Height="22" Visibility="Collapsed"/>

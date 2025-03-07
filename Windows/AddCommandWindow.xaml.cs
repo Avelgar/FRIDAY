@@ -167,7 +167,6 @@ namespace FigmaToWpf
             }
 
             // Логика для добавления команды
-            MessageBox.Show("Команда добавлена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             this.DialogResult = true; // Устанавливаем результат диалога как успешный
             this.Close(); // Закрытие окна после добавления команды
         }

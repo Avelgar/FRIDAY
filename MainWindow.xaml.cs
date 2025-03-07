@@ -87,6 +87,12 @@ namespace FigmaToWpf
                 var actions = addCommandWindow.Actions; // Убедитесь, что это List<ActionItem>
                 bool isPasswordSet = addCommandWindow.IsPasswordSet;
 
+                var customCommand = _commandManager.FindCommandByTrigger(name);
+                if (customCommand != null) {
+                    MessageBox.Show("Команда уже существует!", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                MessageBox.Show("Команда добавлена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                 // Добавляем команду в CommandManager
                 _commandManager.AddCommand(name, description, actions, isPasswordSet);
 

@@ -10,6 +10,7 @@ namespace Friday
     public class VoiceService
     {
         private string modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\model"));
+        public event Action<string> OnPasswordReceived;
         private readonly VoskRecognizer _recognizer;
         private readonly RenameService _renameService;
         private WaveInEvent _waveIn;
@@ -63,6 +64,12 @@ namespace Friday
                             var result = _recognizer.Result();
                             var response = JsonConvert.DeserializeObject<RecognitionResponse>(result);
                             var recognizedText = response?.Alternatives.FirstOrDefault()?.Text;
+
+                            if (ListeningState.IsListeningForPassword)
+                            {
+                                OnPasswordReceived?.Invoke(recognizedText);
+                                return;
+                            }
 
                             if (recognizedText == _renameService.BotName)
                             {
@@ -118,6 +125,12 @@ namespace Friday
         {
             OnMessageReceived?.Invoke($"Распознано: {command}");
 
+            if (ListeningState.IsListeningForPassword)
+            {
+                OnPasswordReceived?.Invoke(command);
+                return;
+            }
+
             if (command.IndexOf("время", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 await SpeakAsync($"Текущее время: {DateTime.Now.ToShortTimeString()}");
@@ -129,7 +142,7 @@ namespace Friday
             else if (command.IndexOf("погода", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 WeatherService weatherService = new WeatherService();
-                int dayOffset = 0; // По умолчанию прогноз на сегодня
+                int dayOffset = 0;
                 if (command.IndexOf("завтра", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     dayOffset = 1;

@@ -1,16 +1,32 @@
 ﻿using System.Windows;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows.Controls;
 using Friday;
 using System.Windows.Media;
 using System.Windows.Input;
+using Friday.Managers;
 
 namespace FigmaToWpf
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private VoiceService _voiceService;
         public static Friday.CommandManager _commandManager = new Friday.CommandManager();
         private static SettingManager _settingManager = new SettingManager();
+
+        // Добавляем свойство для отслеживания команд, отображаемых в ItemsControl.
+        private ObservableCollection<Command> _commands;
+        public ObservableCollection<Command> Commands
+        {
+            get { return _commands; }
+            set
+            {
+                _commands = value;
+                OnPropertyChanged(nameof(Commands));
+            }
+        }
+
         public MainWindow()
         {
             InitializeComponent();
@@ -21,9 +37,46 @@ namespace FigmaToWpf
 
             _voiceService.OnMessageReceived += OnMessageReceived;
             CustomCommandService.Initialize(_voiceService);
-            UpdateCommandsList();
+
+            // Инициализируем Commands и подписываемся на изменение текста в SearchTextBox
+            Commands = new ObservableCollection<Command>(_commandManager.GetCommands());
+            CommandsItemsControl.ItemsSource = Commands;  // Привязка к Commands, а не напрямую к _commandManager
+            SearchTextBox.TextChanged += SearchTextBox_TextChanged; // Подписываемся на событие изменения текста
+
+            DataContext = this; // Необходимо для работы привязки Commands
         }
 
+        // Реализация INotifyPropertyChanged
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            FilterCommands();
+        }
+
+        private void FilterCommands()
+        {
+            string searchText = SearchTextBox.Text;
+
+            if (string.IsNullOrEmpty(searchText) || searchText == "Search")
+            {
+                // Если строка поиска пуста, отображаем все команды
+                Commands = new ObservableCollection<Command>(_commandManager.GetCommands());
+            }
+            else
+            {
+                // Фильтруем команды на основе текста поиска
+                Commands = new ObservableCollection<Command>(_commandManager.GetCommands()
+                    .Where(c => c.Name.ToLower().Contains(searchText.ToLower()) ||
+                                c.Description.ToLower().Contains(searchText.ToLower()))
+                    .ToList());
+            }
+            CommandsItemsControl.ItemsSource = Commands;
+        }
         private void Minimize_Click(object sender, RoutedEventArgs e)
         {
             WindowState = WindowState.Minimized;
@@ -81,7 +134,8 @@ namespace FigmaToWpf
                 bool isPasswordSet = addCommandWindow.IsPasswordSet;
 
                 var customCommand = _commandManager.FindCommandByTrigger(name);
-                if (customCommand != null) {
+                if (customCommand != null)
+                {
                     MessageBox.Show("Команда уже существует!", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
@@ -102,8 +156,9 @@ namespace FigmaToWpf
 
         private void UpdateCommandsList()
         {
-            CommandsItemsControl.ItemsSource = null;
-            CommandsItemsControl.ItemsSource = _commandManager.GetCommands();
+            // После обновления команд в _commandManager, обновляем и Commands, чтобы отобразить изменения
+            Commands = new ObservableCollection<Command>(_commandManager.GetCommands());
+            CommandsItemsControl.ItemsSource = Commands; // Обновляем ItemsSource
         }
         private void EditCommandButton_Click(object sender, RoutedEventArgs e)
         {
@@ -223,12 +278,12 @@ namespace FigmaToWpf
             string password = PasswordTextBox.Text;
             string voiceType = VoiceTypeComboBox.Text;
             int volume = Convert.ToInt32(VolumeSlider.Value);
-            if (string.IsNullOrEmpty(assistantName) || string.IsNullOrEmpty(voiceType)) 
-            { 
+            if (string.IsNullOrEmpty(assistantName) || string.IsNullOrEmpty(voiceType))
+            {
                 MessageBox.Show("Поля не могут быть пустыми", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            if (string.IsNullOrEmpty(password)){ password = _settingManager.Setting.Password; }
+            if (string.IsNullOrEmpty(password)) { password = _settingManager.Setting.Password; }
             _settingManager.UpdateSettings(assistantName, password, voiceType, volume);
             MessageBox.Show("Настройки успешно обновлены!", "Успех!", MessageBoxButton.OK, MessageBoxImage.Information);
         }

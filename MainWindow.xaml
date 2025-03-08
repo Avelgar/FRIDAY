@@ -136,11 +136,11 @@
                 <StackPanel Width="772" Height="auto">
                     <StackPanel Orientation="Horizontal" Margin="10" HorizontalAlignment="Center">
                         <Button Content="Add command" Margin="0,0,5,0" Click="AddCommandButton_Click" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="104" Height="31" />
-                        <TextBox Width="519" Text="Search" Background="#FF625B71" Height="31" VerticalAlignment="Center" VerticalContentAlignment="Center" />
+                        <TextBox x:Name="SearchTextBox" Width="519" Text="Search" Background="#FF625B71" Height="31" VerticalAlignment="Center" VerticalContentAlignment="Center" />
                         <Button Content="Sort and filter" Margin="5,0,0,0" Width="113" />
                     </StackPanel>
                     <ItemsControl Margin="10" Height="auto">
-                        <ItemsControl x:Name="CommandsItemsControl" Margin="10">
+                        <ItemsControl x:Name="CommandsItemsControl" Margin="10" ItemsSource="{Binding Commands}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="{x:Null}" BorderThickness="1" CornerRadius="5" Margin="0,5,0,0" Background="#625B71">

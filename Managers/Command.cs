@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Friday.Managers
+﻿namespace Friday.Managers
 {
     public class Command
     {

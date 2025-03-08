@@ -18,7 +18,7 @@ namespace Friday
 
         public void AddCommand(string name, string description, List<ActionItem> actions, bool isPassword)
         {
-            int id = _commands.Count > 0 ? _commands.Max(c => c.Id) + 1 : 1; // Генерация уникального ID
+            int id = _commands.Count > 0 ? _commands.Max(c => c.Id) + 1 : 1;
             var command = new Command(id, name, description, actions, isPassword);
             _commands.Add(command);
             SaveCommands();
@@ -111,9 +111,7 @@ namespace Friday
             {
                 foreach (var command in _commands)
                 {
-                    // Формируем строку для записи
                     var actions = string.Join(";", command.Actions.Select(a => $"{a.Id}|{a.ActionType}|{a.ActionText}"));
-                    // Записываем команду в нужном формате
                     var line = $"{command.Id},{command.Name},{command.Description},{command.IsPassword},{actions}";
                     writer.WriteLine(line);
                 }

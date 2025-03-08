@@ -18,7 +18,7 @@ namespace Friday
     {
         private string modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\model"));
         private readonly VoskRecognizer _recognizer;
-        private readonly RenameService _renameService; // Добавляем поле для RenameService
+        private readonly RenameService _renameService;
         private WaveInEvent _waveIn;
         private static MusicService musicService = new MusicService();
         private static readonly HttpClient httpClient = new HttpClient();
@@ -81,9 +81,8 @@ namespace Friday
                             }
                             else if (isListeningForCommands && !string.IsNullOrEmpty(recognizedText) && recognizedText != lastRecognizedText)
                             {
-                                // Вызываем ProcessCommand, не ожидая результат
                                 ProcessCommand(recognizedText);
-                                isListeningForCommands = false; // Сбрасываем флаг после обработки команды
+                                isListeningForCommands = false;
                                 lastRecognizedText = recognizedText;
                             }
                         }
@@ -122,11 +121,10 @@ namespace Friday
             }
         }
 
-        private async void ProcessCommand(string command) // Изменяем на async void
+        private async void ProcessCommand(string command)
         {
             OnMessageReceived?.Invoke($"Распознано: {command}");
 
-            // Логика обработки команд
             if (command.IndexOf("время", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 await SpeakAsync($"Текущее время: {DateTime.Now.ToShortTimeString()}");
@@ -187,7 +185,6 @@ namespace Friday
             }
             else
             {
-                // Если команда не распознана, обращаемся к CustomCommandService
                 CommandManager commandManager = new CommandManager();
                 var customCommand = commandManager.FindCommandByTrigger(command);
                 if (customCommand != null)

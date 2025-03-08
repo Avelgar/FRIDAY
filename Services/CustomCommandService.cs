@@ -7,14 +7,14 @@ namespace Friday
 {
     public class CustomCommandService
     {
-        private static VoiceService _voiceService; // Поле для VoiceService
+        private static VoiceService _voiceService;
 
         public static void Initialize(VoiceService voiceService)
         {
-            _voiceService = voiceService; // Инициализируем VoiceService
+            _voiceService = voiceService;
         }
 
-        public static async Task ExecuteCommand(Command command) // Изменяем на Task вместо void
+        public static async Task ExecuteCommand(Command command)
         {
             if (command == null)
             {

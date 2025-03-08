@@ -9,15 +9,15 @@ public class ListeningState
 
     public ListeningState()
     {
-        commandTimer = new System.Timers.Timer(500000); // Таймер на 500 секунд
+        commandTimer = new System.Timers.Timer(500000);
         commandTimer.Elapsed += OnCommandTimerElapsed;
-        commandTimer.AutoReset = false; // Таймер не будет перезапускаться автоматически
+        commandTimer.AutoReset = false;
     }
 
     private void OnCommandTimerElapsed(object sender, ElapsedEventArgs e)
     {
         StopListening();
-        OnTimeout?.Invoke(); // Сообщаем, что время ожидания истекло
+        OnTimeout?.Invoke();
     }
 
     public bool IsListening()

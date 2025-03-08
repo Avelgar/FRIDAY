@@ -4,7 +4,7 @@ namespace Friday.Managers
 {
     public class Command
     {
-        public int Id { get; set; } // ID команды
+        public int Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
         public List<ActionItem> Actions { get; set; } = new List<ActionItem>();
@@ -24,9 +24,9 @@ namespace Friday.Managers
 
     public class ActionItem
     {
-        public int Id { get; set; } // ID действия
-        public string ActionType { get; set; } // Тип действия
-        public string ActionText { get; set; } // Действие
+        public int Id { get; set; }
+        public string ActionType { get; set; }
+        public string ActionText { get; set; }
 
         public ActionItem() { }
 
@@ -37,7 +37,4 @@ namespace Friday.Managers
             ActionText = actionText;
         }
     }
-
-
-
 }

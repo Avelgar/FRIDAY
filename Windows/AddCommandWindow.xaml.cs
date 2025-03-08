@@ -1,9 +1,9 @@
 ﻿using System.Windows;
-using Friday.Managers; // Убедитесь, что это пространство имен соответствует вашему проекту
+using Friday.Managers;
 using System.Collections.Generic;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Linq; // Добавлено для использования LINQ
+using System.Linq;
 using System;
 using static System.Windows.Forms.Design.AxImporter;
 using System.Windows.Input;
@@ -22,12 +22,12 @@ namespace FigmaToWpf
         public AddCommandWindow()
         {
             InitializeComponent();
-            Actions = new List<ActionItem>(); // Инициализация списка действий
+            Actions = new List<ActionItem>();
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
-            this.Close(); // Закрытие окна
+            this.Close();
         }
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
@@ -170,9 +170,6 @@ namespace FigmaToWpf
             this.DialogResult = true; // Устанавливаем результат диалога как успешный
             this.Close(); // Закрытие окна после добавления команды
         }
-
-
-
     }
 }
 

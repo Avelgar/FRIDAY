@@ -23,9 +23,7 @@ namespace FigmaToWpf
 
             _voiceService.OnMessageReceived += OnMessageReceived;
             CustomCommandService.Initialize(_voiceService);
-            // Инициализируем список команд при старте приложения
             UpdateCommandsList();
-
         }
 
         private void Minimize_Click(object sender, RoutedEventArgs e)
@@ -51,7 +49,6 @@ namespace FigmaToWpf
             if (_voiceService.ListeningState.IsListening())
             {
                 _voiceService.ListeningState.StopListening();
-                //ListenButton.Content = "Начать слушать";
                 _voiceService.StopListening();
                 ConsoleTextBox.AppendText("Слушание остановлено." + Environment.NewLine);
                 ConsoleTextBox.ScrollToEnd();
@@ -59,7 +56,6 @@ namespace FigmaToWpf
             else
             {
                 _voiceService.ListeningState.StartListening();
-                //ListenButton.Content = "Остановить слушать";
                 _voiceService.StartListening();
                 ConsoleTextBox.AppendText("Начинаю слушать..." + Environment.NewLine);
                 ConsoleTextBox.ScrollToEnd();
@@ -81,10 +77,9 @@ namespace FigmaToWpf
 
             if (addCommandWindow.ShowDialog() == true)
             {
-                // Получаем значения из открытого окна
                 string name = addCommandWindow.CommandName;
                 string description = addCommandWindow.Description;
-                var actions = addCommandWindow.Actions; // Убедитесь, что это List<ActionItem>
+                var actions = addCommandWindow.Actions;
                 bool isPasswordSet = addCommandWindow.IsPasswordSet;
 
                 var customCommand = _commandManager.FindCommandByTrigger(name);
@@ -93,10 +88,9 @@ namespace FigmaToWpf
                     return;
                 }
                 MessageBox.Show("Команда добавлена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                // Добавляем команду в CommandManager
                 _commandManager.AddCommand(name, description, actions, isPasswordSet);
 
-                UpdateCommandsList(); // Обновляем список команд на интерфейсе
+                UpdateCommandsList();
             }
         }
 
@@ -110,8 +104,8 @@ namespace FigmaToWpf
 
         private void UpdateCommandsList()
         {
-            CommandsItemsControl.ItemsSource = null; // Сбрасываем источник данных
-            CommandsItemsControl.ItemsSource = _commandManager.GetCommands(); // Устанавливаем новый источник данных
+            CommandsItemsControl.ItemsSource = null;
+            CommandsItemsControl.ItemsSource = _commandManager.GetCommands();
         }
         private void EditCommandButton_Click(object sender, RoutedEventArgs e)
         {
@@ -134,16 +128,14 @@ namespace FigmaToWpf
 
                             if (addCommandWindow.ShowDialog() == true)
                             {
-                                // Получаем обновленные значения из окна
                                 string newName = addCommandWindow.CommandName;
                                 string newDescription = addCommandWindow.Description;
-                                var newActions = addCommandWindow.Actions; // Убедитесь, что это List<ActionItem>
+                                var newActions = addCommandWindow.Actions;
                                 bool isPasswordSet = addCommandWindow.IsPasswordSet;
 
-                                // Обновляем команду в CommandManager
                                 _commandManager.EditCommand(commandToEdit.Id, newName, newDescription, newActions, isPasswordSet);
 
-                                UpdateCommandsList(); // Обновляем список команд на интерфейсе
+                                UpdateCommandsList();
                             }
                         }
                     }
@@ -157,11 +149,9 @@ namespace FigmaToWpf
         {
             if (sender is Button button)
             {
-                // Находим родительский Border, который содержит StackPanel
                 var border = FindParent<Border>(button);
                 if (border != null)
                 {
-                    // Находим TextBlock с именем команды внутри Border
                     var nameTextBlock = FindChild<TextBlock>(border, "NameTextBlock");
                     if (nameTextBlock != null)
                     {
@@ -170,19 +160,14 @@ namespace FigmaToWpf
 
                         if (result == MessageBoxResult.Yes)
                         {
-                            // Удаляем команду через CommandManager
-                            _commandManager.DeleteCommand(commandName); // Используем уже созданный экземпляр
+                            _commandManager.DeleteCommand(commandName);
 
-                            // Обновляем интерфейс, чтобы отобразить изменения
-                            UpdateCommandsList(); // Метод для обновления интерфейса
+                            UpdateCommandsList();
                         }
                     }
                 }
             }
         }
-
-
-        // Метод для поиска родительского элемента определенного типа
         private T FindParent<T>(DependencyObject child) where T : DependencyObject
         {
             DependencyObject parentObject = VisualTreeHelper.GetParent(child);
@@ -192,10 +177,8 @@ namespace FigmaToWpf
             return parent != null ? parent : FindParent<T>(parentObject);
         }
 
-        // Метод для поиска дочернего элемента определенного типа
         private T FindChild<T>(DependencyObject parent, string childName) where T : DependencyObject
         {
-            // Проверяем, есть ли у родителя дочерние элементы
             if (parent == null) return null;
 
             T foundChild = null;
@@ -204,11 +187,9 @@ namespace FigmaToWpf
             for (int i = 0; i < childrenCount; i++)
             {
                 var child = VisualTreeHelper.GetChild(parent, i);
-                // Проверяем, является ли дочерний элемент нужного типа
                 T childType = child as T;
                 if (childType != null && !string.IsNullOrEmpty(childName))
                 {
-                    // Если у дочернего элемента есть имя, сравниваем его с искомым
                     var frameworkElement = child as FrameworkElement;
                     if (frameworkElement != null && frameworkElement.Name == childName)
                     {
@@ -218,7 +199,6 @@ namespace FigmaToWpf
                 }
                 else
                 {
-                    // Рекурсивно ищем в дочерних элементах
                     foundChild = FindChild<T>(child, childName);
                     if (foundChild != null) break;
                 }

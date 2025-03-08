@@ -8,7 +8,7 @@ namespace Friday
 {
     public class AppProcessService
     {
-        private bool secureSystemProcesses = true; // Защита от завершения системных процессов
+        private bool secureSystemProcesses = true;
 
         public bool KillProcess(string processName)
         {
@@ -17,21 +17,19 @@ namespace Friday
             {
                 try
                 {
-                    // Проверка на защищенные системные процессы
                     if (secureSystemProcesses && IsSystemProcess(process))
                     {
-                        Console.WriteLine($"Попытка завершить системный процесс: {process.ProcessName}. Операция отменена.");
-                        continue; // Пропускаем системные процессы
+                        MessageBox.Show($"Попытка завершить системный процесс: {process.ProcessName}. Операция отменена.", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Error);
+                        continue;
                     }
 
                     process.Kill();
-                    process.WaitForExit(); // Ждем завершения процесса
+                    process.WaitForExit();
                     isKilled = true;
-                    Console.WriteLine($"Процесс {process.ProcessName} завершен.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Не удалось завершить процесс {process.ProcessName}: {ex.Message}");
+                    MessageBox.Show($"Не удалось завершить процесс {process.ProcessName}: {ex.Message}", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Error);
                     isKilled = false;
                 }
             }
@@ -43,22 +41,20 @@ namespace Friday
             {
                 if (File.Exists(filePath))
                 {
-                    // Создаем новый процесс для открытия файла
                     Process.Start(new ProcessStartInfo
                     {
                         FileName = filePath,
-                        UseShellExecute = true // Используем оболочку для открытия файла
+                        UseShellExecute = true
                     });
                 }
                 else
                 {
-                    MessageBox.Show($"Файл не найден: {filePath}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Файл не найден: {filePath}", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (Exception ex)
             {
-                // Обработка ошибок, если файл не может быть открыт
-                MessageBox.Show($"Не удалось открыть файл: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Не удалось открыть файл: {ex.Message}", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -69,10 +65,7 @@ namespace Friday
 
         private bool IsSystemProcess(Process process)
         {
-            // Здесь можно добавить логику для определения системных процессов
-            // Например, проверка по имени или ID процесса
-            // Для простоты, можно оставить только проверку по имени
-            string[] systemProcesses = { "explorer", "System", "svchost", "lsass", "winlogon" }; // Примеры системных процессов
+            string[] systemProcesses = { "explorer", "System", "svchost", "lsass", "winlogon" };
             return systemProcesses.Contains(process.ProcessName.ToLower());
         }
 

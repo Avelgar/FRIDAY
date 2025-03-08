@@ -3,24 +3,23 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Microsoft.Win32; // Для открытия диалогового окна выбора файла
+using Microsoft.Win32;
 
 namespace FigmaToWpf
 {
     public partial class InputDialog : Window
     {
         public string InputText { get; private set; }
-        public string ActionType { get; private set; } // Свойство для типа действия
+        public string ActionType { get; private set; }
 
 
         // Конструктор с параметрами
         public InputDialog(string title, string commandText, string actionType)
         {
-            InitializeComponent(); // Инициализация компонентов
-            Title = title; // Установка заголовка окна
-            InputTextBox.Text = commandText; // Установка текста команды в текстовое поле
+            InitializeComponent();
+            Title = title;
+            InputTextBox.Text = commandText;
 
-            // Устанавливаем выбранный тип действия, если он задан
             if (!string.IsNullOrEmpty(actionType))
             {
                 ActionTypeComboBox.SelectedItem = ActionTypeComboBox.Items
@@ -31,7 +30,7 @@ namespace FigmaToWpf
             ProcessComboBox.SelectionChanged += ProcessComboBox_SelectionChanged;
         }
 
-        private bool isFirstLoad = true; // Флаг для отслеживания первого открытия окна
+        private bool isFirstLoad = true;
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -61,27 +60,22 @@ namespace FigmaToWpf
 
         private void UpdateInputField(string actionType)
         {
-            // Устанавливаем ограничения на ввод в зависимости от типа действия
             InputTextBox.MaxLength = actionType switch
             {
                 "Голосовой ответ" => 100,
-                "Завершение процесса" => 0, // Здесь не нужно ограничение для завершения процесса
-                _ => 100 // Ограничение по умолчанию
+                "Завершение процесса" => 0,
+                _ => 100
             };
 
-            // Очистка полей ввода при смене типа действия, если это не первое открытие окна
             if (!isFirstLoad)
             {
-                InputTextBox.Clear(); // Очищаем текстовое поле
+                InputTextBox.Clear();
             }
 
-            // Обновляем флаг после первого открытия
             isFirstLoad = false;
 
-            // Обновляем видимость кнопки выбора файла
             FileButton.Visibility = actionType == "Открытие файла" ? Visibility.Visible : Visibility.Collapsed;
             ProcessComboBox.Visibility = actionType == "Завершение процесса" ? Visibility.Visible : Visibility.Collapsed;
-            // Устанавливаем обработчик ввода в зависимости от типа действия
             InputTextBox.PreviewTextInput -= TextBox_PreviewTextInput_Numbers;
             InputTextBox.PreviewTextInput -= TextBox_PreviewTextInput_Russian;
 
@@ -92,11 +86,11 @@ namespace FigmaToWpf
 
             if (actionType == "Голосовой ответ")
             {
-                InputTextBox.PreviewTextInput += TextBox_PreviewTextInput_Russian; // Разрешаем только русские строчные символы
+                InputTextBox.PreviewTextInput += TextBox_PreviewTextInput_Russian;
             }
             else
             {
-                InputTextBox.PreviewTextInput += TextBox_PreviewTextInput_Numbers; // Разрешаем только цифры для других типов
+                InputTextBox.PreviewTextInput += TextBox_PreviewTextInput_Numbers;
             }
         }
 

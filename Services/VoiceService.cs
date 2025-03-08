@@ -1,16 +1,9 @@
-using System;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using NAudio.Wave;
 using Vosk;
 using Newtonsoft.Json;
 using System.Net.Http;
 using System.IO;
-using System.Threading;
-using System.Windows.Input;
-using System.Windows.Forms;
-using Friday.Managers;
 
 namespace Friday
 {

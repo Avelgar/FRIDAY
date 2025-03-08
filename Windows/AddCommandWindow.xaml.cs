@@ -1,11 +1,6 @@
 ﻿using System.Windows;
 using Friday.Managers;
-using System.Collections.Generic;
 using System.Windows.Controls;
-using System.Windows.Media;
-using System.Linq;
-using System;
-using static System.Windows.Forms.Design.AxImporter;
 using System.Windows.Input;
 
 namespace FigmaToWpf

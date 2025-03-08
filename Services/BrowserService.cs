@@ -6,6 +6,10 @@ namespace Friday
     {
         public void OpenLink(string url)
         {
+            if (!url.Contains("https://"))
+            {
+                url = "https://" + url;
+            }
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
     }

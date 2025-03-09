@@ -17,7 +17,7 @@ namespace FigmaToWpf
             LoadSettings();
 
             RenameService renameService = new RenameService(_settingManager.Setting.AssistantName);
-            _voiceService = new VoiceService(renameService);
+            _voiceService = new VoiceService(renameService, _settingManager);
 
             _voiceService.OnMessageReceived += OnMessageReceived;
             CustomCommandService.Initialize(_voiceService);

@@ -13,6 +13,7 @@ namespace Friday
         public event Action<string> OnPasswordReceived;
         private readonly VoskRecognizer _recognizer;
         private readonly RenameService _renameService;
+        private readonly SettingManager _settingManager;
         private WaveInEvent _waveIn;
         private static MusicService musicService = new MusicService();
         private static readonly HttpClient httpClient = new HttpClient();
@@ -21,9 +22,10 @@ namespace Friday
         public ListeningState ListeningState { get; private set; }
 
         public event Action<string> OnMessageReceived;
-        public VoiceService(RenameService renameService)
+        public VoiceService(RenameService renameService, SettingManager settingManager)
         {
             _renameService = renameService;
+            _settingManager = settingManager;
             Vosk.Vosk.SetLogLevel(-1);
             Model model = new Model(modelPath);
             _recognizer = new VoskRecognizer(model, 16000.0f);
@@ -242,6 +244,7 @@ namespace Friday
                     using (var audioFile = new AudioFileReader(filePath))
                     using (var waveOut = new WaveOutEvent())
                     {
+                        waveOut.Volume = _settingManager.Setting.Volume / 10f;
                         waveOut.Init(audioFile);
                         waveOut.Play();
 

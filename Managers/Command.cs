@@ -15,7 +15,7 @@
             Id = id;
             Name = name;
             Description = description;
-            Actions = actions;
+            Actions = actions ?? new List<ActionItem>(); // Защита от null
             IsPassword = isPassword;
         }
     }
@@ -23,12 +23,12 @@
     public class ActionItem
     {
         public int Id { get; set; }
-        public string ActionType { get; set; }
-        public string ActionText { get; set; }
+        public string? ActionType { get; set; }
+        public string? ActionText { get; set; }
 
         public ActionItem() { }
 
-        public ActionItem(int id, string actionType, string actionText)
+        public ActionItem(int id, string? actionType, string? actionText)
         {
             Id = id;
             ActionType = actionType;

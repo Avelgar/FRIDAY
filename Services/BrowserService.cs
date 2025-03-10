@@ -13,4 +13,5 @@ namespace Friday
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
     }
+
 }

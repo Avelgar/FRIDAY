@@ -4,9 +4,16 @@ using Vosk;
 using Newtonsoft.Json;
 using System.Net.Http;
 using System.IO;
+using static Friday.VoiceService;
 
 namespace Friday
 {
+    public interface IVoiceService
+    {
+        Task ProcessCommand(string command); // Убедитесь, что возвращаемый тип - Task
+        Task OnMessageReceived(string message); // Добавьте метод, если он нужен
+        Task SpeakAsync(string text); // Добавьте метод, если он нужен
+    }
     public class VoiceService
     {
         private string modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\model"));
@@ -123,7 +130,7 @@ namespace Friday
             }
         }
 
-        private async void ProcessCommand(string command)
+        public async void ProcessCommand(string command)
         {
             OnMessageReceived?.Invoke($"Распознано: {command}");
 

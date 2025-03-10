@@ -2,9 +2,9 @@
 {
     public class Setting
     {
-        public string AssistantName { get; set; }
-        public string Password { get; set; }
-        public string VoiceType { get; set; }
-        public int Volume { get; set; }
+        public required string AssistantName { get; set; }
+        public required string Password { get; set; }
+        public required string VoiceType { get; set; }
+        public required int Volume { get; set; }
     }
 }

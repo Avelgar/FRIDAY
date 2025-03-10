@@ -8,7 +8,13 @@ namespace Friday
         private static readonly string apiKey = "bd5e378503939ddaee76f12ad7a97608";
         private static readonly string city = "Moscow";
         private static readonly string url = $"https://api.openweathermap.org/data/2.5/forecast?q={city}&units=metric&appid={apiKey}&lang=ru";
+        private readonly HttpClient _httpClient;
 
+        // Конструктор, принимающий HttpClient
+        public WeatherService(HttpClient httpClient)
+        {
+            _httpClient = httpClient;
+        }
         public string GetWeatherForecast(int dayOffset)
         {
             using (HttpClient client = new HttpClient())

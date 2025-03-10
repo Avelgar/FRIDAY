@@ -39,7 +39,7 @@ namespace FigmaToWpf
             }
         }
 
-        private void ActionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        public void ActionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (ActionTypeComboBox.SelectedItem is ComboBoxItem selectedItem)
             {
@@ -131,7 +131,7 @@ namespace FigmaToWpf
             e.Handled = !Regex.IsMatch(e.Text, @"^[а-яё\s]+$"); // Разрешаем только русские строчные символы
         }
 
-        private void OkButton_Click(object sender, RoutedEventArgs e)
+        public void OkButton_Click(object sender, RoutedEventArgs e)
         {
             // Проверяем, что выбран тип действия
             if (ActionTypeComboBox.SelectedItem == null)

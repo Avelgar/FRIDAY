@@ -74,6 +74,7 @@
                     <ComboBoxItem Content="Завершение процесса"/>
                     <ComboBoxItem Content="Открытие ссылки"/>
                     <ComboBoxItem Content="Напечатать текст"/>
+                    <ComboBoxItem Content="Отправить уведомление"/>
                     <!-- Новое действие -->
                 </ComboBox>
                 <ComboBox x:Name="ProcessComboBox" Margin="0,0,0,10" Visibility="Collapsed" Background="#FF4A4459" BorderBrush="#FF4A4459" Foreground="Black"/>

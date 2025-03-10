@@ -73,6 +73,11 @@ namespace Friday
                         keyboardService.TypeText(action.ActionText);
                         break;
 
+                    case "отправить уведомление":
+                        var notificationService = new NotificationService();
+                        notificationService.SendNotification(action.ActionText);
+                        break;
+
                     default:
                         Console.WriteLine($"Неизвестное действие: {action.ActionType}");
                         break;

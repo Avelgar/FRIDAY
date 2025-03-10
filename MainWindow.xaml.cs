@@ -26,6 +26,17 @@ namespace FigmaToWpf
                 OnPropertyChanged(nameof(Commands));
             }
         }
+       
+        private List<string> _actionTypes;
+        public List<string> ActionTypes
+        {
+            get { return _actionTypes; }
+            set
+            {
+                _actionTypes = value;
+                OnPropertyChanged(nameof(ActionTypes));
+            }
+        }
 
         public MainWindow()
         {
@@ -43,7 +54,26 @@ namespace FigmaToWpf
             CommandsItemsControl.ItemsSource = Commands;  // Привязка к Commands, а не напрямую к _commandManager
             SearchTextBox.TextChanged += SearchTextBox_TextChanged; // Подписываемся на событие изменения текста
 
+            // Заполняем ActionTypes и ComboBox
+            LoadActionTypes();
+            ActionTypeComboBox.ItemsSource = ActionTypes;
+
             DataContext = this; // Необходимо для работы привязки Commands
+        }
+        private void LoadActionTypes()
+        {
+            // Получаем все типы действий из команд
+            var allActions = _commandManager.GetCommands()
+                .SelectMany(c => c.Actions)
+                .Select(a => a.ActionType) // Changed a.Type to a.ActionType
+                .Distinct()
+                .ToList();
+
+            // Добавляем пустой тип для отображения всех команд
+            allActions.Insert(0, "All");
+
+            // Обновляем ActionTypes и вызываем PropertyChanged
+            ActionTypes = allActions;
         }
 
         // Реализация INotifyPropertyChanged
@@ -57,24 +87,31 @@ namespace FigmaToWpf
         {
             FilterCommands();
         }
+        private void ActionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            FilterCommands();
+        }
 
         private void FilterCommands()
         {
             string searchText = SearchTextBox.Text;
+            string selectedActionType = ActionTypeComboBox.SelectedItem as string;
 
-            if (string.IsNullOrEmpty(searchText) || searchText == "Search")
+            IEnumerable<Command> filteredCommands = _commandManager.GetCommands();
+
+            if (!string.IsNullOrEmpty(searchText) && searchText != "Search")
             {
-                // Если строка поиска пуста, отображаем все команды
-                Commands = new ObservableCollection<Command>(_commandManager.GetCommands());
+                filteredCommands = filteredCommands.Where(c =>
+                    c.Name.ToLower().Contains(searchText.ToLower()) ||
+                    c.Description.ToLower().Contains(searchText.ToLower()));
             }
-            else
+
+            if (!string.IsNullOrEmpty(selectedActionType) && selectedActionType != "All")
             {
-                // Фильтруем команды на основе текста поиска
-                Commands = new ObservableCollection<Command>(_commandManager.GetCommands()
-                    .Where(c => c.Name.ToLower().Contains(searchText.ToLower()) ||
-                                c.Description.ToLower().Contains(searchText.ToLower()))
-                    .ToList());
+                filteredCommands = filteredCommands.Where(c => c.Actions.Any(a => a.ActionType == selectedActionType)); // Changed a.Type to a.ActionType
             }
+
+            Commands = new ObservableCollection<Command>(filteredCommands.ToList());
             CommandsItemsControl.ItemsSource = Commands;
         }
         private void Minimize_Click(object sender, RoutedEventArgs e)
@@ -143,6 +180,7 @@ namespace FigmaToWpf
                 _commandManager.AddCommand(name, description, actions, isPasswordSet);
 
                 UpdateCommandsList();
+                LoadActionTypes(); //call it here
             }
         }
 
@@ -159,6 +197,7 @@ namespace FigmaToWpf
             // После обновления команд в _commandManager, обновляем и Commands, чтобы отобразить изменения
             Commands = new ObservableCollection<Command>(_commandManager.GetCommands());
             CommandsItemsControl.ItemsSource = Commands; // Обновляем ItemsSource
+            LoadActionTypes(); //call it here
         }
         private void EditCommandButton_Click(object sender, RoutedEventArgs e)
         {
@@ -188,7 +227,8 @@ namespace FigmaToWpf
 
                                 _commandManager.EditCommand(commandToEdit.Id, newName, newDescription, newActions, isPasswordSet);
 
-                                UpdateCommandsList();
+                                UpdateCommandsList(); //call it here
+                                LoadActionTypes(); //call it here
                             }
                         }
                     }
@@ -215,7 +255,8 @@ namespace FigmaToWpf
                         {
                             _commandManager.DeleteCommand(commandName);
 
-                            UpdateCommandsList();
+                            UpdateCommandsList(); //call it here
+                            LoadActionTypes(); //call it here
                         }
                     }
                 }

@@ -78,6 +78,11 @@ namespace Friday
                         notificationService.SendNotification(action.ActionText);
                         break;
 
+                    case "нажать кнопку мыши":
+                        var mouseService = new MouseService();
+                        mouseService.PressMouseButton(action.ActionText);
+                        break;
+
                     default:
                         Console.WriteLine($"Неизвестное действие: {action.ActionType}");
                         break;

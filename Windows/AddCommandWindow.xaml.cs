@@ -144,20 +144,20 @@ namespace FigmaToWpf
             // Проверка на заполненность полей
             if (string.IsNullOrEmpty(CommandName))
             {
-                MessageBox.Show("Пожалуйста, введите имя команды.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Пожалуйста, введите имя команды.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             if (string.IsNullOrEmpty(Description))
             {
-                MessageBox.Show("Пожалуйста, введите описание команды.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Пожалуйста, введите описание команды.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             // Убираем проверку на наличие действий, если это редактирование
             if (Actions.Count == 0 && !isEditing) // Проверяем, есть ли действия только если не редактируем
             {
-                MessageBox.Show("Пожалуйста, добавьте хотя бы одно действие.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Пожалуйста, добавьте хотя бы одно действие.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 

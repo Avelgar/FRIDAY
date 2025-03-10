@@ -10,6 +10,98 @@
     <Window.Resources>
         <FontFamily x:Key="IntroFridayFont">pack://FRIDAY//Assets//IntroFriday.ttf</FontFamily>
 
+
+
+        <Style x:Key="FocusVisual">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Rectangle Margin="2" StrokeDashArray="1 2" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" SnapsToDevicePixels="true" StrokeThickness="1"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        
+
+        <Style x:Key="ComboBoxButtonStyle" TargetType="{x:Type ToggleButton}">
+            <Setter Property="OverridesDefaultStyle" Value="true"/>
+            <Setter Property="IsTabStop" Value="false"/>
+            <Setter Property="Focusable" Value="false"/>
+            <Setter Property="ClickMode" Value="Press"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border x:Name="templateRoot" Background="#625B71" BorderBrush="{x:Null}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5" SnapsToDevicePixels="true">
+                            <Grid>
+                                <ContentPresenter HorizontalAlignment="Center" />
+                                <Path x:Name="arrow" Data="F1 M 0,0 L 2.667,2.66665 L 5.3334,0 L 5.3334,-1.78168 L 2.6667,0.88501 L0,-1.78168 L0,0 Z" Fill="White" HorizontalAlignment="Right" Margin="5" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter Property="Opacity" TargetName="templateRoot" Value="0.8"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="true">
+                                <Setter Property="Opacity" TargetName="templateRoot" Value="0.6"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="false">
+                                <Setter Property="Opacity" TargetName="templateRoot" Value="0.5"/>
+                                <Setter Property="Fill" TargetName="arrow" Value="Gray"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <ControlTemplate x:Key="CustomComboBoxTemplate" TargetType="{x:Type ComboBox}">
+            <Grid x:Name="templateRoot" SnapsToDevicePixels="true">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Popup x:Name="PART_Popup" AllowsTransparency="true" Grid.ColumnSpan="2" IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource Mode=TemplatedParent}}" Placement="Bottom" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}">
+                    <Border x:Name="dropDownBorder" Background="#625B71" BorderBrush="{x:Null}" BorderThickness="0" CornerRadius="5">
+                        <ScrollViewer>
+                            <ItemsPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                        </ScrollViewer>
+                    </Border>
+                </Popup>
+
+                <ToggleButton x:Name="toggleButton" Background="#625B71" BorderBrush="{x:Null}" BorderThickness="0" Grid.ColumnSpan="2" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource Mode=TemplatedParent}}" Style="{StaticResource ComboBoxButtonStyle}" Foreground="White"/>
+
+                <ContentPresenter x:Name="contentPresenter" ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" Content="{TemplateBinding SelectionBoxItem}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" IsHitTestVisible="false" Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+            </Grid>
+        </ControlTemplate>
+
+        <Style TargetType="{x:Type ComboBox}">
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+            <Setter Property="Background" Value="#625B71"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Template" Value="{StaticResource CustomComboBoxTemplate}"/>
+
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="true">
+                    <Setter Property="Background" Value="#625B71"/>
+                    <Setter Property="BorderBrush" Value="{x:Null}"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="false">
+                    <Setter Property="Opacity" Value="0.5"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+
+
+
+
+
+
         <Style TargetType="Button">
             <Setter Property="Background" Value="#625B71"/>
             <Setter Property="BorderBrush" Value="{x:Null}"/>
@@ -18,13 +110,52 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="5" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="5" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#7B728A"/>
+                                <!-- Немного более светлый фиолетовый -->
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#554E62"/>
+                                <!-- Еще более темный фиолетовый -->
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="DarkButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#4A4459"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="5" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#FF453C53"/>
+                                <!-- Немного более светлый оттенок -->
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#3D3849"/>
+                                <!-- Еще более темный оттенок -->
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+
         <Style TargetType="TextBox">
             <Setter Property="Background" Value="#625B71"/>
             <Setter Property="BorderBrush" Value="#625B71"/>
@@ -117,7 +248,7 @@
                 <StackPanel Width="776" Height="444">
                     <StackPanel HorizontalAlignment="Left" Orientation="Horizontal" Width="769" Margin="10,0,0,0" Height="133">
                         <TextBlock Text="FRIDAY" FontSize="120" Foreground="White" HorizontalAlignment="Left" FontWeight="Bold" FontFamily="Intro Friday"/>
-                        <Button Content="√" x:Name="ListenButton" Width="50" Height="50" Background="#6A4E86" Foreground="White" BorderBrush="{x:Null}" FontSize="16" Click="ListenButton_Click" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button Content="√" x:Name="ListenButton" Width="50" Height="50" BorderBrush="{x:Null}" FontSize="16" Click="ListenButton_Click" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <Button.Effect>
                                 <DropShadowEffect BlurRadius="40" Color="#FF6B3B79" Direction="1" Opacity="0.5" RenderingBias="Performance" ShadowDepth="0"/>
 
@@ -133,20 +264,20 @@
             </TabItem>
 
             <TabItem Header="Команды">
-                <StackPanel Width="772" Height="auto">
-                    <StackPanel Orientation="Horizontal" Margin="10" HorizontalAlignment="Center">
-                        <Button Content="Add command" Margin="0,0,5,0" Click="AddCommandButton_Click" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="104" Height="31" />
-                        <TextBox x:Name="SearchTextBox" Width="519" Text="Search" Background="#FF625B71" Height="31" VerticalAlignment="Center" VerticalContentAlignment="Center" />
-                        <ComboBox x:Name="ActionTypeComboBox" Width="150" Margin="5,0,0,0" SelectionChanged="ActionTypeComboBox_SelectionChanged">
+                <StackPanel Width="700" Height="auto">
+                    <StackPanel Orientation="Horizontal" Margin="10" HorizontalAlignment="Left">
+                        <Button Content="Добавить команду" Margin="0,0,5,0" Click="AddCommandButton_Click" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="135" Height="31" />
+                        <TextBox x:Name="SearchTextBox" Width="300" Background="#FF625B71" Height="31" VerticalAlignment="Center" VerticalContentAlignment="Center" TextChanged="SearchTextBox_TextChanged_1" />
+                        <ComboBox x:Name="ActionTypeComboBox" Width="135" Margin="5,0,0,0" SelectionChanged="ActionTypeComboBox_SelectionChanged" Text="Фильтр" Foreground="White">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding}" Foreground="Black" />
+                                    <TextBlock Text="{Binding}" Foreground="White" />
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                     </StackPanel>
-                    <ItemsControl Margin="10" Height="auto">
-                        <ItemsControl x:Name="CommandsItemsControl" Margin="10" ItemsSource="{Binding Commands}">
+                    <ItemsControl Margin="0,10" Height="auto">
+                        <ItemsControl x:Name="CommandsItemsControl" Margin="10" ItemsSource="{Binding Commands}" Width="auto">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="{x:Null}" BorderThickness="1" CornerRadius="5" Margin="0,5,0,0" Background="#625B71">
@@ -154,8 +285,8 @@
                                             <TextBlock x:Name="NameTextBlock" Text="{Binding Name}" Foreground="White" FontWeight="Bold" />
                                             <TextBlock Text="{Binding Description}" Foreground="LightGray" />
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                                <Button Content="Изменить" Click="EditCommandButton_Click" Background="#4A4459" Height="25" Width="80"/>
-                                                <Button Content="Удалить" Margin="5,0" Click="DeleteCommandButton_Click" Background="#4A4459" Height="25" Width="65"/>
+                                                <Button Style="{StaticResource DarkButtonStyle}" Content="Изменить" Click="EditCommandButton_Click"  Height="25" Width="80"/>
+                                                <Button Style="{StaticResource DarkButtonStyle}" Content="Удалить" Margin="5,0" Click="DeleteCommandButton_Click"  Height="25" Width="65"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
@@ -175,7 +306,7 @@
                         <TextBlock Text="Пароль:" Margin="0,5,0,5"/>
                         <TextBox x:Name="PasswordTextBox" Height="24" Margin="0,3,0,5"/>
                         <TextBlock Text="Озвучка:" Margin="0,5,0,5"/>
-                        <ComboBox x:Name="VoiceTypeComboBox" Margin="0,3,0,10" Background="#FF4A4459" BorderBrush="#FF4A4459" Foreground="Black">
+                        <ComboBox x:Name="VoiceTypeComboBox" Margin="0,3,0,10"  Height="23">
                             <ComboBoxItem Content="Maria"/>
                             <ComboBoxItem Content="Amber"/>
                             <ComboBoxItem Content="Rick Sanchez"/>

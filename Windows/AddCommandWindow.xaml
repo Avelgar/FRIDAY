@@ -40,25 +40,65 @@
 
         <Style TargetType="Button">
             <Setter Property="Background" Value="#625B71"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Margin" Value="0,5,0,5"/>
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontFamily" Value="Century Gothic"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,5,0,5"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="5" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="5" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#7B728A"/>
+                                <!-- Немного более светлый фиолетовый -->
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#554E62"/>
+                                <!-- Еще более темный фиолетовый -->
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="DarkButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#4A4459"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="Century Gothic"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,5,0,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="5" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#FF453C53"/>
+                                <!-- Немного более светлый оттенок -->
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#3D3849"/>
+                                <!-- Еще более темный оттенок -->
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
 
         <Style TargetType="CheckBox">
             <Setter Property="Foreground" Value="White"/>
@@ -109,12 +149,12 @@
 
                                         
                                             <TextBlock Text="{Binding}" Foreground="White" Margin="5"/>
-                                        
-                                        
-                                        
-                                           
-                                            <Button Content="✎" Click="EditButton_Click" Background="#4A4459" Height="25" Width="25" Margin="2" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
-                                            <Button Content="🗑" Click="DeleteButton_Click" Background="#4A4459" Height="25" Width="25" Margin="2" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
+
+
+
+
+                                        <Button Style="{StaticResource DarkButtonStyle}" Content="✎" Click="EditButton_Click" Height="25" Width="25" Margin="2" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
+                                        <Button Style="{StaticResource DarkButtonStyle}" Content="🗑" Click="DeleteButton_Click" Height="25" Width="25" Margin="2" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
                                     
                                         
                                     </StackPanel>

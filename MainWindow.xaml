@@ -170,10 +170,11 @@
                         <TextBox x:Name="PasswordTextBox" Height="24" Margin="0,3,0,5"/>
                         <TextBlock Text="Озвучка:" Margin="0,5,0,5"/>
                         <ComboBox x:Name="VoiceTypeComboBox" Margin="0,3,0,10" Background="#FF4A4459" BorderBrush="#FF4A4459" Foreground="Black">
-                            <ComboBoxItem Content="Voice1"/>
-                            <ComboBoxItem Content="Voice2"/>
-                            <ComboBoxItem Content="Voice3"/>
-                            <ComboBoxItem Content="Voice4"/>
+                            <ComboBoxItem Content="Maria"/>
+                            <ComboBoxItem Content="Amber"/>
+                            <ComboBoxItem Content="Rick Sanchez"/>
+                            <ComboBoxItem Content="Sergey"/>
+                            <ComboBoxItem Content="Natasha"/>
                         </ComboBox>
                         <TextBlock Text="Громкость:" Margin="0,5,0,10"/>
                         <Slider x:Name="VolumeSlider" Minimum="0" Maximum="10" SmallChange="1" />

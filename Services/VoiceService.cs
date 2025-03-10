@@ -209,6 +209,25 @@ namespace Friday
 
         public async Task SpeakAsync(string text)
         {
+            int voiceId = 0;
+            switch (_settingManager.Setting.VoiceType.ToLower())
+            {
+                case "maria":
+                    voiceId = 18;
+                    break;
+                case "amber":
+                    voiceId = 484;
+                    break;
+                case "rick sanchez":
+                    voiceId = 483;
+                    break;
+                case "sergey":
+                    voiceId = 355;
+                    break;
+                case "natasha":
+                    voiceId = 321;
+                    break;
+            }
             OnMessageReceived?.Invoke($"Ответ: {text}");
             bool wasMusicPlaying = musicService.IsPlaying();
             if (wasMusicPlaying)
@@ -221,7 +240,7 @@ namespace Friday
                 var response = await httpClient.PostAsync(synthesisUrl,
                     new StringContent(JsonConvert.SerializeObject(new
                     {
-                        voiceId = 1,
+                        voiceId,
                         text
                     }), Encoding.UTF8, "application/json"));
                 if (!response.IsSuccessStatusCode)

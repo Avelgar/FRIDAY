@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using System.Net.Http;
 using System.IO;
 using static Friday.VoiceService;
+using System.Windows;
 
 namespace Friday
 {
@@ -208,7 +209,9 @@ namespace Friday
                 }
                 else
                 {
-                    await SpeakAsync("Команда не распознана.");
+                    await SpeakAsync("Подключаю ии");
+                    string response = await GeminiService.GenerateTextAsync("Представь что ты помошник на компьютере у человека который либо ввел невозможную команду или задал вопрос если ты считаешь что ты можешь отвтеить на этот вопрос просто ответь а если нет скажи что ты бессилен вот вопрос от пользователя: " + command);
+                    MessageBox.Show(response, "Ответ ии", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
         }

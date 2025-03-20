@@ -6,9 +6,14 @@ using System.Net.Http;
 using System.IO;
 using static Friday.VoiceService;
 using System.Windows;
+using Newtonsoft.Json.Serialization;
+using System;
+using Friday.Managers;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Friday
 {
+
     public interface IVoiceService
     {
         Task ProcessCommand(string command); // Убедитесь, что возвращаемый тип - Task
@@ -30,6 +35,11 @@ namespace Friday
         public ListeningState ListeningState { get; private set; }
 
         public event Action<string> OnMessageReceived;
+
+        private List<string> _installedApplications;
+
+        private StringBuilder dialogueHistory = new StringBuilder();
+
         public VoiceService(RenameService renameService, SettingManager settingManager)
         {
             _renameService = renameService;
@@ -84,7 +94,7 @@ namespace Friday
                             if (recognizedText == _renameService.BotName)
                             {
                                 OnMessageReceived?.Invoke($"Распознано: {recognizedText}");
-                                await SpeakAsync("Слушаю ваши указания");
+                                await SpeakAsync("Слушаю вас");
                                 ListeningState.StartListening();
                                 isListeningForCommands = true;
                                 lastRecognizedText = string.Empty;
@@ -131,7 +141,17 @@ namespace Friday
             }
         }
 
-        public async void ProcessCommand(string command)
+        public List<string> GetInstalledApplications()
+        {
+            return _installedApplications; // Возвращаем сохраненный список
+        }
+
+        public void SetInstalledApplications(List<string> installedApplications)
+        {
+            _installedApplications = installedApplications; // Сохраняем список установленных приложений
+        }
+
+        public async Task ProcessCommand(string command)
         {
             OnMessageReceived?.Invoke($"Распознано: {command}");
 
@@ -209,9 +229,105 @@ namespace Friday
                 }
                 else
                 {
-                    await SpeakAsync("Подключаю ии");
-                    string response = await GeminiService.GenerateTextAsync("Представь что ты помошник на компьютере у человека который либо ввел невозможную команду или задал вопрос если ты считаешь что ты можешь отвтеить на этот вопрос просто ответь а если нет скажи что ты бессилен вот вопрос от пользователя: " + command);
-                    MessageBox.Show(response, "Ответ ии", MessageBoxButton.OK, MessageBoxImage.Information);
+                    var installedApps = GetInstalledApplications();
+                    string appsList = string.Join(", ", installedApps);
+                    var appProcessService = new AppProcessService();
+                    var processes = System.Diagnostics.Process.GetProcesses();
+                    var processList = processes.Select(p => $"{p.ProcessName} (ID: {p.Id})").ToList();
+                    string processOutput = string.Join(", ", processList);
+                    //OnMessageReceived?.Invoke($"Ответ: {appsList}");
+                    string response = await GeminiService.GenerateTextAsync($"Представь, что ты помощник на компьютере у человека. Ты должен дать ответ ввиде тип|действие;тип|действие(если у тебя одна пара тип|действие, то ; не ставь). Например голосовой ответ|привет;завершение процесса|chrome;открытие ссылки|https://www.youtube.com вот все типы и что они принимают на вход: открытие файла(принимает путь до файла), завершение процесса(принимает название процесса из списка процессов), открытие ссылки(принимает ссылку), напечатать текст(принимает текст),нажать кнопку мыши(принимает текст: пкм, скм или лкм), отправить уведомление(принимает текст уведомления), голосовой ответ(принимает текст). Команда, которую ты выдашь будет обрабатываться через эти типы и в зависимости от типа будет просиходить какое-то действие. Вот пути ко всем установленным приложениям если нужно:{appsList}. Вот все запущенные на данный момент процессы: {processOutput}. Вот запрос пользователя:" + command + $". Вот история диалога, некоторые ответы нужно строить исходя из неё:{dialogueHistory}.");
+                    dialogueHistory.AppendLine($"Распознано: {command}");
+                    dialogueHistory.AppendLine($"Ответ: {response}");
+                    // Создаем список действий
+                    List<ActionItem> actions = new List<ActionItem>();
+
+                    // Обработка ответа
+                    if (response.Contains(";"))
+                    {
+                        actions = response.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                          .Select(a => a.Split('|'))
+                                          .Select(a => new ActionItem
+                                          {
+                                              ActionType = a[0].Trim(),
+                                              ActionText = a[1].Trim()
+                                          })
+                                          .ToList();
+                    }
+                    else
+                    {
+                        var singleAction = response.Split('|');
+                        actions.Add(new ActionItem
+                        {
+                            ActionType = singleAction[0].Trim(),
+                            ActionText = singleAction[1].Trim()
+                        });
+                    }
+
+                    // Дальнейшая обработка действий
+                    foreach (var action in actions)
+                    {
+                        switch (action.ActionType.ToLower())
+                        {
+                            case "открытие файла":
+                                appProcessService.OpenFile(action.ActionText);
+                                break;
+
+                            case "завершение процесса":
+                                appProcessService.KillProcess(action.ActionText);
+                                break;
+
+                            case "открытие ссылки":
+                                var browserService = new BrowserService();
+                                browserService.OpenLink(action.ActionText);
+                                break;
+
+                            case "напечатать текст":
+                                var keyboardService = new KeyboardService();
+                                keyboardService.TypeText(action.ActionText);
+                                break;
+
+                            case "отправить уведомление":
+                                var notificationService = new NotificationService();
+                                notificationService.SendNotification(action.ActionText);
+                                break;
+
+                            case "нажать кнопку мыши":
+                                var mouseService = new MouseService();
+                                mouseService.PressMouseButton(action.ActionText);
+                                break;
+
+                            case "голосовой ответ":
+                                string[] words = action.ActionText.Split(' ');
+                                StringBuilder currentPart = new StringBuilder();
+
+                                foreach (var word in words)
+                                {
+                                    // Проверяем, если добавление следующего слова не превышает 50 символов
+                                    if (currentPart.Length + word.Length + 1 <= 50) // +1 для пробела
+                                    {
+                                        if (currentPart.Length > 0)
+                                        {
+                                            currentPart.Append(' ');
+                                        }
+                                        currentPart.Append(word);
+                                    }
+                                    else
+                                    {
+                                        // Здесь вы можете обработать текущую часть текста
+                                        await SpeakAsync(currentPart.ToString());
+                                        currentPart.Clear(); // Очищаем для новой части
+                                        currentPart.Append(word); // Добавляем текущее слово
+                                    }
+                                }
+                                // Обработка оставшейся части
+                                if (currentPart.Length > 0)
+                                {
+                                    await SpeakAsync(currentPart.ToString());
+                                }
+                                break;
+                        }
+                    }
                 }
             }
         }

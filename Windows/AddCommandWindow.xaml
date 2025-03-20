@@ -127,7 +127,7 @@
 
                 <!-- Первая колонка -->
                 <StackPanel Grid.Column="0" Margin="0,0,50,0">
-                    <TextBlock Text="Изменить команду" Margin="0,0,0,10" FontSize="30" FontWeight="ExtraBold" FontFamily="Century Gothic" />
+                    <TextBlock Text="{Binding WindowTitle}" Margin="0,0,0,10" FontSize="30" FontWeight="ExtraBold" FontFamily="Century Gothic" />
                     <TextBlock Text="Имя команды:"/>
                     <TextBox x:Name="CommandNameTextBox" PreviewTextInput="CommandNameTextBox_PreviewTextInput"/>
 
@@ -141,28 +141,23 @@
                 <StackPanel Grid.Column="1" Margin="50,0,0,0">
                     <TextBlock Text="Действия:" Margin="0,10,0,10"/>
                     <Button Content="Добавить действие" Click="AddActionButton_Click" Height="26"/>
-                    <ItemsControl x:Name="ActionsItemsControl" Margin="0,0,0,10">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border CornerRadius="5" Margin="0,5,0,0" Background="#625B71">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Height="auto">
-
-                                        
-                                            <TextBlock Text="{Binding}" Foreground="White" Margin="5"/>
-
-
-
-
-                                        <Button Style="{StaticResource DarkButtonStyle}" Content="✎" Click="EditButton_Click" Height="25" Width="25" Margin="2" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
-                                        <Button Style="{StaticResource DarkButtonStyle}" Content="🗑" Click="DeleteButton_Click" Height="25" Width="25" Margin="2" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
-                                    
-                                        
-                                    </StackPanel>
-                                </Border>
-                                
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Height="200">
+                        <!-- Укажите желаемую высоту -->
+                        <ItemsControl x:Name="ActionsItemsControl" Margin="0,0,0,10">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="5" Margin="0,5,0,0" Background="#625B71">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Height="auto">
+                                            <TextBlock Text="{Binding}" Foreground="White" Margin="5" 
+                                       MaxWidth="200" TextTrimming="CharacterEllipsis" />
+                                            <Button Style="{StaticResource DarkButtonStyle}" Content="✎" Click="EditButton_Click" Height="25" Width="25" Margin="2" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
+                                            <Button Style="{StaticResource DarkButtonStyle}" Content="🗑" Click="DeleteButton_Click" Height="25" Width="25" Margin="2" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </StackPanel>
             </Grid>
         </Grid>

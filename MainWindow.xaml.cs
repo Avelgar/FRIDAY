@@ -6,6 +6,7 @@ using Friday;
 using System.Windows.Media;
 using System.Windows.Input;
 using Friday.Managers;
+using System.Management;
 
 namespace FigmaToWpf
 {
@@ -14,6 +15,8 @@ namespace FigmaToWpf
         private VoiceService _voiceService;
         public static Friday.CommandManager _commandManager = new Friday.CommandManager();
         private static SettingManager _settingManager = new SettingManager();
+
+        public List<string> InstalledApplications { get; private set; }
 
         // Добавляем свойство для отслеживания команд, отображаемых в ItemsControl.
         private ObservableCollection<Command> _commands;
@@ -49,6 +52,9 @@ namespace FigmaToWpf
             _voiceService.OnMessageReceived += OnMessageReceived;
             CustomCommandService.Initialize(_voiceService);
 
+            InstalledApplications = GetInstalledApplications();
+            _voiceService.SetInstalledApplications(InstalledApplications);
+
             // Инициализируем Commands и подписываемся на изменение текста в SearchTextBox
             Commands = new ObservableCollection<Command>(_commandManager.GetCommands());
             CommandsItemsControl.ItemsSource = Commands;  // Привязка к Commands, а не напрямую к _commandManager
@@ -60,7 +66,7 @@ namespace FigmaToWpf
 
             DataContext = this; // Необходимо для работы привязки Commands
         }
-        private void LoadActionTypes()
+        public void LoadActionTypes()
         {
             // Получаем все типы действий из команд
             var allActions = _commandManager.GetCommands()
@@ -76,6 +82,43 @@ namespace FigmaToWpf
             ActionTypes = allActions;
         }
 
+        private List<string> GetInstalledApplications()
+        {
+            List<string> appPaths = new List<string>();
+
+            // Путь к ключам реестра, где хранятся установленные приложения
+            string[] registryKeys = new string[]
+            {
+        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+        @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
+            };
+
+            foreach (var key in registryKeys)
+            {
+                using (var uninstallKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(key))
+                {
+                    if (uninstallKey != null)
+                    {
+                        foreach (var subkeyName in uninstallKey.GetSubKeyNames())
+                        {
+                            using (var subkey = uninstallKey.OpenSubKey(subkeyName))
+                            {
+                                // Получаем путь установки
+                                var installLocation = subkey?.GetValue("InstallLocation") as string;
+                                if (!string.IsNullOrEmpty(installLocation))
+                                {
+                                    appPaths.Add(installLocation);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return appPaths;
+        }
+
+
         // Реализация INotifyPropertyChanged
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -83,16 +126,16 @@ namespace FigmaToWpf
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        public void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             FilterCommands();
         }
-        private void ActionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        public void ActionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             FilterCommands();
         }
 
-        private void FilterCommands()
+        public void FilterCommands()
         {
             string searchText = SearchTextBox.Text;
             string selectedActionType = ActionTypeComboBox.SelectedItem as string;
@@ -159,9 +202,9 @@ namespace FigmaToWpf
             });
         }
 
-        private void AddCommandButton_Click(object sender, RoutedEventArgs e)
+        public void AddCommandButton_Click(object sender, RoutedEventArgs e)
         {
-            var addCommandWindow = new AddCommandWindow();
+            var addCommandWindow = new AddCommandWindow("Добавить команду");
 
             if (addCommandWindow.ShowDialog() == true)
             {
@@ -192,14 +235,14 @@ namespace FigmaToWpf
             }
         }
 
-        private void UpdateCommandsList()
+        public void UpdateCommandsList()
         {
             // После обновления команд в _commandManager, обновляем и Commands, чтобы отобразить изменения
             Commands = new ObservableCollection<Command>(_commandManager.GetCommands());
             CommandsItemsControl.ItemsSource = Commands; // Обновляем ItemsSource
             LoadActionTypes(); //call it here
         }
-        private void EditCommandButton_Click(object sender, RoutedEventArgs e)
+        public void EditCommandButton_Click(object sender, RoutedEventArgs e)
         {
             var button = sender as Button;
             if (button != null)
@@ -215,7 +258,7 @@ namespace FigmaToWpf
 
                         if (commandToEdit != null)
                         {
-                            var addCommandWindow = new AddCommandWindow();
+                            var addCommandWindow = new AddCommandWindow("Изменить команду");
                             addCommandWindow.Initialize(commandToEdit.Name, commandToEdit.Description, commandToEdit.Actions, commandToEdit.IsPassword);
 
                             if (addCommandWindow.ShowDialog() == true)
@@ -238,7 +281,7 @@ namespace FigmaToWpf
 
 
 
-        private void DeleteCommandButton_Click(object sender, RoutedEventArgs e)
+        public void DeleteCommandButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
@@ -313,7 +356,7 @@ namespace FigmaToWpf
             }
             VolumeSlider.Value = _settingManager.Setting.Volume;
         }
-        private void Save_Button_Click(object sender, RoutedEventArgs e)
+        public void Save_Button_Click(object sender, RoutedEventArgs e)
         {
             string assistantName = FridayNameTextBox.Text;
             string password = PasswordTextBox.Text;

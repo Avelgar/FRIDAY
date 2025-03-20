@@ -6,7 +6,7 @@ namespace Friday
 {
     public class GeminiService
     {
-        private static readonly string serverUrl = "http://blue.fnode.me:25546/generate";
+        private static readonly string serverUrl = "http://blue.fnode.me:25534/generate";
 
         public static async Task<string> GenerateTextAsync(string prompt)
         {

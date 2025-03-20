@@ -12,12 +12,16 @@ namespace FigmaToWpf
         public List<ActionItem> Actions { get; set; }
         public bool IsPasswordSet { get; set; }
 
+        public string WindowTitle { get; set; }
+
         private bool isEditing;
 
-        public AddCommandWindow()
+        public AddCommandWindow(string title)
         {
             InitializeComponent();
             Actions = new List<ActionItem>();
+            WindowTitle = title; // Установка заголовка
+            DataContext = this;
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)

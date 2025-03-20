@@ -1,2 +1,1 @@
-3,открой хром,открывает хром,False,1|Открытие файла|C:\Program Files\Google\Chrome\Application\chrome.exe
-5,открой киберпанк,открывает киберпанк,False,1|Открытие файла|D:\Games\Cyberpunk 2077\REDprelauncher.exe
+1,в чем смысл жизни,фывфыв,False,1|Голосовой ответ|сорок два

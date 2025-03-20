@@ -22,7 +22,7 @@
             </Setter>
         </Style>
 
-        
+
 
         <Style x:Key="ComboBoxButtonStyle" TargetType="{x:Type ToggleButton}">
             <Setter Property="OverridesDefaultStyle" Value="true"/>
@@ -247,27 +247,26 @@
             <TabItem Header="Home">
                 <StackPanel Width="776" Height="444">
                     <StackPanel HorizontalAlignment="Left" Orientation="Horizontal" Width="769" Margin="10,0,0,0" Height="133">
-                        <TextBlock Text="FRIDAY" FontSize="120" Foreground="White" HorizontalAlignment="Left" FontWeight="Bold" FontFamily="Intro Friday"/>
+                        <TextBlock Text="FRIDAY" FontSize="120" Foreground="White" 
+                           HorizontalAlignment="Left" FontWeight="Bold" FontFamily="Intro Friday" TextWrapping="Wrap"/>
                         <Button Content="√" x:Name="ListenButton" Width="50" Height="50" BorderBrush="{x:Null}" FontSize="16" Click="ListenButton_Click" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <Button.Effect>
                                 <DropShadowEffect BlurRadius="40" Color="#FF6B3B79" Direction="1" Opacity="0.5" RenderingBias="Performance" ShadowDepth="0"/>
-
                             </Button.Effect>
                         </Button>
                     </StackPanel>
 
                     <TextBox x:Name="ConsoleTextBox" Height="286" FontSize="16" Background="White" Foreground="White"
-                             IsReadOnly="True" AcceptsReturn="True"
-                             Visibility="Visible" Width="744" HorizontalScrollBarVisibility="Disabled"/>
+                      IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" 
+                      Visibility="Visible" Width="744" HorizontalScrollBarVisibility="Disabled"/>
 
                 </StackPanel>
             </TabItem>
-
             <TabItem Header="Команды">
                 <StackPanel Width="700" Height="auto">
                     <StackPanel Orientation="Horizontal" Margin="10" HorizontalAlignment="Left">
                         <Button Content="Добавить команду" Margin="0,0,5,0" Click="AddCommandButton_Click" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="135" Height="31" />
-                        <TextBox x:Name="SearchTextBox" Width="300" Background="#FF625B71" Height="31" VerticalAlignment="Center" VerticalContentAlignment="Center" TextChanged="SearchTextBox_TextChanged_1" />
+                        <TextBox x:Name="SearchTextBox" Width="300" Background="#FF625B71" Height="31" VerticalAlignment="Center" VerticalContentAlignment="Center" />
                         <ComboBox x:Name="ActionTypeComboBox" Width="135" Margin="5,0,0,0" SelectionChanged="ActionTypeComboBox_SelectionChanged" Text="Фильтр" Foreground="White">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
@@ -276,7 +275,8 @@
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                     </StackPanel>
-                    <ItemsControl Margin="0,10" Height="auto">
+                    <ScrollViewer Margin="0,10" Height="300" VerticalScrollBarVisibility="Auto">
+                        <!-- Полоса прокрутки будет отображаться только при необходимости -->
                         <ItemsControl x:Name="CommandsItemsControl" Margin="10" ItemsSource="{Binding Commands}" Width="auto">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -293,10 +293,11 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-
-                    </ItemsControl>
+                    </ScrollViewer>
                 </StackPanel>
             </TabItem>
+
+
             <TabItem Header="Настройки">
                 <StackPanel>
                     <TextBlock Text="Настройки" Foreground="White" FontSize="24" />

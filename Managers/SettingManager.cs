@@ -11,7 +11,7 @@ namespace Friday
         {
             LoadSettings();
         }
-        private void LoadSettings()
+        public void LoadSettings()
         {
             if (File.Exists(_filePath))
             {

@@ -91,7 +91,7 @@ namespace Friday
                                 return;
                             }
 
-                            if (recognizedText == _renameService.BotName)
+                            if (recognizedText == _renameService.BotName.ToLower())
                             {
                                 OnMessageReceived?.Invoke($"Распознано: {recognizedText}");
                                 await SpeakAsync("Слушаю вас");
@@ -160,173 +160,166 @@ namespace Friday
                 OnPasswordReceived?.Invoke(command);
                 return;
             }
-
-            if (command.IndexOf("время", StringComparison.OrdinalIgnoreCase) >= 0)
+            CommandManager commandManager = new CommandManager();
+            var customCommand = commandManager.FindCommandByTrigger(command);
+            if (customCommand != null)
             {
-                await SpeakAsync($"Текущее время: {DateTime.Now.ToShortTimeString()}");
-            }
-            else if (command.IndexOf("имя", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                await SpeakAsync($"Меня зовут {_renameService.BotName}");
-            }
-            else if (command.IndexOf("погода", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                WeatherService weatherService = new WeatherService();
-                int dayOffset = 0;
-                if (command.IndexOf("завтра", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    dayOffset = 1;
-                }
-                else if (command.IndexOf("послезавтра", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    dayOffset = 2;
-                }
-
-                await SpeakAsync(weatherService.GetWeatherForecast(dayOffset));
-            }
-            else if (command.IndexOf("браво", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                await SpeakAsync("Спасибо! Я рад, что вам нравится!");
-            }
-            else if (command.IndexOf("смена имени", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                int index = command.IndexOf("смена имени", StringComparison.OrdinalIgnoreCase);
-                string newName = command.Substring(index + "смена имени".Length).Trim();
-
-                if (string.IsNullOrEmpty(newName))
-                {
-                    await SpeakAsync("Пожалуйста, укажите новое имя после команды 'смена имени'");
-                }
-                else
-                {
-                    _renameService.BotName = newName;
-                    await SpeakAsync($"Имя успешно изменено на {newName}");
-                }
-            }
-            else if (command.IndexOf("включить музыку", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                await SpeakAsync("Включаю музыку...");
-                musicService.Play();
-            }
-            else if (command.IndexOf("выключить музыку", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                await SpeakAsync("Выключаю музыку...");
-                Thread.Sleep(1500);
-                musicService.Stop();
-            }
-            else if (command.IndexOf("следующий трек", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                await SpeakAsync("Переключаю...");
-                musicService.NextTrack();
+                await CustomCommandService.ExecuteCommand(customCommand);
             }
             else
             {
-                CommandManager commandManager = new CommandManager();
-                var customCommand = commandManager.FindCommandByTrigger(command);
-                if (customCommand != null)
+                var installedApps = GetInstalledApplications();
+                string appsList = string.Join(", ", installedApps);
+                var appProcessService = new AppProcessService();
+                var processes = System.Diagnostics.Process.GetProcesses();
+                var processList = processes.Select(p => $"{p.ProcessName} (ID: {p.Id})").ToList();
+                string processOutput = string.Join(", ", processList);
+                string response = await GeminiService.GenerateTextAsync($"Представь, что ты помощник на компьютере у человека. " +
+                    $"Ты должен дать ответ ввиде тип|действие;тип|действие(если у тебя одна пара тип|действие, ТО ТОЧКУ С ЗАПЯТОЙ НЕ СТАВЬ). " +
+                    $"Например голосовой ответ|привет;завершение процесса|chrome;открытие ссылки|https://www.youtube.com вот все типы и что они принимают на вход: " +
+                    $"открытие файла(принимает путь до файла), завершение процесса(принимает название процесса из списка процессов), открытие ссылки(принимает ссылку), напечатать текст(принимает текст), " +
+                    $"нажать кнопку мыши(принимает текст: пкм, скм или лкм), отправить уведомление(принимает текст уведомления), голосовой ответ(принимает текст), " +
+                    $"музыка(принимает текст: включить музыку, выключить музыку или следующий трек), погода(принимает текст: сегодня, завтра или послезавтра), смена имени(принимает текст: новое имя). " +
+                    $"Команда, которую ты выдашь будет обрабатываться через эти типы и в зависимости от типа будет просиходить какое-то действие. Каждый раз давай хотя бы один голосовой ответ! Вот пути ко всем установленным приложениям если нужно:{appsList}. " +
+                    $"Вот все запущенные на данный момент процессы: {processOutput}. " +
+                    $"Вот время: {DateTime.Now.ToShortTimeString()}. " +
+                    $"Вот запрос пользователя:" + command + $". " +
+                    $"Вот история диалога, некоторые ответы нужно строить исходя из неё:{dialogueHistory}.");
+                dialogueHistory.AppendLine($"Распознано: {command}");
+                dialogueHistory.AppendLine($"Ответ: {response}");
+                // Создаем список действий
+                List<ActionItem> actions = new List<ActionItem>();
+
+                // Обработка ответа
+                if (response.Contains(";"))
                 {
-                    await CustomCommandService.ExecuteCommand(customCommand);
+                    actions = response.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                        .Select(a => a.Split('|'))
+                                        .Select(a => new ActionItem
+                                        {
+                                            ActionType = a[0].Trim(),
+                                            ActionText = a[1].Trim()
+                                        })
+                                        .ToList();
                 }
                 else
                 {
-                    var installedApps = GetInstalledApplications();
-                    string appsList = string.Join(", ", installedApps);
-                    var appProcessService = new AppProcessService();
-                    var processes = System.Diagnostics.Process.GetProcesses();
-                    var processList = processes.Select(p => $"{p.ProcessName} (ID: {p.Id})").ToList();
-                    string processOutput = string.Join(", ", processList);
-                    //OnMessageReceived?.Invoke($"Ответ: {appsList}");
-                    string response = await GeminiService.GenerateTextAsync($"Представь, что ты помощник на компьютере у человека. Ты должен дать ответ ввиде тип|действие;тип|действие(если у тебя одна пара тип|действие, то ; не ставь). Например голосовой ответ|привет;завершение процесса|chrome;открытие ссылки|https://www.youtube.com вот все типы и что они принимают на вход: открытие файла(принимает путь до файла), завершение процесса(принимает название процесса из списка процессов), открытие ссылки(принимает ссылку), напечатать текст(принимает текст),нажать кнопку мыши(принимает текст: пкм, скм или лкм), отправить уведомление(принимает текст уведомления), голосовой ответ(принимает текст). Команда, которую ты выдашь будет обрабатываться через эти типы и в зависимости от типа будет просиходить какое-то действие. Вот пути ко всем установленным приложениям если нужно:{appsList}. Вот все запущенные на данный момент процессы: {processOutput}. Вот запрос пользователя:" + command + $". Вот история диалога, некоторые ответы нужно строить исходя из неё:{dialogueHistory}.");
-                    dialogueHistory.AppendLine($"Распознано: {command}");
-                    dialogueHistory.AppendLine($"Ответ: {response}");
-                    // Создаем список действий
-                    List<ActionItem> actions = new List<ActionItem>();
-
-                    // Обработка ответа
-                    if (response.Contains(";"))
+                    var singleAction = response.Split('|');
+                    actions.Add(new ActionItem
                     {
-                        actions = response.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
-                                          .Select(a => a.Split('|'))
-                                          .Select(a => new ActionItem
-                                          {
-                                              ActionType = a[0].Trim(),
-                                              ActionText = a[1].Trim()
-                                          })
-                                          .ToList();
-                    }
-                    else
+                        ActionType = singleAction[0].Trim(),
+                        ActionText = singleAction[1].Trim()
+                    });
+                }
+
+
+
+                // Дальнейшая обработка действий
+                foreach (var action in actions)
+                {
+                    switch (action.ActionType.ToLower())
                     {
-                        var singleAction = response.Split('|');
-                        actions.Add(new ActionItem
-                        {
-                            ActionType = singleAction[0].Trim(),
-                            ActionText = singleAction[1].Trim()
-                        });
-                    }
+                        case "открытие файла":
+                            appProcessService.OpenFile(action.ActionText);
+                            break;
 
-                    // Дальнейшая обработка действий
-                    foreach (var action in actions)
-                    {
-                        switch (action.ActionType.ToLower())
-                        {
-                            case "открытие файла":
-                                appProcessService.OpenFile(action.ActionText);
-                                break;
+                        case "завершение процесса":
+                            appProcessService.KillProcess(action.ActionText);
+                            break;
 
-                            case "завершение процесса":
-                                appProcessService.KillProcess(action.ActionText);
-                                break;
+                        case "открытие ссылки":
+                            var browserService = new BrowserService();
+                            browserService.OpenLink(action.ActionText);
+                            break;
 
-                            case "открытие ссылки":
-                                var browserService = new BrowserService();
-                                browserService.OpenLink(action.ActionText);
-                                break;
+                        case "напечатать текст":
+                            var keyboardService = new KeyboardService();
+                            keyboardService.TypeText(action.ActionText);
+                            break;
 
-                            case "напечатать текст":
-                                var keyboardService = new KeyboardService();
-                                keyboardService.TypeText(action.ActionText);
-                                break;
+                        case "отправить уведомление":
+                            var notificationService = new NotificationService();
+                            notificationService.SendNotification(action.ActionText);
+                            break;
 
-                            case "отправить уведомление":
-                                var notificationService = new NotificationService();
-                                notificationService.SendNotification(action.ActionText);
-                                break;
+                        case "нажать кнопку мыши":
+                            var mouseService = new MouseService();
+                            mouseService.PressMouseButton(action.ActionText);
+                            break;
 
-                            case "нажать кнопку мыши":
-                                var mouseService = new MouseService();
-                                mouseService.PressMouseButton(action.ActionText);
-                                break;
+                        case "голосовой ответ":
+                            string[] words = action.ActionText.Split(' ');
+                            StringBuilder currentPart = new StringBuilder();
 
-                            case "голосовой ответ":
-                                string[] words = action.ActionText.Split(' ');
-                                StringBuilder currentPart = new StringBuilder();
-
-                                foreach (var word in words)
+                            foreach (var word in words)
+                            {
+                                // Проверяем, если добавление следующего слова не превышает 50 символов
+                                if (currentPart.Length + word.Length + 1 <= 50) // +1 для пробела
                                 {
-                                    // Проверяем, если добавление следующего слова не превышает 50 символов
-                                    if (currentPart.Length + word.Length + 1 <= 50) // +1 для пробела
+                                    if (currentPart.Length > 0)
                                     {
-                                        if (currentPart.Length > 0)
-                                        {
-                                            currentPart.Append(' ');
-                                        }
-                                        currentPart.Append(word);
+                                        currentPart.Append(' ');
                                     }
-                                    else
-                                    {
-                                        // Здесь вы можете обработать текущую часть текста
-                                        await SpeakAsync(currentPart.ToString());
-                                        currentPart.Clear(); // Очищаем для новой части
-                                        currentPart.Append(word); // Добавляем текущее слово
-                                    }
+                                    currentPart.Append(word);
                                 }
-                                // Обработка оставшейся части
-                                if (currentPart.Length > 0)
+                                else
                                 {
+                                    // Здесь вы можете обработать текущую часть текста
                                     await SpeakAsync(currentPart.ToString());
+                                    currentPart.Clear(); // Очищаем для новой части
+                                    currentPart.Append(word); // Добавляем текущее слово
                                 }
-                                break;
-                        }
+                            }
+                            // Обработка оставшейся части
+                            if (currentPart.Length > 0)
+                            {
+                                await SpeakAsync(currentPart.ToString());
+                            }
+                            break;
+                        case "музыка":
+                            if (action.ActionText.IndexOf("включить музыку", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                musicService.Play();
+                            }
+                            else if (action.ActionText.IndexOf("выключить музыку", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                Thread.Sleep(1500);
+                                musicService.Stop();
+                            }
+                            else if (action.ActionText.IndexOf("следующий трек", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                musicService.NextTrack();
+                            }
+                            break;
+                        case "погода":
+                                WeatherService weatherService = new WeatherService();
+                                int dayOffset = 0;
+                                if (action.ActionText.IndexOf("сегодня", StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    dayOffset = 0;
+                                }
+                                else if (action.ActionText.IndexOf("завтра", StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    dayOffset = 1;
+                                }
+                                else if (action.ActionText.IndexOf("послезавтра", StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    dayOffset = 2;
+                                }
+
+                                await SpeakAsync(weatherService.GetWeatherForecast(dayOffset));
+                            break;
+                        case "смена имени":
+                            if (string.IsNullOrEmpty(action.ActionText))
+                            {
+                                await SpeakAsync("Пожалуйста, укажите новое имя после команды 'смена имени'");
+                            }
+                            else
+                            {
+                                _renameService.BotName = action.ActionText;
+                                await SpeakAsync($"Имя успешно изменено на {action.ActionText}");
+                            }
+                            break;
                     }
                 }
             }

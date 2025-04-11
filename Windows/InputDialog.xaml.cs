@@ -74,6 +74,7 @@ namespace FigmaToWpf
             isFirstLoad = false;
 
             FileButton.Visibility = actionType == "Открытие файла" ? Visibility.Visible : Visibility.Collapsed;
+            SelectFolderButton.Visibility = actionType == "Открыть папку" ? Visibility.Visible : Visibility.Collapsed;
             ProcessComboBox.Visibility = actionType == "Завершение процесса" ? Visibility.Visible : Visibility.Collapsed;
             InputTextBox.PreviewTextInput -= TextBox_PreviewTextInput_Numbers;
             InputTextBox.PreviewTextInput -= TextBox_PreviewTextInput_Russian;
@@ -92,6 +93,7 @@ namespace FigmaToWpf
                 InputTextBox.PreviewTextInput += TextBox_PreviewTextInput_Numbers;
             }
         }
+
 
         private void LoadProcesses()
         {
@@ -184,5 +186,16 @@ namespace FigmaToWpf
                 InputTextBox.Text = openFileDialog.FileName; // Устанавливаем путь к выбранному файлу в текстовое поле
             }
         }
+
+        private void SelectFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Открываем диалог выбора папки
+            var folderDialog = new System.Windows.Forms.FolderBrowserDialog();
+            if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                InputTextBox.Text = folderDialog.SelectedPath; // Устанавливаем путь к выбранной папке в текстовое поле
+            }
+        }
+
     }
 }

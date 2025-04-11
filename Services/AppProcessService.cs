@@ -56,6 +56,30 @@ namespace Friday
             }
         }
 
+        public void OpenFolder(string folderPath)
+        {
+            try
+            {
+                if (Directory.Exists(folderPath))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = folderPath,
+                        UseShellExecute = true
+                    });
+                }
+                else
+                {
+                    MessageBox.Show($"Папка не найдена: {folderPath}", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Не удалось открыть папку: {ex.Message}", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
         public bool IsProcessRunning(string processName)
         {
             return Process.GetProcessesByName(processName).Any();

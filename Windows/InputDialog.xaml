@@ -201,6 +201,7 @@
                     <ComboBoxItem Content="Напечатать текст"/>
                     <ComboBoxItem Content="Отправить уведомление"/>
                     <ComboBoxItem Content="Нажать кнопку мыши"/>
+                    <ComboBoxItem Content="Открыть папку"/>
                     <!-- Новое действие -->
                 </ComboBox>
                 <ComboBox x:Name="ProcessComboBox" Margin="0,0,0,10" Visibility="Collapsed" />
@@ -208,6 +209,7 @@
 
                 <TextBlock Text="Введите данные:"/>
                 <Button x:Name="FileButton" Style="{StaticResource DarkButtonStyle}" Content="Выбрать файл" Click="FileButton_Click" Margin="0,0,0,10" Height="22" Visibility="Collapsed"/>
+                <Button x:Name="SelectFolderButton" Style="{StaticResource DarkButtonStyle}" Content="Указать путь" Click="SelectFolderButton_Click" Margin="0,0,0,10" Visibility="Collapsed"/>
                 <TextBox x:Name="InputTextBox" Margin="0,0,0,5" Height="113" />
                 <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Orientation="Horizontal">
                     <Button Style="{StaticResource DarkButtonStyle}" Content="OK" HorizontalAlignment="Right" Margin="10,5,5,5" Click="OkButton_Click" Width="29" Height="30"/>

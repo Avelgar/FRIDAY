@@ -59,6 +59,10 @@ namespace Friday
                         appProcessService.OpenFile(action.ActionText);
                         break;
 
+                    case "открыть папку":
+                        appProcessService.OpenFolder(action.ActionText);
+                        break;
+
                     case "завершение процесса":
                         appProcessService.KillProcess(action.ActionText);
                         break;

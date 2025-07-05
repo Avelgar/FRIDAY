@@ -24,7 +24,7 @@ namespace Friday
                 {
                     AssistantName = "пятница",
                     Password = "",
-                    VoiceType = "Voice1",
+                    VoiceType = "Aleksandr",
                     Volume = 5
                 };
                 SaveSettings();

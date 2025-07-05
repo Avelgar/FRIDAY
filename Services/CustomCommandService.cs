@@ -88,36 +88,7 @@ namespace Friday
                         break;
 
                    case "голосовой ответ":
-                        string[] words = action.ActionText.Split(' ');
-                        StringBuilder currentPart = new StringBuilder();
-
-                        foreach (var word in words)
-                        {
-                            // Проверяем, если добавление следующего слова не превышает 50 символов
-                            if (currentPart.Length + word.Length + 1 <= 50) // +1 для пробела
-                            {
-                                if (currentPart.Length > 0)
-                                {
-                                    currentPart.Append(' ');
-                                }
-                                currentPart.Append(word);
-                            }
-                            else
-                            {
-                                // Если текущая часть уже заполнена, озвучиваем её
-                               
-                                await _voiceService.SpeakAsync(currentPart.ToString());
-                                // Начинаем новую часть с текущего слова
-                                currentPart.Clear();
-                                currentPart.Append(word);
-                            }
-                        }
-
-                        // Озвучиваем оставшуюся часть, если она не пустая
-                        if (currentPart.Length > 0)
-                        {
-                            await _voiceService.SpeakAsync(currentPart.ToString());
-                        }
+                        await _voiceService.SpeakAsync(action.ActionText);
                         break;
 
                     default:

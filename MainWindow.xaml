@@ -11,7 +11,6 @@
         <FontFamily x:Key="IntroFridayFont">pack://FRIDAY//Assets//IntroFriday.ttf</FontFamily>
 
 
-
         <Style x:Key="FocusVisual">
             <Setter Property="Control.Template">
                 <Setter.Value>
@@ -237,29 +236,52 @@
     </Window.Resources>
 
     <Grid>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,120,0">
+            <Button x:Name="LoginButton" Content="Вход" Width="80" Margin="0,0,5,0" Click="LoginButton_Click" 
+                Style="{StaticResource DarkButtonStyle}" Visibility="Collapsed"/>
+            <Button x:Name="RegisterButton" Content="Регистрация" Width="100" 
+                Style="{StaticResource DarkButtonStyle}" Click="RegisterButton_Click" Visibility="Collapsed"/>
+            <Button x:Name="UserButton" Width="120" Style="{StaticResource DarkButtonStyle}" 
+                Click="UserButton_Click" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="/Assets/user-icon.png" Width="5" Height="16" Margin="0,0,0,0"/>
+                    <TextBlock x:Name="UserButtonText" Text="Пользователь"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="7">
             <Button Content="−" Width="20" Height="20" VerticalAlignment="Top" Foreground="White" Click="Minimize_Click" Background="{x:Null}" BorderBrush="{x:Null}"/>
             <Button Content="⬜️" Width="20" Height="20" VerticalAlignment="Top" Foreground="White" FontWeight="Bold" Click="Maximize_Click" Background="{x:Null}" BorderBrush="{x:Null}"/>
             <Button Content="✖️" Width="20" Height="20" VerticalAlignment="Top" Foreground="White" FontWeight="Bold" Click="Close_Click" Background="{x:Null}" BorderBrush="{x:Null}"/>
         </StackPanel>
 
-        <TabControl Margin="0">
+
+        <TabControl Margin="0"  SelectionChanged="TabControl_SelectionChanged">
             <TabItem Header="Home">
                 <StackPanel Width="776" Height="444">
                     <StackPanel HorizontalAlignment="Left" Orientation="Horizontal" Width="769" Margin="10,0,0,0" Height="133">
                         <TextBlock Text="FRIDAY" FontSize="120" Foreground="White" 
-                           HorizontalAlignment="Left" FontWeight="Bold" FontFamily="Intro Friday" TextWrapping="Wrap"/>
-                        <Button Content="√" x:Name="ListenButton" Width="50" Height="50" BorderBrush="{x:Null}" FontSize="16" Click="ListenButton_Click" HorizontalAlignment="Right" VerticalAlignment="Center">
+                   HorizontalAlignment="Left" FontWeight="Bold" FontFamily="Intro Friday" TextWrapping="Wrap"/>
+                        <Button x:Name="ListenButton" Width="50" Height="50" BorderBrush="{x:Null}" 
+        FontSize="20" Click="ListenButton_Click" HorizontalAlignment="Right" 
+        VerticalAlignment="Center" Content="🎤" FontFamily="Segoe UI Emoji">
                             <Button.Effect>
-                                <DropShadowEffect BlurRadius="40" Color="#FF6B3B79" Direction="1" Opacity="0.5" RenderingBias="Performance" ShadowDepth="0"/>
+                                <DropShadowEffect BlurRadius="40" Color="#FF6B3B79" Direction="1" 
+                          Opacity="0.5" RenderingBias="Performance" ShadowDepth="0"/>
                             </Button.Effect>
+                        </Button>
+                        <!-- Добавляем новую кнопку здесь -->
+                        <Button Content="Очистить историю" x:Name="ClearHistoryButton" Width="140" Height="50" Margin="10,0,0,0"
+                 Click="ClearHistoryButton_Click" VerticalAlignment="Center">
+
                         </Button>
                     </StackPanel>
 
                     <TextBox x:Name="ConsoleTextBox" Height="286" FontSize="16" Background="White" Foreground="White"
                       IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" 
                       Visibility="Visible" Width="744" HorizontalScrollBarVisibility="Disabled"/>
-
                 </StackPanel>
             </TabItem>
             <TabItem Header="Команды">
@@ -308,18 +330,134 @@
                         <TextBox x:Name="PasswordTextBox" Height="24" Margin="0,3,0,5"/>
                         <TextBlock Text="Озвучка:" Margin="0,5,0,5"/>
                         <ComboBox x:Name="VoiceTypeComboBox" Margin="0,3,0,10"  Height="23">
-                            <ComboBoxItem Content="Maria"/>
-                            <ComboBoxItem Content="Amber"/>
-                            <ComboBoxItem Content="Rick Sanchez"/>
-                            <ComboBoxItem Content="Sergey"/>
-                            <ComboBoxItem Content="Natasha"/>
+                            <ComboBoxItem Content="Irina"/>
+                            <ComboBoxItem Content="Anna"/>
+                            <ComboBoxItem Content="Elena"/>
+                            <ComboBoxItem Content="Aleksandr"/>
                         </ComboBox>
                         <TextBlock Text="Громкость:" Margin="0,5,0,10"/>
                         <Slider x:Name="VolumeSlider" Minimum="0" Maximum="10" SmallChange="1" />
                         <Button Content="Сохранить" Margin="0,20,5,0" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="85" Height="23" HorizontalAlignment="Left" Click="Save_Button_Click" />
 
+                        <Button Content="Изменить данные" Margin="0,25,5,0" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="150" Height="30" HorizontalAlignment="Left" Click="ChangedataButton_Click"/>
                     </StackPanel>
+
                 </StackPanel>
+
+            </TabItem>
+            <TabItem x:Name="DevicesTab" Header="Устройства">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Button x:Name="ConnectDeviceButton" Content="Подключить новое устройство" Width="210" Height="25"
+                Click="ConnectDeviceButton_Click" HorizontalAlignment="Left" Margin="0,0,0,10"/>
+
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Первая колонка - Устройства аккаунта -->
+                        <Border Grid.Column="0" Background="#4A4459" CornerRadius="5" Padding="10">
+                            <StackPanel>
+                                <TextBlock Text="Устройства аккаунта" FontWeight="Bold" Foreground="White" Margin="0,0,0,10"/>
+
+                                <ItemsControl x:Name="AccountDevicesList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#625B71" CornerRadius="5" Margin="0,0,0,5" Padding="10">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="{Binding DeviceName}" Foreground="White" FontWeight="Bold"/>
+                                                        <TextBlock Text="{Binding MacAddress}" Foreground="LightGray"/>
+                                                    </StackPanel>
+
+                                                    <TextBlock Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Text" Value="Оффлайн"/>
+                                                                <Setter Property="Foreground" Value="LightGray"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsOnline}" Value="True">
+                                                                        <Setter Property="Text" Value="Онлайн"/>
+                                                                        <Setter Property="Foreground" Value="LightGreen"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock x:Name="NoAccountDevicesText" Text="У данного аккаунта нет устройств" 
+                               Foreground="LightGray" Visibility="Collapsed"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Вторая колонка - Подключенные устройства -->
+                        <Border Grid.Column="2" Background="#4A4459" CornerRadius="5" Padding="10">
+                            <StackPanel>
+                                <TextBlock Text="Подключенные устройства" FontWeight="Bold" Foreground="White" Margin="0,0,0,10"/>
+
+                                <ItemsControl x:Name="ConnectedDevicesList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#625B71" CornerRadius="5" Margin="0,0,0,5" Padding="10">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="{Binding DeviceName}" Foreground="White" FontWeight="Bold"/>
+                                                        <TextBlock Text="{Binding MacAddress}" Foreground="LightGray"/>
+                                                    </StackPanel>
+
+                                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Text" Value="Оффлайн"/>
+                                                                <Setter Property="Foreground" Value="LightGray"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsOnline}" Value="True">
+                                                                        <Setter Property="Text" Value="Онлайн"/>
+                                                                        <Setter Property="Foreground" Value="LightGreen"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+
+                                                    <Button Grid.Column="2" Content="Отключить" Style="{StaticResource DarkButtonStyle}"  Width="100" Height="25"
+                                                Click="DisconnectDeviceButton_Click" Tag="{Binding MacAddress}"
+                                                Padding="5,2" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock x:Name="NoConnectedDevicesText" Text="У вас нет подключенных устройств" 
+                               Foreground="LightGray" Visibility="Collapsed"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
             </TabItem>
         </TabControl>
     </Grid>

@@ -6,7 +6,14 @@ using Friday;
 using System.Windows.Media;
 using System.Windows.Input;
 using Friday.Managers;
-using System.Management;
+using System.Net.NetworkInformation;
+using Newtonsoft.Json;
+using System.Net.Http;
+using System.Text;
+using Friday.Services;
+using FigmaToWpf;
+using System.Windows.Media.Imaging;
+using System.Drawing;
 
 namespace FigmaToWpf
 {
@@ -16,7 +23,7 @@ namespace FigmaToWpf
         public static Friday.CommandManager _commandManager = new Friday.CommandManager();
         private static SettingManager _settingManager = new SettingManager();
 
-        public List<string> InstalledApplications { get; private set; }
+        private dynamic _userData;
 
         // Добавляем свойство для отслеживания команд, отображаемых в ItemsControl.
         private ObservableCollection<Command> _commands;
@@ -41,21 +48,24 @@ namespace FigmaToWpf
             }
         }
 
-        public MainWindow()
+        public MainWindow(dynamic responseData = null)
         {
             InitializeComponent();
+            _userData = responseData;
+            InitializeUserInterface();
             LoadSettings();
+            UpdateMicrophoneIcon(false);
 
             RenameService renameService = new RenameService(_settingManager.Setting.AssistantName);
             _voiceService = new VoiceService(renameService, _settingManager);
 
+            ((App)Application.Current).VoiceService = _voiceService;
+            ((App)Application.Current).IncrementWindowCount();
+
             _voiceService.OnMessageReceived += OnMessageReceived;
             CustomCommandService.Initialize(_voiceService);
 
-            InstalledApplications = GetInstalledApplications();
-            _voiceService.SetInstalledApplications(InstalledApplications);
-
-            // Инициализируем Commands и подписываемся на изменение текста в SearchTextBox
+            // Инициализируем Commands и подписыва  емся на изменение текста в SearchTextBox
             Commands = new ObservableCollection<Command>(_commandManager.GetCommands());
             CommandsItemsControl.ItemsSource = Commands;  // Привязка к Commands, а не напрямую к _commandManager
             SearchTextBox.TextChanged += SearchTextBox_TextChanged; // Подписываемся на событие изменения текста
@@ -66,6 +76,343 @@ namespace FigmaToWpf
 
             DataContext = this; // Необходимо для работы привязки Commands
         }
+
+        public void UpdateData(dynamic responseData)
+        {
+            // Здесь обновляем данные в окне без его повторного открытия
+            // Например, обновляем статус соединения или другие элементы UI
+            if (responseData != null)
+            {
+                ConsoleTextBox.AppendText("Соединение восстановлено" + Environment.NewLine);
+                // Другие обновления по необходимости
+            }
+        }
+
+        public static string GetMacAddress()
+        {
+            // Получаем все сетевые интерфейсы
+            NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+
+            // Ищем первый активный интерфейс с физическим адресом
+            foreach (NetworkInterface networkInterface in networkInterfaces)
+            {
+                // Пропускаем интерфейсы, которые не работают (не активны) или не имеют физического адреса
+                if (networkInterface.OperationalStatus == OperationalStatus.Up &&
+                    !string.IsNullOrEmpty(networkInterface.GetPhysicalAddress().ToString()))
+                {
+                    // Получаем MAC-адрес и форматируем его с дефисами
+                    string macAddress = networkInterface.GetPhysicalAddress().ToString();
+                    if (macAddress.Length == 12) // Стандартная длина MAC без разделителей
+                    {
+                        return string.Join("-", Enumerable.Range(0, 6)
+                            .Select(i => macAddress.Substring(i * 2, 2)));
+                    }
+                    return macAddress; // Если уже есть разделители, возвращаем как есть
+                }
+            }
+
+            return string.Empty; 
+        }
+
+
+
+        private async void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count == 0) return;
+
+            if (e.AddedItems[0] is TabItem selectedTab && selectedTab.Header.ToString() == "Устройства")
+            {
+                try
+                {
+                    var message = new
+                    {
+                        mac = GetMacAddress()
+                    };
+
+                    using (var client = new HttpClient())
+                    {
+                        var json = JsonConvert.SerializeObject(message);
+                        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                        var response = await client.PostAsync("http://blue.fnode.me:25550/get_devices", content);
+                        response.EnsureSuccessStatusCode();
+
+                        var responseJson = await response.Content.ReadAsStringAsync();
+                        var responseObject = JsonConvert.DeserializeObject<DeviceResponse>(responseJson);
+
+                        Dispatcher.Invoke(() =>
+                        {
+                            // Устройства аккаунта
+                            if (responseObject.account_devices != null && responseObject.account_devices.Count > 0)
+                            {
+                                AccountDevicesList.ItemsSource = responseObject.account_devices;
+                                NoAccountDevicesText.Visibility = Visibility.Collapsed;
+                            }
+                            else
+                            {
+                                AccountDevicesList.ItemsSource = null;
+                                NoAccountDevicesText.Visibility = Visibility.Visible;
+                            }
+
+                            // Подключенные устройства
+                            if (responseObject.my_devices != null && responseObject.my_devices.Count > 0)
+                            {
+                                ConnectedDevicesList.ItemsSource = responseObject.my_devices;
+                                NoConnectedDevicesText.Visibility = Visibility.Collapsed;
+                            }
+                            else
+                            {
+                                ConnectedDevicesList.ItemsSource = null;
+                                NoConnectedDevicesText.Visibility = Visibility.Visible;
+                            }
+                        });
+                    }
+                }
+                catch (HttpRequestException ex)
+                {
+                    ConsoleTextBox.AppendText($"Ошибка при отправке запроса: {ex.Message}" + Environment.NewLine);
+                }
+                catch (Exception ex)
+                {
+                    ConsoleTextBox.AppendText($"Произошла ошибка: {ex.Message}" + Environment.NewLine);
+                }
+            }
+        }
+
+        private async void DisconnectDeviceButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button == null) return;
+
+            // MAC устройства, которое нужно отключить (из Tag кнопки)
+            string targetMacAddress = button.Tag as string;
+            if (string.IsNullOrEmpty(targetMacAddress)) return;
+
+            try
+            {
+                // Получаем MAC текущего устройства
+                string currentMacAddress = GetMacAddress();
+
+                var message = new
+                {
+                    requester_mac = currentMacAddress,  // MAC устройства, которое инициирует отключение
+                    target_mac = targetMacAddress      // MAC устройства, которое нужно отключить
+                };
+
+                using (var client = new HttpClient())
+                {
+                    var json = JsonConvert.SerializeObject(message);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                    var response = await client.PostAsync("http://blue.fnode.me:25550/disconnect_device", content);
+                    response.EnsureSuccessStatusCode();
+
+                    // Обновляем список устройств
+                    var devicesTab = (TabItem)this.FindName("DevicesTab");
+                    TabControl_SelectionChanged(null, new SelectionChangedEventArgs(TabControl.SelectionChangedEvent,
+                        new List<object>(), new List<object> { devicesTab }));
+                }
+            }
+            catch (Exception ex)
+            {
+                ConsoleTextBox.AppendText($"Ошибка при отключении устройства: {ex.Message}" + Environment.NewLine);
+            }
+        }
+
+        // Классы для десериализации JSON остаются без изменений
+        public class DeviceResponse
+        {
+            public List<DeviceInfo> account_devices { get; set; }
+            public List<DeviceInfo> my_devices { get; set; }
+            public string status { get; set; }
+        }
+
+        public class DeviceInfo
+        {
+            public string DeviceName { get; set; }
+            public string MacAddress { get; set; }
+            public bool IsOnline { get; set; }
+            public bool IsAccountDevice { get; set; }
+        }
+
+
+        private void ConnectDeviceButton_Click(object sender, RoutedEventArgs e)
+        {
+            var connectDeviceWindow = new ConnectDeviceWindow();
+            if (connectDeviceWindow.ShowDialog() == true)
+            {
+                // Обновить список устройств после успешного подключения
+                TabControl_SelectionChanged(null, new SelectionChangedEventArgs(
+                    TabControl.SelectionChangedEvent,
+                    new List<object>(),
+                    new List<object> { DevicesTab }));
+            }
+        }
+
+        private void InitializeUserInterface()
+        {
+            if (_userData != null)
+            {
+                // Проверяем наличие user_login
+                if (_userData.user_login != null && !string.IsNullOrEmpty(_userData.user_login.ToString()))
+                {
+                    ShowUserButton(_userData.user_login.ToString());
+                }
+                else
+                {
+                    // По умолчанию показываем кнопки авторизации
+                    ShowAuthButtons();
+                }
+            }
+            else
+            {
+                // Если данных нет, показываем кнопки авторизации
+                ShowAuthButtons();
+            }
+
+            if (_userData.history != null)
+            {
+                ConsoleTextBox.AppendText(_userData.history.ToString() + Environment.NewLine);
+            }
+        }
+
+        private string ProcessHistory(string history)
+        {
+            var result = new StringBuilder();
+            var lines = history.Split('\n').Where(line => !string.IsNullOrWhiteSpace(line));
+
+            foreach (var line in lines)
+            {
+                // Извлекаем основное содержимое после префикса
+                int contentStart = line.IndexOf("): ") + 3;
+                if (contentStart < 3) continue;
+
+                string content = line.Substring(contentStart);
+                string prefix = line.Substring(0, contentStart - 3);
+
+                // Упрощаем префиксы (убираем скобки с временем)
+                if (prefix.StartsWith("Вы ("))
+                {
+                    result.AppendLine($"Вы: {content}");
+                }
+                else if (prefix.StartsWith("Бот ("))
+                {
+                    result.AppendLine($"Бот: {content}");
+                }
+                else
+                {
+                    // Для других устройств сохраняем оригинальный формат
+                    result.AppendLine($"{prefix}: {content}");
+                }
+            }
+
+            return result.ToString();
+        }
+
+        public void ShowUserButton(string username)
+        {
+            UserButtonText.Text = username;
+            UserButton.Visibility = Visibility.Visible;
+            LoginButton.Visibility = Visibility.Collapsed;
+            RegisterButton.Visibility = Visibility.Collapsed;
+        }
+
+        private void ShowAuthButtons()
+        {
+            UserButton.Visibility = Visibility.Collapsed;
+            LoginButton.Visibility = Visibility.Visible;
+            RegisterButton.Visibility = Visibility.Visible;
+        }
+
+        private void UserButton_Click(object sender, RoutedEventArgs e)
+        {
+            var menu = new ContextMenu();
+
+            var logoutItem = new MenuItem { Header = "Выйти" };
+            logoutItem.Click += (s, args) => Logout();
+
+            menu.Items.Add(logoutItem);
+
+            menu.PlacementTarget = sender as Button;
+            menu.IsOpen = true;
+        }
+
+        private async void Logout()
+        {
+            try
+            {
+                // Отправляем команду на сервер о выходе
+                var logoutCommand = new
+                {
+                    MAC = GetMacAddress(),
+                    Command = "logout"
+                };
+
+                using (var client = new HttpClient())
+                {
+                    var json = JsonConvert.SerializeObject(logoutCommand);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                    var response = await client.PostAsync("http://blue.fnode.me:25550/logout", content);
+                    response.EnsureSuccessStatusCode();
+
+                    var responseJson = await response.Content.ReadAsStringAsync();
+                    var responseObject = JsonConvert.DeserializeObject<dynamic>(responseJson);
+
+                    if (responseObject.status != "success")
+                    {
+                        ConsoleTextBox.AppendText($"Ошибка: {responseObject.message}" + Environment.NewLine);
+                    }
+                    else
+                    {
+                        ShowAuthButtons();
+                    }
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                ConsoleTextBox.AppendText($"Ошибка при выходе из аккаунта: {ex.Message}" + Environment.NewLine);
+            }
+            catch (Exception ex)
+            {
+                ConsoleTextBox.AppendText($"Произошла ошибка: {ex.Message}" + Environment.NewLine);
+            }
+        }
+
+        private void LoginButton_Click(object sender, RoutedEventArgs e)
+        {
+            var loginWindow = new LoginWindow();
+            loginWindow.ShowDialog();
+        }
+
+        private void RegisterButton_Click(object sender, RoutedEventArgs e) 
+        {
+            var registerWindow = new RegisterWindow();
+            registerWindow.ShowDialog();
+        }
+
+        public void UpdateAfterRegistration(string username)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                UserButtonText.Text = username;
+                UserButton.Visibility = Visibility.Visible;
+                LoginButton.Visibility = Visibility.Collapsed;
+                RegisterButton.Visibility = Visibility.Collapsed;
+
+                ConsoleTextBox.AppendText($"Добро пожаловать, {username}!" + Environment.NewLine);
+            });
+        }
+
+        private void OnMessageReceived(string message)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                ConsoleTextBox.AppendText(message + Environment.NewLine);
+                ConsoleTextBox.ScrollToEnd();
+            });
+        }
+
         public void LoadActionTypes()
         {
             // Получаем все типы действий из команд
@@ -80,42 +427,6 @@ namespace FigmaToWpf
 
             // Обновляем ActionTypes и вызываем PropertyChanged
             ActionTypes = allActions;
-        }
-
-        private List<string> GetInstalledApplications()
-        {
-            List<string> appPaths = new List<string>();
-
-            // Путь к ключам реестра, где хранятся установленные приложения
-            string[] registryKeys = new string[]
-            {
-        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
-        @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
-            };
-
-            foreach (var key in registryKeys)
-            {
-                using (var uninstallKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(key))
-                {
-                    if (uninstallKey != null)
-                    {
-                        foreach (var subkeyName in uninstallKey.GetSubKeyNames())
-                        {
-                            using (var subkey = uninstallKey.OpenSubKey(subkeyName))
-                            {
-                                // Получаем путь установки
-                                var installLocation = subkey?.GetValue("InstallLocation") as string;
-                                if (!string.IsNullOrEmpty(installLocation))
-                                {
-                                    appPaths.Add(installLocation);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            return appPaths;
         }
 
 
@@ -181,25 +492,24 @@ namespace FigmaToWpf
             {
                 _voiceService.ListeningState.StopListening();
                 _voiceService.StopListening();
+                UpdateMicrophoneIcon(false);
                 ConsoleTextBox.AppendText("Слушание остановлено." + Environment.NewLine);
-                ConsoleTextBox.ScrollToEnd();
             }
             else
             {
                 _voiceService.ListeningState.StartListening();
                 _voiceService.StartListening();
+                UpdateMicrophoneIcon(true);
                 ConsoleTextBox.AppendText("Начинаю слушать..." + Environment.NewLine);
-                ConsoleTextBox.ScrollToEnd();
             }
+            ConsoleTextBox.ScrollToEnd();
         }
 
-        private void OnMessageReceived(string message)
+        private void UpdateMicrophoneIcon(bool isListening)
         {
-            Dispatcher.Invoke(() =>
-            {
-                ConsoleTextBox.AppendText(message + Environment.NewLine);
-                ConsoleTextBox.ScrollToEnd();
-            });
+            // Эмодзи для разных состояний
+            ListenButton.Content = isListening ? "🔴" : "🎤";
+            ListenButton.Foreground = isListening ? System.Windows.Media.Brushes.Red : System.Windows.Media.Brushes.White;
         }
 
         public void AddCommandButton_Click(object sender, RoutedEventArgs e)
@@ -371,5 +681,57 @@ namespace FigmaToWpf
             _settingManager.UpdateSettings(assistantName, password, voiceType, volume);
             MessageBox.Show("Настройки успешно обновлены!", "Успех!", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+
+        private async void ClearHistoryButton_Click(object sender, RoutedEventArgs e)
+        {
+            ConsoleTextBox.Clear();
+            ConsoleTextBox.AppendText("История успешно очищена" + Environment.NewLine);
+            try
+            {
+                var message = new
+                {
+                    mac = GetMacAddress() // Замените на реальный MAC адрес устройства
+                };
+
+                using (var client = new HttpClient())
+                {
+                    var json = JsonConvert.SerializeObject(message);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                    var response = await client.PostAsync("http://blue.fnode.me:25550/clear_history", content);
+                    response.EnsureSuccessStatusCode();
+
+                    var responseJson = await response.Content.ReadAsStringAsync();
+                    var responseObject = JsonConvert.DeserializeObject<dynamic>(responseJson);
+
+                    if (responseObject.status != "success")
+                    {
+                        ConsoleTextBox.AppendText($"Ошибка: {responseObject.message}" + Environment.NewLine);
+                    }
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                ConsoleTextBox.AppendText($"Ошибка при отправке запроса: {ex.Message}" + Environment.NewLine);
+            }
+            catch (Exception ex)
+            {
+                ConsoleTextBox.AppendText($"Произошла ошибка: {ex.Message}" + Environment.NewLine);
+            }
+        }
+
+        public void ChangedataButton_Click(object sender, RoutedEventArgs e)
+        {
+            ChangeDataWindow changedatawindow = new ChangeDataWindow();
+            changedatawindow.Show();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            ((App)Application.Current).DecrementWindowCount();
+            base.OnClosed(e);
+        }
     }
 }
+
+//gemini-2.0-flash

@@ -2,7 +2,6 @@
 using System.IO;
 using System.Text;
 using System.Windows;
-using WebSocketSharp;
 using System.Net.NetworkInformation;
 using Newtonsoft.Json;
 using static Friday.App;
@@ -16,9 +15,10 @@ namespace Friday
         public RegistrationWindow()
         {
             InitializeComponent();
-            ((App)Application.Current).OnMessageReceived += HandleWebSocketMessage;
-            ((App)Application.Current).IncrementWindowCount();
         }
+        public string DeviceName => DeviceNameTextBox.Text;
+        public string Password => PasswordTextBox.Text;
+
 
         private void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
@@ -36,42 +36,6 @@ namespace Friday
             ((App)Application.Current).SendWebSocketMessage(registrationData);
         }
 
-        private void HandleWebSocketMessage(string message)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                if (message.Contains("Данные успешно обработаны!"))
-                {
-                    try
-                    {
-                        var response = JsonConvert.DeserializeObject<dynamic>(message);
-                        UpdateDeviceDataFile(DeviceNameTextBox.Text, PasswordTextBox.Text);
-                    }
-                    catch
-                    {
-                        // Обработка некорректного JSON
-                    }
-                }
-                else if (message.Contains("\"status\":\"error\""))
-                {
-                    try
-                    {
-                        var response = JsonConvert.DeserializeObject<dynamic>(message);
-                        MessageBox.Show(response.message.ToString(), "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                    catch
-                    {
-                        // Обработка некорректного JSON
-                    }
-                }
-            });
-        }
-
-        private void UpdateDeviceDataFile(string deviceName, string password)
-        {
-            ((App)Application.Current).UpdateDeviceDataFile(deviceName, password);
-        }
-
         public static string GetMacAddress()
         {
             return App.GetMacAddress();
@@ -79,8 +43,6 @@ namespace Friday
 
         protected override void OnClosed(EventArgs e)
         {
-            ((App)Application.Current).OnMessageReceived -= HandleWebSocketMessage;
-            ((App)Application.Current).DecrementWindowCount();
             base.OnClosed(e);
         }
     }

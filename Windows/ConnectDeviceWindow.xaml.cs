@@ -52,7 +52,7 @@ namespace FigmaToWpf
                     var json = JsonConvert.SerializeObject(message);
                     var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                    var response = await client.PostAsync("http://blue.fnode.me:25550/connect_device", content);
+                    var response = await client.PostAsync("https://friday-assistant.ru/connect_device", content);
                     response.EnsureSuccessStatusCode();
 
                     var responseJson = await response.Content.ReadAsStringAsync();

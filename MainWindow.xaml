@@ -2,14 +2,14 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Custom Window"
-        Height="500" Width="800"
+        Height="600" Width="1000"
         WindowStyle="None"
         Background="#302B3D"
         MouseDown="Window_MouseDown">
 
     <Window.Resources>
         <FontFamily x:Key="IntroFridayFont">pack://FRIDAY//Assets//IntroFriday.ttf</FontFamily>
-
+ 
 
         <Style x:Key="FocusVisual">
             <Setter Property="Control.Template">
@@ -260,8 +260,8 @@
 
         <TabControl Margin="0"  SelectionChanged="TabControl_SelectionChanged">
             <TabItem Header="Home">
-                <StackPanel Width="776" Height="444">
-                    <StackPanel HorizontalAlignment="Left" Orientation="Horizontal" Width="769" Margin="10,0,0,0" Height="133">
+                <StackPanel Width="970" Height="744">
+                    <StackPanel HorizontalAlignment="Left" Orientation="Horizontal" Width="950" Margin="10,0,0,0" Height="133">
                         <TextBlock Text="FRIDAY" FontSize="120" Foreground="White" 
                    HorizontalAlignment="Left" FontWeight="Bold" FontFamily="Intro Friday" TextWrapping="Wrap"/>
                         <Button x:Name="ListenButton" Width="50" Height="50" BorderBrush="{x:Null}" 
@@ -272,16 +272,91 @@
                           Opacity="0.5" RenderingBias="Performance" ShadowDepth="0"/>
                             </Button.Effect>
                         </Button>
+                        <ComboBox x:Name="InputModeComboBox" Width="150" Height="30" Margin="10,0,0,0" VerticalAlignment="Center"
+              SelectedIndex="0">
+                            <ComboBoxItem Content="Имя-ответ-команда"/>
+                            <ComboBoxItem Content="Имя + команда"/>
+                            <ComboBoxItem Content="Разговорный режим"/>
+                        </ComboBox>
                         <!-- Добавляем новую кнопку здесь -->
                         <Button Content="Очистить историю" x:Name="ClearHistoryButton" Width="140" Height="50" Margin="10,0,0,0"
                  Click="ClearHistoryButton_Click" VerticalAlignment="Center">
-
+                        
                         </Button>
+                        <ToggleButton x:Name="ScreenshotButton" Content="Скриншот" Width="120" Height="50" Margin="10,0,0,0"
+              Click="ScreenshotButton_Click" VerticalAlignment="Center">
+                            <ToggleButton.Style>
+                                <Style TargetType="ToggleButton">
+                                    <Setter Property="Background" Value="#625B71"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="2"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter Property="Padding" Value="10,5"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Border x:Name="border" 
+                                Background="{TemplateBinding Background}" 
+                                CornerRadius="5"
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <!-- Обычное состояние -->
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#7B728A"/>
+                                                    </Trigger>
+
+                                                    <!-- Активированное состояние -->
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Setter Property="Background" Value="#6A3D8B"/>
+                                                        <Setter Property="BorderBrush" Value="#9B59B6"/>
+                                                    </Trigger>
+
+                                                    <!-- Активированное + наведение -->
+                                                    <MultiTrigger>
+                                                        <MultiTrigger.Conditions>
+                                                            <Condition Property="IsChecked" Value="True"/>
+                                                            <Condition Property="IsMouseOver" Value="True"/>
+                                                        </MultiTrigger.Conditions>
+                                                        <Setter Property="Background" Value="#8E44AD"/>
+                                                        <Setter Property="BorderBrush" Value="#BF8FDE"/>
+                                                    </MultiTrigger>
+
+                                                    <!-- Нажатие -->
+                                                    <Trigger Property="IsPressed" Value="True">
+                                                        <Setter Property="Background" Value="#554E62"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ToggleButton.Style>
+                        </ToggleButton>
                     </StackPanel>
 
-                    <TextBox x:Name="ConsoleTextBox" Height="286" FontSize="16" Background="White" Foreground="White"
-                      IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" 
-                      Visibility="Visible" Width="744" HorizontalScrollBarVisibility="Disabled"/>
+                    <TextBox x:Name="ConsoleTextBox" Height="250" FontSize="16" Background="White" Foreground="White"
+                  IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" 
+                  Visibility="Visible" Width="744" HorizontalScrollBarVisibility="Disabled"/>
+                    <StackPanel Orientation="Horizontal" Margin="80,10,0,0">
+                        <Button x:Name="AttachFileButton" Content="📎" Width="30" Height="25" VerticalAlignment="Center"
+            Click="AttachFileButton_Click" ToolTip="Прикрепить файл"/>
+                        <TextBox x:Name="MessageTextBox" Width="750" Height="25" VerticalAlignment="Center" 
+             Background="#625B71" Foreground="White" BorderBrush="#625B71"
+             KeyDown="MessageTextBox_KeyDown"/>
+                        <Button x:Name="SendMessageButton" Content="Отправить" Width="80" Height="25" Margin="10,0,0,0" 
+            Click="SendMessageButton_Click" />
+                    </StackPanel>
+                    <ItemsControl x:Name="ThumbnailContainer" Margin="80,5,0,0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                    <TextBlock x:Name="AttachedFileInfoTextBlock" Margin="80,5,0,0" Foreground="LightGray" TextWrapping="Wrap"/>
                 </StackPanel>
             </TabItem>
             <TabItem Header="Команды">

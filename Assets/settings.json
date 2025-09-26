@@ -1,6 +1,7 @@
 {
   "AssistantName": "Пятница",
-  "Password": "тест",
-  "VoiceType": "Irina",
-  "Volume": 10
+  "Password": "123",
+  "VoiceType": "Anna",
+  "Volume": 5,
+  "InputMode": "Разговорный режим"
 }

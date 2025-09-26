@@ -19,6 +19,9 @@
     <Compile Update="Windows\ChangeDataWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Windows\ChangePasswordWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Windows\ConnectDeviceWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -34,6 +37,11 @@
     <Compile Update="Windows\RegistrationWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="Services\ScreenshotForm.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <Page Update="MainWindow.xaml">

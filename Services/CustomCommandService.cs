@@ -30,7 +30,7 @@ namespace Friday
                 bool isPasswordCorrect = await CheckPasswordAsync();
                 if (!isPasswordCorrect)
                 {
-                    await _voiceService.SpeakAsync("Попытки ввода пароля исчерпаны. Повторите вызов ассистента.");
+                    await _voiceService.SpeakAsync("Бот", "Попытки ввода пароля исчерпаны. Повторите вызов ассистента.");
                     return;
                 }
             }
@@ -48,7 +48,7 @@ namespace Friday
 
             if (!hasVoiceResponse)
             {
-                await _voiceService.SpeakAsync("Выполняю");
+                await _voiceService.SpeakAsync("Бот", "Выполняю");
             }
 
             foreach (var action in command.Actions)
@@ -88,7 +88,7 @@ namespace Friday
                         break;
 
                    case "голосовой ответ":
-                        await _voiceService.SpeakAsync(action.ActionText);
+                        await _voiceService.SpeakAsync("Бот", action.ActionText);
                         break;
 
                     default:
@@ -110,12 +110,12 @@ namespace Friday
 
             for (int i = 0; i < _passwordAttempts; i++)
             {
-                await _voiceService.SpeakAsync("Введите пароль:");
+                await _voiceService.SpeakAsync("Бот", "Введите пароль:");
                 string recognizedPassword = await RecognizePasswordAsync();
 
                 if (string.IsNullOrEmpty(recognizedPassword))
                 {
-                    await _voiceService.SpeakAsync("Пароль не распознан. Повторите попытку.");
+                    await _voiceService.SpeakAsync("Бот", "Пароль не распознан. Повторите попытку.");
                     continue;
                 }
 
@@ -126,7 +126,7 @@ namespace Friday
                 }
                 else
                 {
-                    await _voiceService.SpeakAsync("Неверный пароль. Повторите попытку.");
+                    await _voiceService.SpeakAsync("Бот", "Неверный пароль. Повторите попытку.");
                 }
             }
 

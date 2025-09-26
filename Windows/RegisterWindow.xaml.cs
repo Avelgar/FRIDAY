@@ -55,7 +55,7 @@ namespace Friday
                     email,
                     login,
                     password = password1,
-                    mac = MainWindow.GetMacAddress() // Добавляем MAC адрес устройства
+                    mac = MainWindow.GetMacAddress() 
                 };
 
                 using (var client = new HttpClient())
@@ -63,18 +63,12 @@ namespace Friday
                     var json = JsonConvert.SerializeObject(registerData);
                     var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                    var response = await client.PostAsync("http://blue.fnode.me:25550/register", content);
+                    var response = await client.PostAsync("https://friday-assistant.ru/register", content);
                     var responseString = await response.Content.ReadAsStringAsync();
                     var responseObject = JsonConvert.DeserializeObject<dynamic>(responseString);
 
                     if (response.IsSuccessStatusCode)
                     {
-                        // Получаем главное окно и обновляем интерфейс
-                        var mainWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
-                        if (mainWindow != null)
-                        {
-                            mainWindow.ShowUserButton(responseObject.user_login.ToString());
-                        }
 
                         MessageBox.Show("Регистрация прошла успешно!", "Успех",
                                       MessageBoxButton.OK, MessageBoxImage.Information);

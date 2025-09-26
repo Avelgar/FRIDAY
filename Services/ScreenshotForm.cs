@@ -126,7 +126,7 @@ namespace Friday.Services
                 // Обработка ответа
                 if (!string.IsNullOrEmpty(response))
                 {
-                    await _voiceService.SpeakAsync(response);
+                    await _voiceService.SpeakAsync("Бот", response);
                 }
                 else
                 {

@@ -27,7 +27,7 @@ namespace Friday
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
             string login = LoginTextBox.Text.Trim();
-            string password = PasswordBox.Text.Trim();
+            string password = PasswordBox.Password.Trim();
 
             // Валидация
             if (string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password))

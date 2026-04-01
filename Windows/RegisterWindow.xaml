@@ -124,6 +124,27 @@
             </Setter>
         </Style>
 
+        <Style TargetType="PasswordBox">
+            <Setter Property="Background" Value="#4A4459"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#4A4459"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Margin" Value="0,5,0,5"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontFamily" Value="Century Gothic"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Border CornerRadius="5" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                            <ScrollViewer x:Name="PART_ContentHost" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style TargetType="Button">
             <Setter Property="Background" Value="#554E62"/>
             <Setter Property="BorderBrush" Value="{x:Null}"/>
@@ -205,10 +226,10 @@
             <TextBox x:Name="LoginTextBox" Margin="0,0,0,15"/>
 
             <TextBlock Text="Пароль:" Foreground="White" Margin="0,0,0,5"/>
-            <TextBox x:Name="PasswordBox1" Margin="0,0,0,15"/>
+            <PasswordBox x:Name="PasswordBox1" Margin="0,0,0,15"/>
 
             <TextBlock Text="Повторите пароль:" Foreground="White" Margin="0,0,0,5"/>
-            <TextBox x:Name="PasswordBox2" Margin="0,0,0,25"/>
+            <PasswordBox x:Name="PasswordBox2" Margin="0,0,0,25"/>
 
             <!-- Кнопка регистрации -->
             <Button Content="ЗАРЕГИСТРИРОВАТЬСЯ" 

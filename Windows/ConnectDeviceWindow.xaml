@@ -205,6 +205,6 @@
 
         <!-- Кнопка подключения -->
         <Button Grid.Row="4" Content="Подключить" Width="100" Height="30" 
-                HorizontalAlignment="Right" Click="ConnectButton_Click"/>
+                HorizontalAlignment="Center" Click="ConnectButton_Click"/>
     </Grid>
 </Window>

@@ -416,6 +416,8 @@
                         <Button Content="Сохранить" Margin="0,20,5,0" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="85" Height="23" HorizontalAlignment="Left" Click="Save_Button_Click" />
 
                         <Button Content="Изменить данные" Margin="0,25,5,0" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="150" Height="30" HorizontalAlignment="Left" Click="ChangedataButton_Click"/>
+
+                        <Button Content="Управление приложениями" Margin="0,15,5,0" Padding="10,5,10,5" BorderThickness="0,0,0,0" Width="200" Height="30" HorizontalAlignment="Left" Click="ManageAppsButton_Click"/>
                     </StackPanel>
 
                 </StackPanel>

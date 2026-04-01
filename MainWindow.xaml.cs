@@ -1083,6 +1083,12 @@ namespace FigmaToWpf
             }
         }
 
+        public void ManageAppsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var appPathsWindow = new Friday.Windows.AppPathsWindow();
+            appPathsWindow.ShowDialog();
+        }
+
         private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
         {
             if (ScreenshotButton.IsChecked == true)

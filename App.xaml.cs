@@ -580,20 +580,19 @@ namespace Friday
         public List<string> GetInstalledApplications()
         {
             var appList = new List<string>();
-            var programsWithPaths = new List<string>
+
+            // Загружаем пути из нашего нового менеджера
+            var customApps = Friday.Managers.AppPathManager.LoadApps();
+
+            // Экранирование обратных слешей для отправки по WebSockets
+            foreach (var app in customApps)
             {
-                @"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-                @"C:\Program Files\Google\Chrome\Application\chrome.exe",
-                @"C:\Program Files\Microsoft Office\root\Office16\excel.exe",
-                @"C:\Program Files\Microsoft Office\root\Office16\powerpnt.exe",
-                @"D:\Program Files(x86)\Steam\steamapps\common\dota 2 beta\game\bin\win64\dota2.exe"
-            };
-            // Экранирование обратных слешей
-            foreach (var path in programsWithPaths)
-            {
-                if (File.Exists(path))
-                    appList.Add(path.Replace("\\", "\\\\")); // Двойное экранирование
+                if (File.Exists(app.Path))
+                {
+                    appList.Add(app.Path.Replace("\\", "\\\\")); // Двойное экранирование
+                }
             }
+
             return appList;
         }
 

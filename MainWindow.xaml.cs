@@ -1053,7 +1053,7 @@ namespace FigmaToWpf
             {
                 var message = new
                 {
-                    mac = GetMacAddress() // Замените на реальный MAC адрес устройства
+                    mac = GetMacAddress()
                 };
 
                 using (var client = new HttpClient())

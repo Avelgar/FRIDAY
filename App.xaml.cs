@@ -198,7 +198,6 @@ namespace Friday
                 }
             }
         }
-
         private void CheckAndInstallVoices()
         {
             try
@@ -211,7 +210,7 @@ namespace Friday
                         .ToList();
 
                     // Проверяем наличие всех требуемых голосов
-                    var requiredVoices = new[] { "Aleksandr", "Anna", "Elena", "Irina" };
+                    var requiredVoices = new[] { "Aleksandr", "Anna", "Elena", "Irina", "Dasha" };
                     var missingVoices = requiredVoices.Where(v =>
                         !installedVoices.Any(iv => iv.Contains(v))).ToList();
 

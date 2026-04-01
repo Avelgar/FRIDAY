@@ -1,7 +1,7 @@
 {
   "AssistantName": "Пятница",
   "Password": "123",
-  "VoiceType": "Anna",
+  "VoiceType": "Irina",
   "Volume": 5,
-  "InputMode": "Разговорный режим"
+  "InputMode": "Имя + команда"
 }

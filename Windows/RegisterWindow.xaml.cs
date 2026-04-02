@@ -25,8 +25,8 @@ namespace Friday
         {
             string email = EmailTextBox.Text.Trim();
             string login = LoginTextBox.Text.Trim();
-            string password1 = PasswordBox1.Text.Trim();
-            string password2 = PasswordBox2.Text.Trim();
+            string password1 = PasswordBox1.Password.Trim();
+            string password2 = PasswordBox2.Password.Trim();
 
             // Валидация
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(login) ||

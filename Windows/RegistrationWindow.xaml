@@ -119,6 +119,27 @@
             </Setter>
         </Style>
 
+        <Style TargetType="PasswordBox">
+            <Setter Property="Background" Value="#4A4459"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#4A4459"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Margin" Value="0,5,0,5"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontFamily" Value="Century Gothic"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Border CornerRadius="5" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                            <ScrollViewer x:Name="PART_ContentHost" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style TargetType="Button">
             <Setter Property="Background" Value="#554E62"/>
             <Setter Property="BorderBrush" Value="{x:Null}"/>
@@ -185,9 +206,8 @@
                  Tag="Введите имя устройства"/>
 
         <TextBlock Text="Пароль:"/>
-        <TextBox Name="PasswordTextBox" 
+        <PasswordBox Name="PasswordTextBox" 
                  Margin="0,0,0,10"
-                 Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}"
                  Tag="Введите пароль"/>
 
         <Button Content="Зарегистрироваться" 

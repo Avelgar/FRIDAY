@@ -42,10 +42,14 @@ namespace Friday
             {
                 if (File.Exists(filePath))
                 {
+                    // Получаем папку, в которой лежит запускаемый файл
+                    string workingDirectory = Path.GetDirectoryName(filePath);
+
                     Process.Start(new ProcessStartInfo
                     {
                         FileName = filePath,
-                        UseShellExecute = true
+                        UseShellExecute = true,
+                        WorkingDirectory = workingDirectory // <-- ВОТ ЭТО РЕШИТ ПРОБЛЕМУ С ИГРАМИ
                     });
                 }
                 else

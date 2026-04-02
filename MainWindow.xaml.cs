@@ -79,6 +79,16 @@ namespace FigmaToWpf
                 return;
             }
 
+            // --- ДОБАВЛЕНО: Запрет отправки, пока ждем ответ сервера ---
+            var app = (App)Application.Current;
+            if (app.IsWaitingForServerResponse)
+            {
+                ConsoleTextBox.AppendText("Ожидаю ответа от сервера. Пожалуйста, подождите..." + Environment.NewLine);
+                ConsoleTextBox.ScrollToEnd();
+                return;
+            }
+            // -----------------------------------------------------------
+
             try
             {
                 string screenshotBase64 = null;
@@ -113,8 +123,11 @@ namespace FigmaToWpf
                 ((App)Application.Current).SendWebSocketMessage(message);
 
                 // Выводим сообщение в консоль
-                ConsoleTextBox.AppendText($"Вы: {messageText}{Environment.NewLine}");
+                ((App)Application.Current).MarkAsWaitingForServer();
+                // -----------------------------------------------------
 
+                // Выводим сообщение в консоль
+                ConsoleTextBox.AppendText($"Вы: {messageText}{Environment.NewLine}");
                 ConsoleTextBox.ScrollToEnd();
 
                 // Очищаем поле ввода и информацию о файле

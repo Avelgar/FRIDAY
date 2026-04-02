@@ -40,6 +40,10 @@ namespace Friday
         public List<string> InstalledApplications { get; private set; }
         private CancellationTokenSource _cancellationTokenSource;
         private static Mutex _mutex;
+
+        public bool IsWaitingForServerResponse { get; private set; } = false;
+        private CancellationTokenSource _responseTimeoutCts;
+
         protected override void OnStartup(StartupEventArgs e)
         {
             const string appName = "FridayAssistantApp";
@@ -184,6 +188,7 @@ namespace Friday
                     {
                         await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", cancellationToken);
                         _isConnectionActive = false;
+                        ClearWaitingForServer(); // <--- ДОБАВИТЬ ЭТО
                     }
                 }
                 catch (OperationCanceledException)
@@ -194,10 +199,12 @@ namespace Friday
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Ошибка получения сообщения: {ex.Message}");
+                    ClearWaitingForServer(); // <--- И ДОБАВИТЬ ЭТО
                     break;
                 }
             }
         }
+
         private void CheckAndInstallVoices()
         {
             try
@@ -332,6 +339,10 @@ namespace Friday
             try
             {
                 string answer = DecodeFromBase64(message);
+                if (!answer.Contains("data_request") && !answer.Contains("ping"))
+                {
+                    ClearWaitingForServer();
+                }
                 //OnMessageReceived?.Invoke(answer);
                 if (answer.Contains("connection_timeout"))
                 {
@@ -581,15 +592,35 @@ namespace Friday
         {
             var appList = new List<string>();
 
-            // Загружаем пути из нашего нового менеджера
+            // Подгружаем наши приложения из менеджера
             var customApps = Friday.Managers.AppPathManager.LoadApps();
 
-            // Экранирование обратных слешей для отправки по WebSockets
+            // Создаем временную папку для наших скрытых ярлыков-запускаторов
+            string tempDir = Path.Combine(Path.GetTempPath(), "FridayAppLaunchers");
+            if (!Directory.Exists(tempDir))
+            {
+                Directory.CreateDirectory(tempDir);
+            }
+
             foreach (var app in customApps)
             {
                 if (File.Exists(app.Path))
                 {
-                    appList.Add(app.Path.Replace("\\", "\\\\")); // Двойное экранирование
+                    // Убираем из имени приложения запрещенные символы (на случай если они есть)
+                    string safeName = string.Join("_", app.Name.Split(Path.GetInvalidFileNameChars()));
+
+                    // Формируем путь к нашему скрипту-запускатору (например: Дискорд.vbs)
+                    string vbsPath = Path.Combine(tempDir, $"{safeName}.vbs");
+
+                    // VBS-скрипт, который без черных окон командной строки открывает оригинальный .exe файл
+                    string script = $"Set WshShell = CreateObject(\"WScript.Shell\")\r\nWshShell.Run Chr(34) & \"{app.Path}\" & Chr(34), 1, False";
+
+                    // Создаем или перезаписываем файл запуска
+                    File.WriteAllText(vbsPath, script, System.Text.Encoding.UTF8);
+
+                    // Отправляем серверу путь к скрипту с ПРАВИЛЬНЫМ названием. 
+                    // Обязательно экранируем слеши, как это было в оригинальном коде
+                    appList.Add(vbsPath.Replace("\\", "\\\\"));
                 }
             }
 
@@ -683,6 +714,27 @@ namespace Friday
                     break;
                 }
             }
+        }
+
+        public void MarkAsWaitingForServer()
+        {
+            IsWaitingForServerResponse = true;
+            _responseTimeoutCts?.Cancel();
+            _responseTimeoutCts = new CancellationTokenSource();
+
+            // Защита: Снимаем блокировку через 15 секунд автоматически, 
+            // если сервер "завис" и не ответил
+            Task.Delay(15000, _responseTimeoutCts.Token).ContinueWith(t =>
+            {
+                if (!t.IsCanceled && IsWaitingForServerResponse)
+                    IsWaitingForServerResponse = false;
+            });
+        }
+
+        public void ClearWaitingForServer()
+        {
+            IsWaitingForServerResponse = false;
+            _responseTimeoutCts?.Cancel();
         }
 
 

@@ -133,6 +133,14 @@ namespace Friday
                             }
                             else
                             {
+                                // --- ДОБАВЛЕНО: Запрет обработки голоса ---
+                                var app = (App)System.Windows.Application.Current;
+                                if (app.IsWaitingForServerResponse)
+                                {
+                                    return; // Полностью игнорируем голосовой ввод, пока ждем ответа
+                                }
+                                // ------------------------------------------
+
                                 // Обработка в зависимости от режима ввода
                                 switch (inputMode)
                                 {
@@ -471,6 +479,13 @@ namespace Friday
 
         public async Task ProcessCommand(string command)
         {
+
+            var app = (App)System.Windows.Application.Current;
+            if (app.IsWaitingForServerResponse)
+            {
+                OnMessageReceived?.Invoke("Система занята: ожидаю ответа от сервера.");
+                return;
+            }
             OnMessageReceived?.Invoke($"Вы: {command}");
 
             if (ListeningState.IsListeningForPassword)
@@ -521,6 +536,7 @@ namespace Friday
                     };
 
                     ((App)System.Windows.Application.Current).SendWebSocketMessage(message);
+                    app.MarkAsWaitingForServer();
 
                     // Очищаем прикрепленный файл после отправки
                     System.Windows.Application.Current.Dispatcher.Invoke(() => _mainWindow.ClearAttachedFile());

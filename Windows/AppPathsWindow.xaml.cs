@@ -39,15 +39,15 @@ namespace Friday.Windows
         {
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
-                Filter = "Исполняемые файлы (*.exe)|*.exe|Все файлы (*.*)|*.*",
-                Title = "Выберите приложение"
+                // ДОБАВЛЕНА ПОДДЕРЖКА ЯРЛЫКОВ (.lnk)
+                Filter = "Программы и Ярлыки (*.exe;*.lnk)|*.exe;*.lnk|Все файлы (*.*)|*.*",
+                Title = "Выберите приложение или его ярлык на рабочем столе"
             };
 
             if (openFileDialog.ShowDialog() == true)
             {
                 AppPathTextBox.Text = openFileDialog.FileName;
 
-                // Если имя пустое, берем имя файла без расширения
                 if (AppNameTextBox.Text == "Название (напр. Dota 2)" || string.IsNullOrWhiteSpace(AppNameTextBox.Text))
                 {
                     AppNameTextBox.Text = System.IO.Path.GetFileNameWithoutExtension(openFileDialog.FileName);

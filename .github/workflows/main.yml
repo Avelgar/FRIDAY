@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# Выдаем права нашему боту на создание релизов в репозитории
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest  
@@ -28,8 +32,14 @@ jobs:
     - name: Publish
       run: dotnet publish Friday.csproj -c Release -o ./publish /p:UseAppHost=true
 
-    - name: Upload Build Artifact
-      uses: actions/upload-artifact@v4
+    - name: Zip the application
+      run: Compress-Archive -Path ./publish/* -DestinationPath ./Friday-App.zip
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
       with:
-        name: WPF-App-Release
-        path: ./publish
+        tag_name: build-${{ github.run_number }}
+        name: "Dev Build #${{ github.run_number }}"
+        files: ./Friday-App.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

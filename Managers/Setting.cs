@@ -7,5 +7,6 @@
         public required string VoiceType { get; set; }
         public required int Volume { get; set; }
         public required string InputMode { get; set; }
+        public required string MusicFolderPath { get; set; }
     }
 }

@@ -1,13 +1,27 @@
-﻿using NAudio.Wave;
+﻿using Friday;
+using Friday.Services;
+using NAudio.Wave;
 using System.IO;
 
-public class MusicService
+public class MusicService : Service
 {
     private IWavePlayer _wavePlayer;
     private AudioFileReader _audioFileReader;
     private string[] _musicFiles;
     private int _currentTrackIndex;
-    private readonly string _musicFolderPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\music"));
+    private string _musicFolderPath;
+
+    public override void Init()
+    {
+        _musicFolderPath = SettingManager.Setting.MusicFolderPath;
+        base.Init();
+    }
+
+    public override void UpdateVariables()
+    {
+        _musicFolderPath = SettingManager.Setting.MusicFolderPath;
+        base.UpdateVariables();
+    }
 
     public MusicService()
     {

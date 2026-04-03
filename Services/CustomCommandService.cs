@@ -101,7 +101,7 @@ namespace Friday
         private static async Task<bool> CheckPasswordAsync()
         {
             SettingManager settingManager = new SettingManager();
-            string correctPassword = settingManager.Setting.Password;
+            string correctPassword = SettingManager.Setting.Password;
 
             if (string.IsNullOrEmpty(correctPassword))
             {

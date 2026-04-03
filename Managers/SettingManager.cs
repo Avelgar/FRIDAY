@@ -2,15 +2,16 @@
 using Newtonsoft.Json;
 using System.IO;
 using System;
+using Friday.Services;
 
 namespace Friday
 {
     public class SettingManager
     {
         private readonly string _filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\settings.json"));
-        public Setting Setting { get; private set; }
+        private readonly string _defaultMusicFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyMusic);
+        public static Setting Setting { get; private set; }
 
-        // Событие для уведомления об изменениях настроек
         public event EventHandler<SettingChangedEventArgs> SettingsChanged;
 
         public SettingManager()
@@ -24,6 +25,7 @@ namespace Friday
             {
                 string json = File.ReadAllText(_filePath);
                 Setting = JsonConvert.DeserializeObject<Setting>(json);
+                EnsureSettingDefaults();
             }
             else
             {
@@ -33,8 +35,64 @@ namespace Friday
                     Password = "",
                     VoiceType = "Aleksandr",
                     Volume = 5,
-                    InputMode = "Имя-ответ-команда"
+                    InputMode = "Имя-ответ-команда",
+                    MusicFolderPath = _defaultMusicFolderPath
                 };
+                SaveSettings();
+            }
+        }
+
+        private void EnsureSettingDefaults()
+        {
+            if (Setting == null)
+            {
+                Setting = new Setting
+                {
+                    AssistantName = "пятница",
+                    Password = "",
+                    VoiceType = "Aleksandr",
+                    Volume = 5,
+                    InputMode = "Имя-ответ-команда",
+                    MusicFolderPath = _defaultMusicFolderPath
+                };
+                SaveSettings();
+                return;
+            }
+
+            bool changed = false;
+
+            if (string.IsNullOrWhiteSpace(Setting.AssistantName))
+            {
+                Setting.AssistantName = "пятница";
+                changed = true;
+            }
+
+            if (Setting.Password == null)
+            {
+                Setting.Password = string.Empty;
+                changed = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(Setting.VoiceType))
+            {
+                Setting.VoiceType = "Aleksandr";
+                changed = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(Setting.InputMode))
+            {
+                Setting.InputMode = "Имя-ответ-команда";
+                changed = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(Setting.MusicFolderPath))
+            {
+                Setting.MusicFolderPath = _defaultMusicFolderPath;
+                changed = true;
+            }
+
+            if (changed)
+            {
                 SaveSettings();
             }
         }
@@ -45,13 +103,14 @@ namespace Friday
             File.WriteAllText(_filePath, json);
         }
 
-        public void UpdateSettings(string assistantName, string password, string voiceType, int volume, string inputMode)
+        public void UpdateSettings(string assistantName, string password, string voiceType, int volume, string inputMode, string musicFolderPath)
         {
             Setting.AssistantName = assistantName;
             Setting.Password = password;
             Setting.VoiceType = voiceType;
             Setting.Volume = volume;
             Setting.InputMode = inputMode;
+            Setting.MusicFolderPath = musicFolderPath;
             SaveSettings();
 
             // Уведомляем подписчиков об изменениях
@@ -60,6 +119,8 @@ namespace Friday
                 AssistantName = assistantName,
                 VoiceType = voiceType
             });
+
+            AppServices.UpdateVariables();
         }
 
         // Метод для вызова события

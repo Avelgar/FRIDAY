@@ -1,4 +1,5 @@
 ﻿using FigmaToWpf;
+using Friday.Services;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -46,6 +47,7 @@ namespace Friday
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            AppServices.Init();
             const string appName = "FridayAssistantApp";
             bool createdNew;
 

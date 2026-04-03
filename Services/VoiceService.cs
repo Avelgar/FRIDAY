@@ -327,7 +327,7 @@ namespace Friday
                     break;
                 case "смена имени":
                     _renameService.BotName = action.ActionText;
-                    _settingManager.Setting.AssistantName = action.ActionText;
+                    SettingManager.Setting.AssistantName = action.ActionText;
                     _settingManager.SaveSettings();
                     break;
 
@@ -663,7 +663,7 @@ namespace Friday
                 _currentSynthesizer = new SpeechSynthesizer(); // Используем поле
 
                 VoiceInfo selectedVoice = null;
-                string voiceType = _settingManager.Setting.VoiceType;
+                string voiceType = SettingManager.Setting.VoiceType;
 
                 // Получаем все доступные голоса
                 var installedVoices = _currentSynthesizer.GetInstalledVoices()
@@ -711,7 +711,7 @@ namespace Friday
                 _currentSynthesizer.SelectVoice(selectedVoice.Name);
 
                 // Устанавливаем громкость (0-100)
-                _currentSynthesizer.Volume = (int)(_settingManager.Setting.Volume * 10);
+                _currentSynthesizer.Volume = (int)(SettingManager.Setting.Volume * 10);
 
                 // Асинхронное произношение с ожиданием завершения
                 var tcs = new TaskCompletionSource<bool>();

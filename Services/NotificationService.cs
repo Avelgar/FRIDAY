@@ -11,7 +11,7 @@ namespace Friday
             notifyIcon.Icon = SystemIcons.Information;
             notifyIcon.Visible = true;
             SettingManager _settingManager = new SettingManager();
-            notifyIcon.ShowBalloonTip(3000, _settingManager.Setting.AssistantName, text, ToolTipIcon.Info);
+            notifyIcon.ShowBalloonTip(3000, SettingManager.Setting.AssistantName, text, ToolTipIcon.Info);
         }
     }
 }

@@ -115,7 +115,7 @@ namespace FigmaToWpf
                     command = messageText,
                     mac = GetMacAddress(),
                     timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                    name = _settingManager.Setting.AssistantName,
+                    name = SettingManager.Setting.AssistantName,
                     screenshot = screenshotBase64
                 };
 
@@ -147,7 +147,7 @@ namespace FigmaToWpf
             LoadSettings();
             UpdateMicrophoneIcon(false);
 
-            RenameService renameService = new RenameService(_settingManager.Setting.AssistantName, _settingManager);
+            RenameService renameService = new RenameService(SettingManager.Setting.AssistantName, _settingManager);
             _voiceService = new VoiceService(renameService, _settingManager, this);
             _settingManager.SettingsChanged += SettingManager_SettingsChanged;
 
@@ -185,7 +185,7 @@ namespace FigmaToWpf
         {
             if (InputModeComboBox.SelectedItem is ComboBoxItem selectedItem)
             {
-                _settingManager.Setting.InputMode = selectedItem.Content.ToString();
+                SettingManager.Setting.InputMode = selectedItem.Content.ToString();
                 _settingManager.SaveSettings();
             }
         }
@@ -1008,19 +1008,19 @@ namespace FigmaToWpf
         private void LoadSettings()
         {
             // Существующие настройки...
-            FridayNameTextBox.Text = _settingManager.Setting.AssistantName;
+            FridayNameTextBox.Text = SettingManager.Setting.AssistantName;
             foreach (ComboBoxItem item in VoiceTypeComboBox.Items)
             {
-                if (item.Content.ToString() == _settingManager.Setting.VoiceType)
+                if (item.Content.ToString() == SettingManager.Setting.VoiceType)
                 {
                     VoiceTypeComboBox.SelectedItem = item;
                     break;
                 }
             }
-            VolumeSlider.Value = _settingManager.Setting.Volume;
+            VolumeSlider.Value = SettingManager.Setting.Volume;
 
             // Загрузка режима ввода
-            string savedInputMode = _settingManager.Setting.InputMode;
+            string savedInputMode = SettingManager.Setting.InputMode;
             foreach (ComboBoxItem item in InputModeComboBox.Items)
             {
                 if (item.Content.ToString() == savedInputMode)
@@ -1029,7 +1029,26 @@ namespace FigmaToWpf
                     break;
                 }
             }
+
+            MusicFolderPathTextBox.Text = SettingManager.Setting.MusicFolderPath;
         }
+
+        private void ChooseMusicFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFolderDialog
+            {
+                Title = "Выберите папку с музыкой",
+                InitialDirectory = Directory.Exists(MusicFolderPathTextBox.Text)
+                    ? MusicFolderPathTextBox.Text
+                    : Environment.GetFolderPath(Environment.SpecialFolder.MyMusic)
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                MusicFolderPathTextBox.Text = dialog.FolderName;
+            }
+        }
+
         public void Save_Button_Click(object sender, RoutedEventArgs e)
         {
             string assistantName = FridayNameTextBox.Text;
@@ -1046,10 +1065,10 @@ namespace FigmaToWpf
 
             if (string.IsNullOrEmpty(password))
             {
-                password = _settingManager.Setting.Password;
+                password = SettingManager.Setting.Password;
             }
 
-            _settingManager.UpdateSettings(assistantName, password, voiceType, volume, inputMode);
+            _settingManager.UpdateSettings(assistantName, password, voiceType, volume, inputMode, MusicFolderPathTextBox.Text);
             MessageBox.Show("Настройки успешно обновлены!", "Успех!", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 

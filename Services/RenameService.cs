@@ -15,7 +15,7 @@ namespace Friday
                 if (!string.IsNullOrWhiteSpace(value))
                 {
                     _botName = value;
-                    _settingManager.Setting.AssistantName = value;
+                    SettingManager.Setting.AssistantName = value;
                     _settingManager.SaveSettings();
 
                     // Уведомляем об изменении имени

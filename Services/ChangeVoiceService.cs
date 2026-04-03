@@ -13,7 +13,7 @@ namespace Friday.Services
 
         public void ChangeVoice(string voice)
         {
-            _settingManager.Setting.VoiceType = voice;
+            SettingManager.Setting.VoiceType = voice;
             _settingManager.SaveSettings();
 
             // Уведомляем об изменении голоса

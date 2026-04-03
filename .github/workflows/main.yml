@@ -20,13 +20,13 @@ jobs:
         dotnet-version: '8.0.x' 
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore Friday.csproj
       
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build Friday.csproj --configuration Release --no-restore
 
     - name: Publish
-      run: dotnet publish -c Release -o ./publish /p:UseAppHost=true
+      run: dotnet publish Friday.csproj -c Release -o ./publish /p:UseAppHost=true
 
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4

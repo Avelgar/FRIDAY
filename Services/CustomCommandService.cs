@@ -1,5 +1,4 @@
 ﻿using Friday.Managers;
-using System.Text;
 
 namespace Friday
 {
@@ -87,7 +86,7 @@ namespace Friday
                         mouseService.PressMouseButton(action.ActionText);
                         break;
 
-                   case "голосовой ответ":
+                    case "голосовой ответ":
                         await _voiceService.SpeakAsync("Бот", action.ActionText);
                         break;
 
@@ -95,7 +94,7 @@ namespace Friday
                         Console.WriteLine($"Неизвестное действие: {action.ActionType}");
                         break;
                 }
-            } 
+            }
         }
 
         private static async Task<bool> CheckPasswordAsync()

@@ -1,12 +1,8 @@
-﻿using FigmaToWpf;
-using Friday.Services;
+﻿using Friday.Services;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.WebSockets;
 using System.Speech.Synthesis;
@@ -47,6 +43,8 @@ namespace Friday
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            SettingManager settingManager = new SettingManager();
+            settingManager.LoadSettings();
             AppServices.Init();
             const string appName = "FridayAssistantApp";
             bool createdNew;
@@ -182,7 +180,8 @@ namespace Friday
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
                         string message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                        Application.Current.Dispatcher.Invoke(() => {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
                             OnWebSocketMessage(message);
                         });
                     }
@@ -368,7 +367,7 @@ namespace Friday
                         bool mainWindowExists = _mainWindow != null && _mainWindow.IsVisible;
 
                         var response = JsonConvert.DeserializeObject<dynamic>(answer);
-                        
+
                         if (_registrationWindow != null && _registrationWindow.IsVisible)
                         {
                             string deviceName = _registrationWindow.DeviceName;

@@ -1,9 +1,6 @@
 ﻿using Emgu.CV;
 using Emgu.CV.Structure;
-using System;
-using System.Collections.Generic;
 using System.Drawing;
-using Friday.Games;
 
 namespace Friday.Games
 {
@@ -74,7 +71,7 @@ namespace Friday.Games
                 }
             }
 
-            using (Mat scoreImage = DrawingUtils.CreateTextImage($"Рекорд: {_bestScore} ударов", 
+            using (Mat scoreImage = DrawingUtils.CreateTextImage($"Рекорд: {_bestScore} ударов",
                                                   new MCvScalar(255, 255, 255),
                                                   new MCvScalar(200, 50, 50),
                                                   250, 40))

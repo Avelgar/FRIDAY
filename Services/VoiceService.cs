@@ -1,4 +1,3 @@
-using FigmaToWpf;
 using Friday.Games;
 using Friday.Services;
 using NAudio.Wave;
@@ -10,13 +9,9 @@ using System.IO;
 using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Speech.Synthesis;
-using System.Text;
-using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 using Vosk;
-using static FigmaToWpf.MainWindow;
 
 
 namespace Friday
@@ -32,13 +27,13 @@ namespace Friday
     {
         private readonly BluetoothService _bluetoothService;
         private SpeechSynthesizer _currentSynthesizer;
-        private readonly List<string> _stopWords = new List<string> { "стоп", "хватит", "довольно", "заткнись", "завали ебало", "заткнись", "закрой рот"};
+        private readonly List<string> _stopWords = new List<string> { "стоп", "хватит", "довольно", "заткнись", "завали ебало", "заткнись", "закрой рот" };
         private PoseTrackingService _poseTrackingService;
         private CameraWindow _cameraWindow;
         private bool _isSpeaking = false;
         private string modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\model"));
         public event Action<string> OnPasswordReceived;
-        private readonly VoskRecognizer _recognizer;    
+        private readonly VoskRecognizer _recognizer;
         private readonly RenameService _renameService;
         private readonly SettingManager _settingManager;
         private readonly ChangeVoiceService _changeVoiceService;
@@ -51,7 +46,7 @@ namespace Friday
 
         public event Action<string> OnMessageReceived;
         private readonly MainWindow _mainWindow;
-        public AttachedFile AttachedFile { get; set; }
+        public MainWindow.AttachedFile AttachedFile { get; set; }
 
         public bool IsScreenshotEnabled { get; set; } = false;
 

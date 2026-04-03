@@ -1,8 +1,7 @@
 ﻿using Friday.Managers;
+using Friday.Services;
 using Newtonsoft.Json;
 using System.IO;
-using System;
-using Friday.Services;
 
 namespace Friday
 {

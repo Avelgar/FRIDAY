@@ -1,7 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace Friday
@@ -20,8 +17,8 @@ namespace Friday
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct KeyboardInput { public ushort wVk; public ushort wScan; public uint dwFlags; public uint time; public IntPtr dwExtraInfo; } // Добавили internal
-        // Делаем метод асинхронным, чтобы не блокировать интерфейс программы
-        
+                                                                                                                                                    // Делаем метод асинхронным, чтобы не блокировать интерфейс программы
+
         const uint INPUT_KEYBOARD = 1;
         const uint KEYEVENTF_KEYUP = 0x0002;
         const uint KEYEVENTF_UNICODE = 0x0004;

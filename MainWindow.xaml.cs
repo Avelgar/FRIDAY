@@ -1,6 +1,4 @@
-﻿using Emgu.CV;
-using Friday;
-using Friday.Managers;
+﻿using Friday.Managers;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
@@ -15,12 +13,12 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace FigmaToWpf
+namespace Friday
 {
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private VoiceService _voiceService;
-        public static Friday.CommandManager _commandManager = new Friday.CommandManager();
+        public static CommandManager _commandManager = new CommandManager();
         private static SettingManager _settingManager = new SettingManager();
         public AttachedFile _attachedFile;
         public AttachedFile GetAttachedFile()
@@ -30,7 +28,6 @@ namespace FigmaToWpf
 
         private dynamic _userData;
 
-        // Добавляем свойство для отслеживания команд, отображаемых в ItemsControl.
         private ObservableCollection<Command> _commands;
         public ObservableCollection<Command> Commands
         {
@@ -41,7 +38,7 @@ namespace FigmaToWpf
                 OnPropertyChanged(nameof(Commands));
             }
         }
-       
+
         private List<string> _actionTypes;
         public List<string> ActionTypes
         {
@@ -237,7 +234,7 @@ namespace FigmaToWpf
                 }
             }
 
-            return string.Empty; 
+            return string.Empty;
         }
 
         private void ProcessHistoryMessages(dynamic historyData)
@@ -737,7 +734,7 @@ namespace FigmaToWpf
             loginWindow.ShowDialog();
         }
 
-        private void RegisterButton_Click(object sender, RoutedEventArgs e) 
+        private void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
             var registerWindow = new RegisterWindow();
             registerWindow.ShowDialog();

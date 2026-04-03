@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Newtonsoft.Json;
 using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Net.Http;
 using System.Windows.Forms;
 using Tesseract;
-using Newtonsoft.Json;
-using System.Text;
 
 namespace Friday.Services
 {

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Friday.Services
+﻿namespace Friday.Services
 {
     public class ChangeVoiceService
     {

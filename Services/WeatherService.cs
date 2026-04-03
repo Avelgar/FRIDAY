@@ -1,5 +1,5 @@
-﻿using System.Net.Http;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
+using System.Net.Http;
 
 namespace Friday
 {

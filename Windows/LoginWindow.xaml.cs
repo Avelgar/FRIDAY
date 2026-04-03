@@ -1,11 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
 using System.Net.Http;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
-using FigmaToWpf;
-using Newtonsoft.Json;
-using System.Windows.Documents;
 
 namespace Friday
 {

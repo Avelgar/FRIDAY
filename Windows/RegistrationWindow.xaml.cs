@@ -1,12 +1,4 @@
-﻿using FigmaToWpf;
-using System.IO;
-using System.Text;
-using System.Windows;
-using System.Net.NetworkInformation;
-using Newtonsoft.Json;
-using static Friday.App;
-using System.Security.Cryptography;
-using System;
+﻿using System.Windows;
 
 namespace Friday
 {

@@ -1,10 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
 using System.Net.Http;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
-using FigmaToWpf;
-using Newtonsoft.Json;
 
 namespace Friday
 {
@@ -55,7 +53,7 @@ namespace Friday
                     email,
                     login,
                     password = password1,
-                    mac = MainWindow.GetMacAddress() 
+                    mac = MainWindow.GetMacAddress()
                 };
 
                 using (var client = new HttpClient())

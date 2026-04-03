@@ -1,18 +1,17 @@
-﻿using System.Drawing;
-using Emgu.CV;
-using Emgu.CV.Structure;
+﻿using Emgu.CV;
 using Emgu.CV.CvEnum;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Windows;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
+using Emgu.CV.Structure;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using System.Windows.Forms;
-using System.Timers;
-using System.Text;
+using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Timers;
+using System.Windows;
+using System.Windows.Forms;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace Friday.Games
 {
@@ -694,23 +693,23 @@ namespace Friday.Games
         }
 
         public void Dispose()
-{
-    _isTracking = false;
-    _hoverTimer?.Stop();
-    _hoverTimer?.Dispose();
-    _camera?.Dispose();
-    _session?.Dispose();
-    
-    // Отписываемся от событий
-    if (_boxingGame != null)
-        _boxingGame.OnReturnToMainMenu -= ReturnToMainMenu;
-    if (_dodgeGame != null)
-        _dodgeGame.OnReturnToMainMenu -= ReturnToMainMenu;
-    if (_appearanceGame != null)
-        _appearanceGame.OnReturnToMainMenu -= ReturnToMainMenu;
-    
-    GC.SuppressFinalize(this);
-}
+        {
+            _isTracking = false;
+            _hoverTimer?.Stop();
+            _hoverTimer?.Dispose();
+            _camera?.Dispose();
+            _session?.Dispose();
+
+            // Отписываемся от событий
+            if (_boxingGame != null)
+                _boxingGame.OnReturnToMainMenu -= ReturnToMainMenu;
+            if (_dodgeGame != null)
+                _dodgeGame.OnReturnToMainMenu -= ReturnToMainMenu;
+            if (_appearanceGame != null)
+                _appearanceGame.OnReturnToMainMenu -= ReturnToMainMenu;
+
+            GC.SuppressFinalize(this);
+        }
     }
 
     public enum AppState

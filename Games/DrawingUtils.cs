@@ -3,8 +3,6 @@ using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
-using System.Windows.Forms;
 
 namespace Friday.Games
 {

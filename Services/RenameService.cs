@@ -1,6 +1,4 @@
-﻿using Friday.Managers;
-
-namespace Friday
+﻿namespace Friday
 {
     public class RenameService
     {

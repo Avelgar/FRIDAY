@@ -1,6 +1,4 @@
-﻿using System;
-using System.ComponentModel;
-using System.Management;
+﻿using System.ComponentModel;
 using System.Runtime.InteropServices;
 
 public class BluetoothService

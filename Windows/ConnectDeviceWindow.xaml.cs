@@ -1,11 +1,10 @@
-﻿using System;
+﻿using Newtonsoft.Json;
 using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Text;
 using System.Windows;
-using Newtonsoft.Json;
 
-namespace FigmaToWpf
+namespace Friday
 {
     public partial class ConnectDeviceWindow : Window
     {

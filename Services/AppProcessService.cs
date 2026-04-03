@@ -2,8 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using System;
-using System.Runtime.InteropServices;
 
 namespace Friday
 {

@@ -9,17 +9,19 @@ public class MusicService : Service
     private AudioFileReader _audioFileReader;
     private string[] _musicFiles;
     private int _currentTrackIndex;
-    private string _musicFolderPath;
+    private string _musicFolderPath = SettingManager.Setting.MusicFolderPath;
 
     public override void Init()
     {
         _musicFolderPath = SettingManager.Setting.MusicFolderPath;
+        _musicFiles = Directory.GetFiles(_musicFolderPath, "*.mp3");
         base.Init();
     }
 
     public override void UpdateVariables()
     {
         _musicFolderPath = SettingManager.Setting.MusicFolderPath;
+        _musicFiles = Directory.GetFiles(_musicFolderPath, "*.mp3");
         base.UpdateVariables();
     }
 
@@ -28,12 +30,6 @@ public class MusicService : Service
         if (!Directory.Exists(_musicFolderPath))
         {
             throw new DirectoryNotFoundException("The specified folder does not exist: " + _musicFolderPath);
-        }
-
-        _musicFiles = Directory.GetFiles(_musicFolderPath, "*.mp3");
-        if (_musicFiles.Length == 0)
-        {
-            throw new FileNotFoundException("No MP3 files found in the specified folder.");
         }
 
         _currentTrackIndex = 0;

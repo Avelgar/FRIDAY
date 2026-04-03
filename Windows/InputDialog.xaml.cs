@@ -1,10 +1,10 @@
-﻿using System.Text.RegularExpressions;
+﻿using Microsoft.Win32;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Microsoft.Win32;
 
-namespace FigmaToWpf
+namespace Friday
 {
     public partial class InputDialog : Window
     {

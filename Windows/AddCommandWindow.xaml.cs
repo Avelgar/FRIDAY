@@ -1,9 +1,9 @@
-﻿using System.Windows;
-using Friday.Managers;
+﻿using Friday.Managers;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace FigmaToWpf
+namespace Friday
 {
     public partial class AddCommandWindow : Window
     {

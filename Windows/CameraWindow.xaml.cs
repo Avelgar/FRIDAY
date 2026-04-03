@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Media.Imaging;
 
-namespace FigmaToWpf
+namespace Friday
 {
     public partial class CameraWindow : Window
     {

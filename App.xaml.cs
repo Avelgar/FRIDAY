@@ -5,10 +5,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Net.WebSockets;
-using System.Speech.Synthesis;
 using System.Text;
 using System.Windows;
-
 
 namespace Friday
 {
@@ -26,8 +24,6 @@ namespace Friday
 
         private int _openWindowsCount = 0;
         private bool _isConnectionActive = false;
-
-        private bool _voicesInstalled = false;
 
         private bool _isReconnecting = false;
         private readonly object _reconnectLock = new object();
@@ -58,7 +54,8 @@ namespace Friday
                 return;
             }
             base.OnStartup(e);
-            CheckAndInstallVoices();
+
+            // Удалена проверка и установка RHVoice
 
             string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\devisedata.json"));
 
@@ -189,115 +186,22 @@ namespace Friday
                     {
                         await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", cancellationToken);
                         _isConnectionActive = false;
-                        ClearWaitingForServer(); // <--- ДОБАВИТЬ ЭТО
+                        ClearWaitingForServer();
                     }
                 }
                 catch (OperationCanceledException)
                 {
-                    // Operation was cancelled, break the loop
                     break;
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Ошибка получения сообщения: {ex.Message}");
-                    ClearWaitingForServer(); // <--- И ДОБАВИТЬ ЭТО
+                    ClearWaitingForServer();
                     break;
                 }
             }
         }
 
-        private void CheckAndInstallVoices()
-        {
-            try
-            {
-                using (var synth = new SpeechSynthesizer())
-                {
-                    var installedVoices = synth.GetInstalledVoices()
-                        .Where(v => v.Enabled)
-                        .Select(v => v.VoiceInfo.Name)
-                        .ToList();
-
-                    // Проверяем наличие всех требуемых голосов
-                    var requiredVoices = new[] { "Aleksandr", "Anna", "Elena", "Irina", "Dasha" };
-                    var missingVoices = requiredVoices.Where(v =>
-                        !installedVoices.Any(iv => iv.Contains(v))).ToList();
-
-                    if (!missingVoices.Any())
-                    {
-                        _voicesInstalled = true;
-                        return;
-                    }
-
-                    // Показываем сообщение о необходимости установки голосов
-                    var result = MessageBox.Show(
-                        $"Необходимо установить голоса: {string.Join(", ", missingVoices)}. Установить сейчас?",
-                        "Требуется установка голосов",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        InstallVoices(missingVoices);
-                        _voicesInstalled = true;
-                    }
-                    else
-                    {
-                        _voicesInstalled = false;
-                        MessageBox.Show(
-                            "Некоторые функции могут работать некорректно без установленных голосов",
-                            "Предупреждение",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Warning);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при проверке голосов: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                _voicesInstalled = false;
-            }
-        }
-
-        private void InstallVoices(List<string> voicesToInstall)
-        {
-            try
-            {
-                // Путь к папке с установщиками
-                string voicesDir = Path.GetFullPath(Path.Combine(
-                    AppDomain.CurrentDomain.BaseDirectory,
-                    @"..\..\..\Assets\Voices"));
-
-                foreach (var voice in voicesToInstall)
-                {
-                    string installerName = $"RHVoice-voice-Russian-{voice}-v4.1.2016.21-setup.exe";
-                    string installerPath = Path.Combine(voicesDir, installerName);
-
-                    if (!File.Exists(installerPath))
-                    {
-                        MessageBox.Show($"Установщик не найден: {installerPath}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                        continue;
-                    }
-
-                    var process = new Process();
-                    process.StartInfo.FileName = installerPath;
-                    process.StartInfo.Arguments = "/SILENT"; // Тихая установка
-                    process.StartInfo.Verb = "runas"; // Запрос прав администратора
-                    process.StartInfo.UseShellExecute = true;
-                    process.Start();
-                    process.WaitForExit();
-
-                    if (process.ExitCode != 0)
-                    {
-                        MessageBox.Show($"Ошибка при установке голоса {voice}. Код ошибки: {process.ExitCode}",
-                            "Ошибка установки", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при установке голосов: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
         private void LoadDeviceData(string filePath)
         {
             if (!File.Exists(filePath))
@@ -308,7 +212,6 @@ namespace Friday
             {
                 try
                 {
-
                     var fileContent = File.ReadAllText(filePath);
                     _deviceData = JsonConvert.DeserializeObject<DeviceData>(fileContent);
 
@@ -344,7 +247,7 @@ namespace Friday
                 {
                     ClearWaitingForServer();
                 }
-                //OnMessageReceived?.Invoke(answer);
+
                 if (answer.Contains("connection_timeout"))
                 {
                     _isConnectionActive = false;
@@ -469,7 +372,6 @@ namespace Friday
             }
         }
 
-        // Изменяем модификатор доступа с private на public
         public void UpdateDeviceDataFile(string deviceName, string password)
         {
             string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\devisedata.json"));
@@ -481,16 +383,12 @@ namespace Friday
                 Password = password
             };
 
-            // Сериализация данных в JSON
             string jsonData = JsonConvert.SerializeObject(deviceData, Formatting.Indented);
-
-            // Запись данных в файл (очистка файла, если он существует)
             File.WriteAllText(filePath, jsonData, Encoding.UTF8);
         }
 
         private void OpenRegistrationWindow()
         {
-            // Проверяем, открыто ли окно регистрации
             if (_registrationWindow == null || !_registrationWindow.IsVisible)
             {
                 _registrationWindow = new RegistrationWindow();
@@ -505,7 +403,6 @@ namespace Friday
             _mainWindow.Show();
         }
 
-        // Не забудьте закрыть WebSocket при завершении приложения
         protected override async void OnExit(ExitEventArgs e)
         {
             _cancellationTokenSource.Cancel();
@@ -516,10 +413,7 @@ namespace Friday
                 {
                     await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Application exit", CancellationToken.None);
                 }
-                catch
-                {
-                    // Ignore close errors during exit
-                }
+                catch { }
                 _webSocket.Dispose();
             }
 
@@ -528,28 +422,24 @@ namespace Friday
 
         public static string GetMacAddress()
         {
-            // Получаем все сетевые интерфейсы
             NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
 
-            // Ищем первый активный интерфейс с физическим адресом
             foreach (NetworkInterface networkInterface in networkInterfaces)
             {
-                // Пропускаем интерфейсы, которые не работают (не активны) или не имеют физического адреса
                 if (networkInterface.OperationalStatus == OperationalStatus.Up &&
                     !string.IsNullOrEmpty(networkInterface.GetPhysicalAddress().ToString()))
                 {
-                    // Получаем MAC-адрес и форматируем его с дефисами
                     string macAddress = networkInterface.GetPhysicalAddress().ToString();
-                    if (macAddress.Length == 12) // Стандартная длина MAC без разделителей
+                    if (macAddress.Length == 12)
                     {
                         return string.Join("-", Enumerable.Range(0, 6)
                             .Select(i => macAddress.Substring(i * 2, 2)));
                     }
-                    return macAddress; // Если уже есть разделители, возвращаем как есть
+                    return macAddress;
                 }
             }
 
-            return string.Empty; // Возвращаем пустую строку, если не нашли MAC-адрес
+            return string.Empty;
         }
 
         private async Task CheckConnectionAndSendPingAsync()
@@ -592,11 +482,8 @@ namespace Friday
         public List<string> GetInstalledApplications()
         {
             var appList = new List<string>();
-
-            // Подгружаем наши приложения из менеджера
             var customApps = Friday.Managers.AppPathManager.LoadApps();
 
-            // Создаем временную папку для наших скрытых ярлыков-запускаторов
             string tempDir = Path.Combine(Path.GetTempPath(), "FridayAppLaunchers");
             if (!Directory.Exists(tempDir))
             {
@@ -607,20 +494,11 @@ namespace Friday
             {
                 if (File.Exists(app.Path))
                 {
-                    // Убираем из имени приложения запрещенные символы (на случай если они есть)
                     string safeName = string.Join("_", app.Name.Split(Path.GetInvalidFileNameChars()));
-
-                    // Формируем путь к нашему скрипту-запускатору (например: Дискорд.vbs)
                     string vbsPath = Path.Combine(tempDir, $"{safeName}.vbs");
-
-                    // VBS-скрипт, который без черных окон командной строки открывает оригинальный .exe файл
                     string script = $"Set WshShell = CreateObject(\"WScript.Shell\")\r\nWshShell.Run Chr(34) & \"{app.Path}\" & Chr(34), 1, False";
 
-                    // Создаем или перезаписываем файл запуска
                     File.WriteAllText(vbsPath, script, System.Text.Encoding.UTF8);
-
-                    // Отправляем серверу путь к скрипту с ПРАВИЛЬНЫМ названием. 
-                    // Обязательно экранируем слеши, как это было в оригинальном коде
                     appList.Add(vbsPath.Replace("\\", "\\\\"));
                 }
             }
@@ -649,17 +527,13 @@ namespace Friday
                     {
                         await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Reconnecting", CancellationToken.None);
                     }
-                    catch
-                    {
-                        // Ignore close errors during reconnect
-                    }
+                    catch { }
                 }
 
                 _webSocket = new ClientWebSocket();
                 await _webSocket.ConnectAsync(new Uri("wss://friday-assistant.ru/ws"), _cancellationTokenSource.Token);
                 _isConnectionActive = true;
 
-                // Повторно отправляем регистрационные данные
                 if (_deviceData != null)
                 {
                     var registrationData = new
@@ -671,10 +545,7 @@ namespace Friday
                     await SendDataInternal(registrationData);
                 }
 
-                // Отправляем все команды из очереди
                 await ProcessCommandQueue();
-
-                // Перезапускаем задачу прослушивания
                 _ = Task.Run(async () => await ReceiveMessages(_cancellationTokenSource.Token));
             }
             catch (Exception ex)
@@ -723,8 +594,6 @@ namespace Friday
             _responseTimeoutCts?.Cancel();
             _responseTimeoutCts = new CancellationTokenSource();
 
-            // Защита: Снимаем блокировку через 15 секунд автоматически, 
-            // если сервер "завис" и не ответил
             Task.Delay(15000, _responseTimeoutCts.Token).ContinueWith(t =>
             {
                 if (!t.IsCanceled && IsWaitingForServerResponse)

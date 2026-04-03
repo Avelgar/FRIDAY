@@ -2,36 +2,47 @@ using Friday.Games;
 using Friday.Services;
 using NAudio.Wave;
 using Newtonsoft.Json;
-using System.Drawing; // Для работы со скриншотами
+using System.Diagnostics;
+using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging; // Для формата изображения
+using System.Drawing.Imaging;
 using System.IO;
 using System.Net.Http;
 using System.Net.NetworkInformation;
-using System.Speech.Synthesis;
+using System.Text;
+using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Media.Imaging;
 using Vosk;
 
-
 namespace Friday
 {
-
     public interface IVoiceService
     {
-        Task ProcessCommand(string command); // Убедитесь, что возвращаемый тип - Task
-        Task OnMessageReceived(string message); // Добавьте метод, если он нужен
-        Task SpeakAsync(string text); // Добавьте метод, если он нужен
+        Task ProcessCommand(string command);
+        Task OnMessageReceived(string message);
+        Task SpeakAsync(string text);
     }
+
     public class VoiceService
     {
         private readonly BluetoothService _bluetoothService;
-        private SpeechSynthesizer _currentSynthesizer;
+
+        // Убрали SpeechSynthesizer
         private readonly List<string> _stopWords = new List<string> { "стоп", "хватит", "довольно", "заткнись", "завали ебало", "заткнись", "закрой рот" };
         private PoseTrackingService _poseTrackingService;
         private CameraWindow _cameraWindow;
         private bool _isSpeaking = false;
         private string modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\model"));
+
+        // Пути к Piper (сделаны по аналогии с Vosk)
+        private string _piperExePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\piper\piper.exe"));
+        private string _modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\Models\ru_RU-irina-medium.onnx"));
+
+        // Для принудительной остановки речи
+        private Process _piperProcess;
+        private WaveOutEvent _waveOut;
+
         public event Action<string> OnPasswordReceived;
         private readonly VoskRecognizer _recognizer;
         private readonly RenameService _renameService;
@@ -40,8 +51,6 @@ namespace Friday
         private WaveInEvent _waveIn;
         private static MusicService musicService = new MusicService();
         private static readonly HttpClient httpClient = new HttpClient();
-        private static readonly string apiToken = "6847f156-b1fd-4506-b80e-46b64a14106d";
-        private static readonly string synthesisUrl = $"https://public.api.voice.steos.io/api/v1/synthesize-controller/synthesis-by-text?authToken={apiToken}";
         public ListeningState ListeningState { get; private set; }
 
         public event Action<string> OnMessageReceived;
@@ -100,7 +109,6 @@ namespace Friday
                                 return;
                             }
 
-                            // Получаем текущий режим ввода в UI-потоке
                             InputMode inputMode = InputMode.NameResponseCommand;
                             bool isScreenshotModeActive = ScreenshotForm.IsActive;
 
@@ -110,47 +118,40 @@ namespace Friday
                             });
                             if (_isSpeaking)
                             {
-                                // Проверяем содержит ли речь пользователя стоп-слово
                                 if (!string.IsNullOrEmpty(recognizedText) &&
                                     _stopWords.Any(stopWord => recognizedText.ToLower().Contains(stopWord)))
                                 {
-                                    // Получаем последний ответ бота из App
                                     var app = (App)System.Windows.Application.Current;
                                     string lastAnswer = app._last_answer.ToLower();
 
-                                    // Проверяем нет ли стоп-слова в ответе бота
                                     if (!_stopWords.Any(stopWord => lastAnswer.Contains(stopWord)))
                                     {
-                                        // Прерываем голосовой ответ
                                         StopSpeaking();
                                     }
                                 }
                             }
                             else
                             {
-                                // --- ДОБАВЛЕНО: Запрет обработки голоса ---
                                 var app = (App)System.Windows.Application.Current;
                                 if (app.IsWaitingForServerResponse)
                                 {
-                                    return; // Полностью игнорируем голосовой ввод, пока ждем ответа
+                                    return;
                                 }
-                                // ------------------------------------------
 
-                                // Обработка в зависимости от режима ввода
                                 switch (inputMode)
                                 {
                                     case InputMode.NameResponseCommand:
                                         if (recognizedText == _renameService.BotName.ToLower() && !isScreenshotModeActive)
                                         {
                                             OnMessageReceived?.Invoke($"Вы: {recognizedText}");
-                                            _ = SpeakAsync("Бот", "Слушаю вас"); // Используем discard для асинхронного вызова
+                                            _ = SpeakAsync("Бот", "Слушаю вас");
                                             ListeningState.StartListening();
                                             isListeningForCommands = true;
                                             lastRecognizedText = string.Empty;
                                         }
                                         else if (isListeningForCommands && !string.IsNullOrEmpty(recognizedText) && recognizedText != lastRecognizedText)
                                         {
-                                            _ = ProcessCommand(recognizedText); // Используем discard для асинхронного вызова
+                                            _ = ProcessCommand(recognizedText);
                                             isListeningForCommands = false;
                                             lastRecognizedText = recognizedText;
                                         }
@@ -160,10 +161,9 @@ namespace Friday
                                         if (!isScreenshotModeActive && recognizedText != null &&
                                             recognizedText.ToLower().Contains(_renameService.BotName.ToLower()))
                                         {
-
                                             if (!string.IsNullOrEmpty(recognizedText))
                                             {
-                                                _ = ProcessCommand(recognizedText); // Используем discard для асинхронного вызова
+                                                _ = ProcessCommand(recognizedText);
                                             }
                                         }
                                         break;
@@ -172,7 +172,7 @@ namespace Friday
                                         if (!isScreenshotModeActive && !string.IsNullOrEmpty(recognizedText) &&
                                             recognizedText != lastRecognizedText)
                                         {
-                                            _ = ProcessCommand(recognizedText); // Используем discard для асинхронного вызова
+                                            _ = ProcessCommand(recognizedText);
                                             lastRecognizedText = recognizedText;
                                         }
                                         break;
@@ -197,16 +197,18 @@ namespace Friday
 
         public void StopSpeaking()
         {
-            _mainWindow.Dispatcher.Invoke(() =>
+            _isSpeaking = false;
+            try
             {
-                _currentSynthesizer?.SpeakAsyncCancelAll();
-                _currentSynthesizer?.Dispose();
-                _currentSynthesizer = null;
-                _isSpeaking = false;
-            });
+                _waveOut?.Stop();
+                if (_piperProcess != null && !_piperProcess.HasExited)
+                {
+                    _piperProcess.Kill();
+                }
+            }
+            catch { }
         }
 
-        // Вспомогательный метод для вызова в UI-потоке
         private async Task DispatchToUI(Action action)
         {
             await _mainWindow.Dispatcher.InvokeAsync(action);
@@ -217,7 +219,6 @@ namespace Friday
             switch (action.ActionType.ToLower())
             {
                 case "голосовой ответ":
-                    // Передаем отправителя и текст
                     await SpeakAsync(action.Sender, action.ActionText);
                     break;
 
@@ -412,8 +413,6 @@ namespace Friday
             }
         }
 
-
-
         private void TakeScreenshot()
         {
             using (ScreenshotForm screenshotForm = new ScreenshotForm(this))
@@ -448,28 +447,24 @@ namespace Friday
 
         public static string GetMacAddress()
         {
-            // Получаем все сетевые интерфейсы
             NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
 
-            // Ищем первый активный интерфейс с физическим адресом
             foreach (NetworkInterface networkInterface in networkInterfaces)
             {
-                // Пропускаем интерфейсы, которые не работают (не активны) или не имеют физического адреса
                 if (networkInterface.OperationalStatus == OperationalStatus.Up &&
                     !string.IsNullOrEmpty(networkInterface.GetPhysicalAddress().ToString()))
                 {
-                    // Получаем MAC-адрес и форматируем его с дефисами
                     string macAddress = networkInterface.GetPhysicalAddress().ToString();
-                    if (macAddress.Length == 12) // Стандартная длина MAC без разделителей
+                    if (macAddress.Length == 12)
                     {
                         return string.Join("-", Enumerable.Range(0, 6)
                             .Select(i => macAddress.Substring(i * 2, 2)));
                     }
-                    return macAddress; // Если уже есть разделители, возвращаем как есть
+                    return macAddress;
                 }
             }
 
-            return string.Empty; // Возвращаем пустую строку, если не нашли MAC-адрес
+            return string.Empty;
         }
 
         public async Task ProcessCommand(string command)
@@ -502,15 +497,12 @@ namespace Friday
                 {
                     string screenshotBase64 = null;
 
-                    // Получаем прикрепленный файл из MainWindow
                     var attachedFile = _mainWindow.GetAttachedFile();
 
-                    // Приоритет: сначала проверяем прикрепленный файл
                     if (attachedFile != null)
                     {
                         screenshotBase64 = Convert.ToBase64String(attachedFile.Data);
                     }
-                    // Если файла нет, но включен режим скриншота - делаем скриншот
                     else if (IsScreenshotEnabled)
                     {
                         byte[] screenshotBytes = CaptureScreenshot();
@@ -533,7 +525,6 @@ namespace Friday
                     ((App)System.Windows.Application.Current).SendWebSocketMessage(message);
                     app.MarkAsWaitingForServer();
 
-                    // Очищаем прикрепленный файл после отправки
                     System.Windows.Application.Current.Dispatcher.Invoke(() => _mainWindow.ClearAttachedFile());
                 }
                 catch (Exception ex)
@@ -555,14 +546,9 @@ namespace Friday
                 {
                     using (Graphics g = Graphics.FromImage(bitmap))
                     {
-                        // Копируем экран
                         g.CopyFromScreen(bounds.Location, System.Drawing.Point.Empty, bounds.Size);
-
-                        // Настраиваем рендеринг для качественной графики
                         g.SmoothingMode = SmoothingMode.AntiAlias;
                         g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-
-                        // Рисуем координатную сетку и разметку
                         DrawCoordinateMarkings(g, bounds);
                     }
 
@@ -587,7 +573,6 @@ namespace Friday
             using (Brush textBrush = new SolidBrush(Color.White))
             using (Brush backgroundBrush = new SolidBrush(Color.FromArgb(100, Color.Black)))
             {
-                // Рисуем сетку с шагом 100 пикселей
                 for (int x = 0; x < bounds.Width; x += 50)
                 {
                     g.DrawLine(gridPen, x, 0, x, bounds.Height);
@@ -600,7 +585,6 @@ namespace Friday
                     DrawTextWithBackground(g, $"{y}", coordFont, textBrush, backgroundBrush, 5, y);
                 }
 
-                // Угловые координаты
                 string[] corners = {
                     $"({0}, {0})",
                     $"({bounds.Width}, {0})",
@@ -655,75 +639,20 @@ namespace Friday
 
             try
             {
-                _currentSynthesizer = new SpeechSynthesizer(); // Используем поле
-
-                VoiceInfo selectedVoice = null;
-                string voiceType = SettingManager.Setting.VoiceType;
-
-                // Получаем все доступные голоса
-                var installedVoices = _currentSynthesizer.GetInstalledVoices()
-                    .Where(v => v.Enabled)
-                    .Select(v => v.VoiceInfo)
-                    .ToList();
-
-                // Попробуем найти точное совпадение
-                selectedVoice = installedVoices.FirstOrDefault(v =>
-                    v.Name.Equals(voiceType, StringComparison.OrdinalIgnoreCase));
-
-                // Если не нашли - попробуем частичное совпадение
-                if (selectedVoice == null)
+                if (!File.Exists(_piperExePath))
                 {
-                    selectedVoice = installedVoices.FirstOrDefault(v =>
-                        v.Name.Contains(voiceType, StringComparison.OrdinalIgnoreCase));
+                    OnMessageReceived?.Invoke($"Ошибка: Piper не найден по пути {_piperExePath}");
+                    return;
                 }
 
-                // Если русский голос не найден - используем первый доступный русский
-                if (selectedVoice == null)
-                {
-                    selectedVoice = installedVoices.FirstOrDefault(v =>
-                        v.Culture.TwoLetterISOLanguageName.Equals("ru", StringComparison.OrdinalIgnoreCase));
-                }
-
-                // Если русских нет - используем первый доступный
-                if (selectedVoice == null)
-                {
-                    selectedVoice = installedVoices.FirstOrDefault();
-
-                    if (selectedVoice == null)
-                    {
-                        OnMessageReceived?.Invoke("Нет доступных голосов");
-                        return;
-                    }
-
-                    OnMessageReceived?.Invoke($"Голос '{voiceType}' не найден. Используется {selectedVoice.Name}");
-                }
-                else
-                {
-                    //OnMessageReceived?.Invoke($"Используется голос: {selectedVoice.Name}");
-                }
-
-                // Выбираем голос
-                _currentSynthesizer.SelectVoice(selectedVoice.Name);
-
-                // Устанавливаем громкость (0-100)
-                _currentSynthesizer.Volume = (int)(SettingManager.Setting.Volume * 10);
-
-                // Асинхронное произношение с ожиданием завершения
-                var tcs = new TaskCompletionSource<bool>();
-                _currentSynthesizer.SpeakCompleted += (s, e) => tcs.SetResult(true);
-                _currentSynthesizer.SpeakAsync(text);
-
-                await tcs.Task;
+                await Task.Run(() => PlayWithPiper(text));
             }
             catch (Exception ex)
             {
-                OnMessageReceived?.Invoke($"Ошибка при озвучивании: {ex.Message}");
+                OnMessageReceived?.Invoke($"Ошибка при воспроизведении Piper: {ex.Message}");
             }
             finally
             {
-                _currentSynthesizer?.Dispose();
-                _currentSynthesizer = null;
-                await Task.Delay(100);
                 _isSpeaking = false;
                 if (wasMusicPlaying)
                 {
@@ -732,33 +661,66 @@ namespace Friday
             }
         }
 
-        // Вспомогательный метод для проверки доступных голосов
-        public List<string> GetAvailableVoices()
+        private void PlayWithPiper(string text)
         {
-            var voices = new List<string>();
-
-            try
+            var startInfo = new ProcessStartInfo
             {
-                using (var synth = new SpeechSynthesizer())
+                FileName = _piperExePath,
+                Arguments = $"--model \"{_modelPath}\" --length_scale 0.85 --sentence_silence 0.1 --output_raw",
+                UseShellExecute = false,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true,
+                StandardInputEncoding = Encoding.UTF8
+            };
+
+            using (_piperProcess = Process.Start(startInfo))
+            {
+                if (_piperProcess == null) return;
+
+                using (var sw = _piperProcess.StandardInput)
                 {
-                    foreach (var voice in synth.GetInstalledVoices().Where(v => v.Enabled))
+                    sw.WriteLine(text);
+                }
+
+                var waveFormat = new WaveFormat(22050, 16, 1);
+
+                using (_waveOut = new WaveOutEvent())
+                using (var rawStream = _piperProcess.StandardOutput.BaseStream)
+                using (var waveStream = new RawSourceWaveStream(rawStream, waveFormat))
+                {
+                    _waveOut.Init(waveStream);
+                    _waveOut.Play();
+
+                    while (_waveOut != null && _waveOut.PlaybackState == PlaybackState.Playing)
                     {
-                        voices.Add($"{voice.VoiceInfo.Name} ({voice.VoiceInfo.Culture.Name}, {voice.VoiceInfo.Gender})");
+                        Thread.Sleep(100);
+                        // Выход из цикла, если кто-то вызвал StopSpeaking
+                        if (!_isSpeaking)
+                        {
+                            _waveOut.Stop();
+                            break;
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                OnMessageReceived?.Invoke($"Ошибка при получении голосов: {ex.Message}");
-            }
 
-            return voices;
+                if (!_piperProcess.HasExited) _piperProcess.Kill();
+                _piperProcess = null;
+                _waveOut = null;
+            }
         }
+
+        public List<string> GetAvailableVoices()
+        {
+            // Возвращаем модель Piper, чтобы UI не падал при запросе голосов
+            return new List<string> { "Piper Neural Voice (ru_RU)" };
+        }
+
         public class Actions
         {
             public string ActionType { get; set; }
             public string ActionText { get; set; }
-            public string Sender { get; set; } // Новое свойство
+            public string Sender { get; set; }
         }
     }
 
@@ -778,4 +740,3 @@ namespace Friday
         public string FileContents { get; set; }
     }
 }
-

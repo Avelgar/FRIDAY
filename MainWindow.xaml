@@ -347,31 +347,79 @@
                                 <Setter Property="Margin" Value="0"/>
                                 <Setter Property="MinHeight" Value="0"/>
                                 <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                             </Style>
                         </ListBox.ItemContainerStyle>
 
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Button Click="ChatMessage_Click" 
-                                        Background="Transparent" 
-                                        BorderBrush="{x:Null}" 
-                                        HorizontalAlignment="Left" 
-                                        Padding="0" 
-                                        Margin="0,2,0,2"
-                                        MinHeight="0">
+                            <Grid Margin="0,2,0,2"
+                                  HorizontalAlignment="Stretch"
+                                    MouseEnter="ChatMessageContainer_MouseEnter">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                                    <Border Background="#625B71" 
-                                            CornerRadius="8" 
-                                            Padding="10,4" 
-                                            MaxWidth="600">
+                                <Border x:Name="MessageBorder"
+                                    Grid.Column="0"
+                                    HorizontalAlignment="Left"
+                                    Background="#625B71"
+                                    CornerRadius="8"
+                                    Padding="10,4"
+                                    Margin="0,0,8,0"
+                                    MaxWidth="600"
+                                    MouseLeftButtonUp="ChatMessage_Click">
+                                <TextBlock Text="{Binding}"
+                                       MinHeight="20"
+                                       MaxHeight="3000"
+                                       Foreground="White"
+                                       FontSize="16"
+                                       TextWrapping="Wrap"/>
+                                </Border>
 
-                                        <TextBlock Text="{Binding}"
-                                                   Height="20"
-                                                   Foreground="White" 
-                                                   FontSize="16" 
-                                                   TextWrapping="Wrap"/>
-                                    </Border>
-                                </Button>
+                                <StackPanel x:Name="MessageActionsPanel"
+                                    Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,8,0">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsMouseOver}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <Button Content="Удалить"
+                                    Margin="0,0,4,0"
+                                    Padding="6,2"
+                                    Height="30"
+                                    Click="DeleteChatMessage_Click"/>
+                                <Button Content="Редактировать"
+                                    Margin="0,0,4,0"
+                                    Padding="6,2"
+                                    Height="30"
+                                    Click="EditChatMessage_Click"/>
+                                <Button Content="Скопировать"
+                                    Margin="0,0,4,0"
+                                    Padding="6,2"
+                                    Height="30"
+                                    Click="CopyChatMessage_Click"/>
+                                <Button x:Name="RegenerateButton"
+                                    Content="Перегенерировать"
+                                    Padding="6,2"
+                                    Height="30"
+                                    Visibility="Collapsed"
+                                    Click="RegenerateChatMessage_Click"/>
+                                </StackPanel>
+                            </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>

@@ -1089,12 +1089,17 @@ namespace Friday
 
         private void ChatListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            string selectedText = ChatListBox.SelectedItem.ToString();
-            fillMessageTextBox(selectedText);
+            if (ChatListBox.SelectedItem != null)
+                fillMessageTextBox(ChatListBox.SelectedItem.ToString());
         }
 
         public void fillMessageTextBox(string selectedText)
         {
+            if (string.IsNullOrWhiteSpace(selectedText))
+            {
+                return;
+            }
+
             selectedText = new string(selectedText.Where(c => !char.IsControl(c)).ToArray()).Replace("Вы:", "").Replace("Бот:", "");
             if (!string.IsNullOrEmpty(selectedText))
             {
@@ -1102,16 +1107,190 @@ namespace Friday
             }
         }
 
-        private void ChatMessage_Click(object sender, RoutedEventArgs e)
+        private void ChatMessageContainer_MouseEnter(object sender, MouseEventArgs e)
         {
-            Button clickedButton = sender as Button;
-
-            if (clickedButton != null)
+            if (sender is not FrameworkElement messageContainer)
             {
-                string messageText = clickedButton.DataContext as string;
-
-                fillMessageTextBox(messageText);
+                return;
             }
+
+            if (messageContainer.FindName("RegenerateButton") is Button regenerateButton)
+            {
+                string messageText = messageContainer.DataContext as string;
+                regenerateButton.Visibility = IsLastBotMessage(messageText)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            }
+        }
+
+        private void ChatMessage_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is not FrameworkElement clickedElement)
+            {
+                return;
+            }
+
+            string messageText = clickedElement.DataContext as string;
+            fillMessageTextBox(messageText);
+        }
+
+        private void EditChatMessage_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Редактирование временно недоступно.", "Заглушка", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void CopyChatMessage_Click(object sender, RoutedEventArgs e)
+        {
+            string messageText = GetMessageFromSender(sender);
+            if (string.IsNullOrWhiteSpace(messageText))
+            {
+                return;
+            }
+
+            string cleanText = new string(messageText.Where(c => !char.IsControl(c)).ToArray()).Trim();
+
+            if (cleanText.StartsWith("Вы:", StringComparison.OrdinalIgnoreCase))
+            {
+                cleanText = cleanText.Substring("Вы:".Length).Trim();
+            }
+            else if (cleanText.StartsWith("Бот:", StringComparison.OrdinalIgnoreCase))
+            {
+                cleanText = cleanText.Substring("Бот:".Length).Trim();
+            }
+
+            Clipboard.SetText(cleanText);
+        }
+
+        private void DeleteChatMessage_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Удаление временно недоступно.", "Заглушка", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private async void RegenerateChatMessage_Click(object sender, RoutedEventArgs e)
+        {
+            int botMessageIndex = GetChatMessageIndexFromSender(sender);
+            if (botMessageIndex < 0 || botMessageIndex >= ChatListBox.Items.Count)
+            {
+                return;
+            }
+
+            if (ChatListBox.Items[botMessageIndex] is not string botMessage || !IsLastBotMessage(botMessage))
+            {
+                return;
+            }
+
+            int previousUserIndex = FindPreviousUserMessageIndex(botMessageIndex);
+            if (previousUserIndex < 0)
+            {
+                ChatListBox.Items.Add("Не найдено предыдущее сообщение пользователя для перегенерации." + Environment.NewLine);
+                ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
+                return;
+            }
+
+            string previousUserMessage = ChatListBox.Items[previousUserIndex] as string;
+            string userText = ExtractMessageContent(previousUserMessage, "Вы:");
+
+            if (string.IsNullOrWhiteSpace(userText))
+            {
+                ChatListBox.Items.Add("Не удалось извлечь текст запроса для перегенерации." + Environment.NewLine);
+                ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
+                return;
+            }
+
+            MessageTextBox.Text = userText;
+            await SendCurrentMessageAsync();
+        }
+
+        private string GetMessageFromSender(object sender)
+        {
+            if (sender is not DependencyObject source)
+            {
+                return null;
+            }
+
+            ListBoxItem listBoxItem = FindParent<ListBoxItem>(source);
+            return listBoxItem?.DataContext as string;
+        }
+
+        private int GetChatMessageIndexFromSender(object sender)
+        {
+            if (sender is not DependencyObject source)
+            {
+                return -1;
+            }
+
+            ListBoxItem listBoxItem = FindParent<ListBoxItem>(source);
+            if (listBoxItem == null)
+            {
+                return -1;
+            }
+
+            return ChatListBox.ItemContainerGenerator.IndexFromContainer(listBoxItem);
+        }
+
+        private bool IsLastBotMessage(string message)
+        {
+            if (!IsBotMessage(message))
+            {
+                return false;
+            }
+
+            for (int i = ChatListBox.Items.Count - 1; i >= 0; i--)
+            {
+                if (ChatListBox.Items[i] is string current && IsBotMessage(current))
+                {
+                    return string.Equals(current, message, StringComparison.Ordinal);
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsBotMessage(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return false;
+            }
+
+            string cleanMessage = new string(message.Where(c => !char.IsControl(c)).ToArray()).Trim();
+            string assistantPrefix = $"{SettingManager.Setting.AssistantName}:";
+
+            return cleanMessage.StartsWith("Бот:", StringComparison.OrdinalIgnoreCase)
+                || cleanMessage.StartsWith(assistantPrefix, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private int FindPreviousUserMessageIndex(int startIndex)
+        {
+            for (int i = startIndex - 1; i >= 0; i--)
+            {
+                if (ChatListBox.Items[i] is string current)
+                {
+                    string clean = new string(current.Where(c => !char.IsControl(c)).ToArray()).Trim();
+                    if (clean.StartsWith("Вы:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return i;
+                    }
+                }
+            }
+
+            return -1;
+        }
+
+        private string ExtractMessageContent(string message, string prefix)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return string.Empty;
+            }
+
+            string clean = new string(message.Where(c => !char.IsControl(c)).ToArray());
+            if (clean.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return clean.Substring(prefix.Length).Trim();
+            }
+
+            return clean.Trim();
         }
     }
     public enum InputMode

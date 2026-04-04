@@ -69,7 +69,7 @@ namespace Friday
                                         if (mainWindow != null)
                                         {
                                             mainWindow.ShowUserButton(responseObject.user_login.ToString());
-                                            mainWindow.ConsoleTextBox.AppendText($"Вход выполнен: {responseObject.user_login}" + Environment.NewLine);
+                                            mainWindow.ChatListBox.Items.Add($"Вход выполнен: {responseObject.user_login}" + Environment.NewLine);
                                         }
                                     });
 

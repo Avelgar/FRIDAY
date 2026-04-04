@@ -9,7 +9,7 @@
 
     <Window.Resources>
         <FontFamily x:Key="IntroFridayFont">pack://FRIDAY//Assets//IntroFriday.ttf</FontFamily>
- 
+
 
         <Style x:Key="FocusVisual">
             <Setter Property="Control.Template">
@@ -281,7 +281,7 @@
                         <!-- Добавляем новую кнопку здесь -->
                         <Button Content="Очистить историю" x:Name="ClearHistoryButton" Width="140" Height="50" Margin="10,0,0,0"
                  Click="ClearHistoryButton_Click" VerticalAlignment="Center">
-                        
+
                         </Button>
                         <ToggleButton x:Name="ScreenshotButton" Content="Скриншот" Width="120" Height="50" Margin="10,0,0,0"
               Click="ScreenshotButton_Click" VerticalAlignment="Center">
@@ -337,9 +337,45 @@
                         </ToggleButton>
                     </StackPanel>
 
-                    <TextBox x:Name="ConsoleTextBox" Height="250" FontSize="16" Background="White" Foreground="White"
-                  IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" 
-                  Visibility="Visible" Width="744" HorizontalScrollBarVisibility="Disabled"/>
+                    <ListBox x:Name="ChatListBox" Height="250" Width="744" Background="#4A4459" BorderThickness="0"
+         ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="ChatListBox_SelectionChanged">
+
+                        <!-- Отключаем скрытые системные отступы -->
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0"/>
+                                <Setter Property="MinHeight" Value="0"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Button Click="ChatMessage_Click" 
+                                        Background="Transparent" 
+                                        BorderBrush="{x:Null}" 
+                                        HorizontalAlignment="Left" 
+                                        Padding="0" 
+                                        Margin="0,2,0,2"
+                                        MinHeight="0">
+
+                                    <Border Background="#625B71" 
+                                            CornerRadius="8" 
+                                            Padding="10,4" 
+                                            MaxWidth="600">
+
+                                        <TextBlock Text="{Binding}"
+                                                   Height="20"
+                                                   Foreground="White" 
+                                                   FontSize="16" 
+                                                   TextWrapping="Wrap"/>
+                                    </Border>
+                                </Button>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
                     <StackPanel Orientation="Horizontal" Margin="80,10,0,0">
                         <Button x:Name="AttachFileButton" Content="📎" Width="30" Height="25" VerticalAlignment="Center"
             Click="AttachFileButton_Click" ToolTip="Прикрепить файл"/>

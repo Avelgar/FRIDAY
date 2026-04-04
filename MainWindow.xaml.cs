@@ -71,15 +71,15 @@ namespace Friday
 
             if (string.IsNullOrEmpty(messageText))
             {
-                ConsoleTextBox.AppendText("Сообщение не может быть пустым!" + Environment.NewLine);
+                ChatListBox.Items.Add("Сообщение не может быть пустым!" + Environment.NewLine);
                 return;
             }
 
             var app = (App)Application.Current;
             if (app.IsWaitingForServerResponse)
             {
-                ConsoleTextBox.AppendText("Ожидаю ответа от сервера. Пожалуйста, подождите..." + Environment.NewLine);
-                ConsoleTextBox.ScrollToEnd();
+                ChatListBox.Items.Add("Ожидаю ответа от сервера. Пожалуйста, подождите..." + Environment.NewLine);
+                ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
                 return;
             }
 
@@ -114,15 +114,15 @@ namespace Friday
 
                 ((App)Application.Current).MarkAsWaitingForServer();
 
-                ConsoleTextBox.AppendText($"Вы: {messageText}{Environment.NewLine}");
-                ConsoleTextBox.ScrollToEnd();
+                ChatListBox.Items.Add($"Вы: {messageText}{Environment.NewLine}");
+                ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
 
                 MessageTextBox.Text = "";
                 ClearAttachedFile();
             }
             catch (Exception ex)
             {
-                ConsoleTextBox.AppendText($"Ошибка при отправке: {ex.Message}{Environment.NewLine}");
+                ChatListBox.Items.Add($"Ошибка при отправке: {ex.Message}{Environment.NewLine}");
             }
         }
         public MainWindow(dynamic responseData = null)
@@ -158,7 +158,7 @@ namespace Friday
         {
             if (responseData != null)
             {
-                ConsoleTextBox.AppendText("Соединение восстановлено" + Environment.NewLine);
+                ChatListBox.Items.Add("Соединение восстановлено" + Environment.NewLine);
             }
         }
 
@@ -230,7 +230,7 @@ namespace Friday
 
                 if (sender == "Вы")
                 {
-                    ConsoleTextBox.AppendText($"{sender}: {text}{Environment.NewLine}");
+                    ChatListBox.Items.Add($"{sender}: {text}{Environment.NewLine}");
                 }
                 else
                 {
@@ -250,7 +250,7 @@ namespace Friday
                         if (voiceResponses.Count > 0)
                         {
                             string combinedResponse = string.Join(" ", voiceResponses);
-                            ConsoleTextBox.AppendText($"{sender}: {combinedResponse}{Environment.NewLine}");
+                            ChatListBox.Items.Add($"{sender}: {combinedResponse}{Environment.NewLine}");
                         }
                     }
                     else if (text.Contains("текстовой ответ|"))
@@ -269,7 +269,7 @@ namespace Friday
                         if (textResponses.Count > 0)
                         {
                             string combinedResponse = string.Join(" ", textResponses);
-                            ConsoleTextBox.AppendText($"{sender}: {combinedResponse}{Environment.NewLine}");
+                            ChatListBox.Items.Add($"{sender}: {combinedResponse}{Environment.NewLine}");
                         }
                     }
                 }
@@ -329,11 +329,11 @@ namespace Friday
                 }
                 catch (HttpRequestException ex)
                 {
-                    ConsoleTextBox.AppendText($"Ошибка при отправке запроса: {ex.Message}" + Environment.NewLine);
+                    ChatListBox.Items.Add($"Ошибка при отправке запроса: {ex.Message}" + Environment.NewLine);
                 }
                 catch (Exception ex)
                 {
-                    ConsoleTextBox.AppendText($"Произошла ошибка: {ex.Message}" + Environment.NewLine);
+                    ChatListBox.Items.Add($"Произошла ошибка: {ex.Message}" + Environment.NewLine);
                 }
             }
         }
@@ -371,7 +371,7 @@ namespace Friday
             }
             catch (Exception ex)
             {
-                ConsoleTextBox.AppendText($"Ошибка при отключении устройства: {ex.Message}" + Environment.NewLine);
+                ChatListBox.Items.Add($"Ошибка при отключении устройства: {ex.Message}" + Environment.NewLine);
             }
         }
 
@@ -379,7 +379,7 @@ namespace Friday
         {
             if (ScreenshotButton.IsChecked == true)
             {
-                ConsoleTextBox.AppendText("Нельзя прикреплять файлы в режиме скриншота!" + Environment.NewLine);
+                ChatListBox.Items.Add("Нельзя прикреплять файлы в режиме скриншота!" + Environment.NewLine);
                 return;
             }
 
@@ -399,7 +399,7 @@ namespace Friday
 
                     if (fileSize > 10 * 1024 * 1024)
                     {
-                        ConsoleTextBox.AppendText("Файл слишком большой! Максимальный размер: 10 МБ" + Environment.NewLine);
+                        ChatListBox.Items.Add("Файл слишком большой! Максимальный размер: 10 МБ" + Environment.NewLine);
                         return;
                     }
 
@@ -420,7 +420,7 @@ namespace Friday
                 }
                 catch (Exception ex)
                 {
-                    ConsoleTextBox.AppendText($"Ошибка при загрузке файла: {ex.Message}" + Environment.NewLine);
+                    ChatListBox.Items.Add($"Ошибка при загрузке файла: {ex.Message}" + Environment.NewLine);
                 }
             }
         }
@@ -506,7 +506,7 @@ namespace Friday
             }
             catch (Exception ex)
             {
-                ConsoleTextBox.AppendText($"Не удалось загрузить миниатюру: {ex.Message}" + Environment.NewLine);
+                ChatListBox.Items.Add($"Не удалось загрузить миниатюру: {ex.Message}" + Environment.NewLine);
             }
         }
 
@@ -650,7 +650,7 @@ namespace Friday
 
                     if (responseObject.status != "success")
                     {
-                        ConsoleTextBox.AppendText($"Ошибка: {responseObject.message}" + Environment.NewLine);
+                        ChatListBox.Items.Add($"Ошибка: {responseObject.message}" + Environment.NewLine);
                     }
                     else
                     {
@@ -660,11 +660,11 @@ namespace Friday
             }
             catch (HttpRequestException ex)
             {
-                ConsoleTextBox.AppendText($"Ошибка при выходе из аккаунта: {ex.Message}" + Environment.NewLine);
+                ChatListBox.Items.Add($"Ошибка при выходе из аккаунта: {ex.Message}" + Environment.NewLine);
             }
             catch (Exception ex)
             {
-                ConsoleTextBox.AppendText($"Произошла ошибка: {ex.Message}" + Environment.NewLine);
+                ChatListBox.Items.Add($"Произошла ошибка: {ex.Message}" + Environment.NewLine);
             }
         }
 
@@ -689,7 +689,7 @@ namespace Friday
                 LoginButton.Visibility = Visibility.Collapsed;
                 RegisterButton.Visibility = Visibility.Collapsed;
 
-                ConsoleTextBox.AppendText($"Добро пожаловать, {username}!" + Environment.NewLine);
+                ChatListBox.Items.Add($"Добро пожаловать, {username}!" + Environment.NewLine);
             });
         }
 
@@ -697,8 +697,8 @@ namespace Friday
         {
             Dispatcher.Invoke(() =>
             {
-                ConsoleTextBox.AppendText(message + Environment.NewLine);
-                ConsoleTextBox.ScrollToEnd();
+                ChatListBox.Items.Add(message + Environment.NewLine);
+                ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
             });
         }
 
@@ -778,16 +778,16 @@ namespace Friday
                 _voiceService.ListeningState.StopListening();
                 _voiceService.StopListening();
                 UpdateMicrophoneIcon(false);
-                ConsoleTextBox.AppendText("Слушание остановлено." + Environment.NewLine);
+                ChatListBox.Items.Add("Слушание остановлено." + Environment.NewLine);
             }
             else
             {
                 _voiceService.ListeningState.StartListening();
                 _voiceService.StartListening();
                 UpdateMicrophoneIcon(true);
-                ConsoleTextBox.AppendText("Начинаю слушать..." + Environment.NewLine);
+                ChatListBox.Items.Add("Начинаю слушать..." + Environment.NewLine);
             }
-            ConsoleTextBox.ScrollToEnd();
+            ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
         }
 
         private void UpdateMicrophoneIcon(bool isListening)
@@ -1008,8 +1008,8 @@ namespace Friday
 
         public async void ClearHistory()
         {
-            ConsoleTextBox.Clear();
-            ConsoleTextBox.AppendText("История успешно очищена" + Environment.NewLine);
+            ChatListBox.Items.Clear();
+            ChatListBox.Items.Add("История успешно очищена" + Environment.NewLine);
             try
             {
                 var message = new
@@ -1030,17 +1030,17 @@ namespace Friday
 
                     if (responseObject.status != "success")
                     {
-                        ConsoleTextBox.AppendText($"Ошибка: {responseObject.message}" + Environment.NewLine);
+                        ChatListBox.Items.Add($"Ошибка: {responseObject.message}" + Environment.NewLine);
                     }
                 }
             }
             catch (HttpRequestException ex)
             {
-                ConsoleTextBox.AppendText($"Ошибка при отправке запроса: {ex.Message}" + Environment.NewLine);
+                ChatListBox.Items.Add($"Ошибка при отправке запроса: {ex.Message}" + Environment.NewLine);
             }
             catch (Exception ex)
             {
-                ConsoleTextBox.AppendText($"Произошла ошибка: {ex.Message}" + Environment.NewLine);
+                ChatListBox.Items.Add($"Произошла ошибка: {ex.Message}" + Environment.NewLine);
             }
         }
 
@@ -1057,7 +1057,7 @@ namespace Friday
                 _voiceService.IsScreenshotEnabled = true;
                 if (_attachedFile != null)
                 {
-                    ConsoleTextBox.AppendText("Режим скриншота активирован. Прикрепленный файл удален." + Environment.NewLine);
+                    ChatListBox.Items.Add("Режим скриншота активирован. Прикрепленный файл удален." + Environment.NewLine);
                     ClearAttachedFile();
                 }
             }
@@ -1065,7 +1065,7 @@ namespace Friday
             {
                 _voiceService.IsScreenshotEnabled = false;
             }
-            ConsoleTextBox.ScrollToEnd();
+            ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
         }
 
         public void ClearAttachedFile()
@@ -1085,6 +1085,33 @@ namespace Friday
             _settingManager.SettingsChanged -= SettingManager_SettingsChanged;
             ((App)Application.Current).DecrementWindowCount();
             base.OnClosed(e);
+        }
+
+        private void ChatListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            string selectedText = ChatListBox.SelectedItem.ToString();
+            fillMessageTextBox(selectedText);
+        }
+
+        public void fillMessageTextBox(string selectedText)
+        {
+            selectedText = new string(selectedText.Where(c => !char.IsControl(c)).ToArray()).Replace("Вы:", "").Replace("Бот:", "");
+            if (!string.IsNullOrEmpty(selectedText))
+            {
+                MessageTextBox.Text = selectedText;
+            }
+        }
+
+        private void ChatMessage_Click(object sender, RoutedEventArgs e)
+        {
+            Button clickedButton = sender as Button;
+
+            if (clickedButton != null)
+            {
+                string messageText = clickedButton.DataContext as string;
+
+                fillMessageTextBox(messageText);
+            }
         }
     }
     public enum InputMode

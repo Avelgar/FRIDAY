@@ -30,8 +30,7 @@ namespace Friday.Games
         }
 
         public event Action OnReturnToMainMenu;
-
-        // Метод для вызова события
+        
         protected void ReturnToMainMenu()
         {
             OnReturnToMainMenu?.Invoke();

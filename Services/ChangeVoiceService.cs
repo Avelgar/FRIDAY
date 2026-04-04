@@ -14,7 +14,6 @@
             SettingManager.Setting.VoiceType = voice;
             _settingManager.SaveSettings();
 
-            // Уведомляем об изменении голоса
             _settingManager.OnSettingsChanged(new SettingChangedEventArgs
             {
                 VoiceType = voice

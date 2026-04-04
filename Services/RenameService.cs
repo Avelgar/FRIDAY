@@ -16,7 +16,6 @@
                     SettingManager.Setting.AssistantName = value;
                     _settingManager.SaveSettings();
 
-                    // Уведомляем об изменении имени
                     _settingManager.OnSettingsChanged(new SettingChangedEventArgs
                     {
                         AssistantName = value

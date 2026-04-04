@@ -25,53 +25,39 @@ namespace Friday.Games
         private const int InputSize = 192;
         private bool _isTracking;
         private AppState _currentState = AppState.MainMenu;
-        private int _bestScore = 0;
-        private List<GameZone> _game1Buttons = new List<GameZone>();
 
         private BoxingGame _boxingGame;
         private DodgeGame _dodgeGame;
         private AppearanceGame _appearanceGame;
         private GameBase _currentGame;
 
-        // Размеры экрана
         private readonly int _screenWidth;
         private readonly int _screenHeight;
 
-        // Связи между точками для отрисовки скелета (пары индексов)
         private static readonly (int, int)[] SkeletonConnections = new[]
         {
-            // Голова
             (0, 1), (0, 2), (1, 3), (2, 4),
-            // Туловище
             (5, 6), (5, 11), (6, 12), (11, 12),
-            // Руки
             (5, 7), (7, 9), (6, 8), (8, 10),
-            // Ноги
             (11, 13), (13, 15), (12, 14), (14, 16)
         };
 
-        // Фиолетовый цвет для фона (BGR format)
         private readonly MCvScalar PurpleBackground = new MCvScalar(238, 130, 238);
-        // Цвета для скелета
-        private readonly MCvScalar SkeletonColor = new MCvScalar(255, 255, 255); // Белый
-        private readonly MCvScalar PointColor = new MCvScalar(0, 255, 255); // Желтый
+        private readonly MCvScalar SkeletonColor = new MCvScalar(255, 255, 255);
+        private readonly MCvScalar PointColor = new MCvScalar(0, 255, 255);
 
-        // Игровые зоны
         private List<GameZone> _gameZones;
         private System.Timers.Timer _hoverTimer;
         private DateTime _lastUpdateTime;
 
         public PoseTrackingService()
         {
-            // Получаем размеры экрана
             _screenWidth = Screen.PrimaryScreen.Bounds.Width;
             _screenHeight = Screen.PrimaryScreen.Bounds.Height;
 
-            // Создаем игровые зоны
             CreateGameZones();
 
-            // Настраиваем таймер для обработки наведения
-            _hoverTimer = new System.Timers.Timer(16); // ~60 FPS
+            _hoverTimer = new System.Timers.Timer(16);
             _hoverTimer.Elapsed += ProcessHoverProgress;
             _hoverTimer.AutoReset = true;
 
@@ -91,7 +77,6 @@ namespace Friday.Games
                     throw new Exception("Camera initialization failed");
                 }
 
-                // Создаем bitmap с размером экрана
                 _cameraBitmap = new WriteableBitmap(
                     _screenWidth,
                     _screenHeight,
@@ -103,7 +88,6 @@ namespace Friday.Games
                 _dodgeGame = new DodgeGame(_screenWidth, _screenHeight);
                 _appearanceGame = new AppearanceGame(_screenWidth, _screenHeight);
 
-                // Подписываемся на события возврата в главное меню
                 _boxingGame.OnReturnToMainMenu += ReturnToMainMenu;
                 _dodgeGame.OnReturnToMainMenu += ReturnToMainMenu;
                 _appearanceGame.OnReturnToMainMenu += ReturnToMainMenu;
@@ -149,7 +133,6 @@ namespace Friday.Games
             _currentState = AppState.MainMenu;
             _currentGame = null;
 
-            // Сбрасываем прогресс наведения для всех игровых зон
             foreach (var zone in _gameZones)
             {
                 zone.HoverProgress = 0;
@@ -196,12 +179,10 @@ namespace Friday.Games
                             {
                                 if (_currentState == AppState.MainMenu)
                                 {
-                                    // Отрисовываем главное меню
                                     DrawMainMenu(purpleFrame, keypoints);
                                 }
                                 else if (_currentGame != null)
                                 {
-                                    // Делегируем отрисовку текущей игре
                                     _currentGame.DrawInterface(purpleFrame);
 
                                     if (keypoints != null)
@@ -231,7 +212,6 @@ namespace Friday.Games
             {
                 if (_currentState == AppState.MainMenu)
                 {
-                    // Обрабатываем прогресс наведения на игровые зоны
                     foreach (var zone in _gameZones)
                     {
                         if (zone.IsHovered)
@@ -241,10 +221,8 @@ namespace Friday.Games
                                 zone.HoverStartTime = DateTime.Now;
                             }
 
-                            // Увеличиваем прогресс (2 секунды для полной загрузки)
                             zone.HoverProgress = Math.Min(1.0f, zone.HoverProgress + deltaTime / 2.0f);
 
-                            // Если прогресс достиг 100%, переходим в игру
                             if (zone.HoverProgress >= 1.0f && !zone.IsLoading)
                             {
                                 zone.IsLoading = true;
@@ -265,7 +243,6 @@ namespace Friday.Games
                                     _currentGame = _appearanceGame;
                                 }
 
-                                // Сбрасываем прогресс
                                 zone.HoverProgress = 0;
                                 zone.HoverStartTime = null;
                                 zone.IsLoading = false;
@@ -273,7 +250,6 @@ namespace Friday.Games
                         }
                         else
                         {
-                            // Если не наведено, сбрасываем прогресс
                             zone.HoverProgress = 0;
                             zone.HoverStartTime = null;
                         }
@@ -281,7 +257,6 @@ namespace Friday.Games
                 }
                 else if (_currentGame != null)
                 {
-                    // Делегируем обработку текущей игре
                     _currentGame.ProcessHover(deltaTime);
                 }
             });
@@ -289,27 +264,21 @@ namespace Friday.Games
 
         public void DrawProgressCircle(Mat frame, System.Drawing.Point center, float progress)
         {
-            // Внешний круг (контур) - зеленый
             int radius = 40;
-            CvInvoke.Circle(frame, center, radius, new MCvScalar(0, 255, 0), 3); // Зеленый контур
+            CvInvoke.Circle(frame, center, radius, new MCvScalar(0, 255, 0), 3);
 
-            // Внутренний круг (прогресс) - красный
             if (progress > 0)
             {
-                // Рассчитываем угол для дуги прогресса (0-360 градусов)
                 int angle = (int)(360 * progress);
 
-                // Рисуем дугу прогресса красным
                 CvInvoke.Ellipse(frame, center, new System.Drawing.Size(radius, radius), 0, 0, angle, new MCvScalar(0, 0, 255), 5);
             }
 
-            // Центральная точка - красная
             CvInvoke.Circle(frame, center, 5, new MCvScalar(0, 0, 255), -1);
         }
 
         private bool IsPointInZone(System.Drawing.PointF point, GameZone zone)
         {
-            // Преобразуем нормализованные координаты в пиксельные
             var pixelPoint = new System.Drawing.Point(
                 (int)(point.X * _screenWidth),
                 (int)(point.Y * _screenHeight)
@@ -320,20 +289,17 @@ namespace Friday.Games
 
         public Mat CreateTextImage(string text, MCvScalar textColor, MCvScalar backgroundColor, int width = 200, int height = 50)
         {
-            // Создаем временное изображение с текстом
             using (Bitmap bmp = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
             using (Graphics g = Graphics.FromImage(bmp))
             {
-                // Настраиваем качество рендеринга
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
-                // Создаем сплошной цвет фона
                 System.Drawing.Color bgColor = System.Drawing.Color.FromArgb(
-                    255, // Полностью непрозрачный
-                    (int)backgroundColor.V2, // R (поменяли порядок для BGR)
-                    (int)backgroundColor.V1, // G
-                    (int)backgroundColor.V0  // B
+                    255,
+                    (int)backgroundColor.V2,
+                    (int)backgroundColor.V1,
+                    (int)backgroundColor.V0
                 );
 
                 // Заливаем фон
@@ -507,20 +473,18 @@ namespace Friday.Games
                             frame,
                             startPoint,
                             endPoint,
-                            SkeletonColor, // Белый цвет для линий
-                            3); // Более толстые линии
+                            SkeletonColor,
+                            3);
                     }
                 }
 
-                // Рисуем точки
                 for (int i = 0; i < keypoints.Count; i++)
                 {
                     if (!keypoints[i].IsEmpty)
                     {
                         var point = ScalePoint(keypoints[i], scale);
 
-                        // Рисуем точку
-                        CvInvoke.Circle(frame, point, 8, PointColor, -1); // Желтые точки
+                        CvInvoke.Circle(frame, point, 8, PointColor, -1);
                     }
                 }
             }
@@ -552,17 +516,14 @@ namespace Friday.Games
             }
             catch
             {
-                // Игнорируем ошибки обновления изображения
             }
         }
 
 
         private void DrawMainMenu(Mat frame, List<System.Drawing.PointF> keypoints)
         {
-            // Заливаем фиолетовым цветом
             frame.SetTo(PurpleBackground);
 
-            // Рисуем игровые зоны
             DrawGameZones(frame);
 
             if (keypoints != null)
@@ -570,7 +531,6 @@ namespace Friday.Games
                 DrawSkeleton(frame, keypoints);
                 CheckHandInGameZone(keypoints);
 
-                // Рисуем анимацию загрузки
                 DrawLoadingAnimation(frame, keypoints);
             }
         }
@@ -579,23 +539,19 @@ namespace Friday.Games
         {
             foreach (var zone in _gameZones)
             {
-                // Рисуем квадрат игровой зоны
                 CvInvoke.Rectangle(frame,
                     new Rectangle((int)zone.Area.X, (int)zone.Area.Y, (int)zone.Area.Width, (int)zone.Area.Height),
                     zone.Color,
                     3);
 
-                // Создаем изображение с текстом
                 using (Mat textImage = CreateTextImage(zone.GameName,
-                                                     new MCvScalar(255, 255, 255), // Белый текст
-                                                     zone.Color, // Цвет фона как у зоны
+                                                     new MCvScalar(255, 255, 255),
+                                                     zone.Color,
                                                      120, 30))
                 {
-                    // Определяем позицию для текста (центрируем по горизонтали)
                     int textX = (int)(zone.Area.X + (zone.Area.Width - textImage.Width) / 2);
                     int textY = (int)(zone.Area.Y + 15);
 
-                    // Накладываем текст на кадр
                     if (textX + textImage.Width <= frame.Width && textY + textImage.Height <= frame.Height)
                     {
                         Mat roi = new Mat(frame, new Rectangle(textX, textY, textImage.Width, textImage.Height));
@@ -603,19 +559,16 @@ namespace Friday.Games
                     }
                 }
 
-                // Отображаем прогресс загрузки
                 if (zone.HoverProgress > 0)
                 {
                     using (Mat progressImage = CreateTextImage($"{(int)(zone.HoverProgress * 100)}%",
-                                                              new MCvScalar(0, 0, 255), // Красный текст
-                                                              new MCvScalar(0, 0, 0), // Черный фон
+                                                              new MCvScalar(0, 0, 255),
+                                                              new MCvScalar(0, 0, 0),
                                                               40, 20))
                     {
-                        // Определяем позицию для текста прогресса (центрируем по горизонтали)
                         int progressX = (int)(zone.Area.X + (zone.Area.Width - progressImage.Width) / 2);
                         int progressY = (int)(zone.Area.Y + 50);
 
-                        // Накладываем текст прогресса на кадр
                         if (progressX + progressImage.Width <= frame.Width && progressY + progressImage.Height <= frame.Height)
                         {
                             Mat roi = new Mat(frame, new Rectangle(progressX, progressY, progressImage.Width, progressImage.Height));
@@ -630,17 +583,14 @@ namespace Friday.Games
         {
             if (keypoints == null || keypoints.Count < 17) return;
 
-            // Получаем координаты рук (индексы 9 и 10)
             var leftHand = keypoints[9];
             var rightHand = keypoints[10];
 
-            // Сбрасываем состояние наведения для всех зон
             foreach (var zone in _gameZones)
             {
                 zone.IsHovered = false;
             }
 
-            // Проверяем, находится ли какая-либо рука в игровой зоне
             foreach (var zone in _gameZones)
             {
                 if (!leftHand.IsEmpty && IsPointInZone(leftHand, zone) ||
@@ -656,16 +606,13 @@ namespace Friday.Games
         {
             if (keypoints == null || keypoints.Count < 17) return;
 
-            // Получаем координаты рук (индексы 9 и 10)
             var leftHand = keypoints[9];
             var rightHand = keypoints[10];
 
-            // Рисуем анимацию загрузки для каждой руки, находящейся над зоной
             foreach (var zone in _gameZones)
             {
                 if (zone.IsHovered && zone.HoverProgress > 0)
                 {
-                    // Определяем, какая рука находится над зоной
                     System.Drawing.PointF handPoint = System.Drawing.PointF.Empty;
 
                     if (!leftHand.IsEmpty && IsPointInZone(leftHand, zone))
@@ -679,13 +626,11 @@ namespace Friday.Games
 
                     if (!handPoint.IsEmpty)
                     {
-                        // Преобразуем нормализованные координаты в пиксельные
                         var pixelPoint = new System.Drawing.Point(
                             (int)(handPoint.X * _screenWidth),
                             (int)(handPoint.Y * _screenHeight)
                         );
 
-                        // Рисуем круговую анимацию загрузки
                         DrawProgressCircle(frame, pixelPoint, zone.HoverProgress);
                     }
                 }
@@ -700,7 +645,6 @@ namespace Friday.Games
             _camera?.Dispose();
             _session?.Dispose();
 
-            // Отписываемся от событий
             if (_boxingGame != null)
                 _boxingGame.OnReturnToMainMenu -= ReturnToMainMenu;
             if (_dodgeGame != null)

@@ -112,7 +112,6 @@ namespace Friday
             Setting.MusicFolderPath = musicFolderPath;
             SaveSettings();
 
-            // Уведомляем подписчиков об изменениях
             OnSettingsChanged(new SettingChangedEventArgs
             {
                 AssistantName = assistantName,
@@ -122,14 +121,12 @@ namespace Friday
             AppServices.UpdateVariables();
         }
 
-        // Метод для вызова события
         public virtual void OnSettingsChanged(SettingChangedEventArgs e)
         {
             SettingsChanged?.Invoke(this, e);
         }
     }
 
-    // Класс для передачи данных о измененных настройках
     public class SettingChangedEventArgs : EventArgs
     {
         public string AssistantName { get; set; }

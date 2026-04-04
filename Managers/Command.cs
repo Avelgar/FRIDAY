@@ -15,7 +15,7 @@
             Id = id;
             Name = name;
             Description = description;
-            Actions = actions ?? new List<ActionItem>(); // Защита от null
+            Actions = actions ?? new List<ActionItem>();
             IsPassword = isPassword;
         }
     }

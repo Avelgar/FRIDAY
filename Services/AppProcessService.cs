@@ -40,14 +40,13 @@ namespace Friday
             {
                 if (File.Exists(filePath))
                 {
-                    // Получаем папку, в которой лежит запускаемый файл
                     string workingDirectory = Path.GetDirectoryName(filePath);
 
                     Process.Start(new ProcessStartInfo
                     {
                         FileName = filePath,
                         UseShellExecute = true,
-                        WorkingDirectory = workingDirectory // <-- ВОТ ЭТО РЕШИТ ПРОБЛЕМУ С ИГРАМИ
+                        WorkingDirectory = workingDirectory
                     });
                 }
                 else
@@ -91,7 +90,7 @@ namespace Friday
                 return;
             }
 
-            float volumeScalar = volume / 100f; // Преобразуем в диапазон от 0.0 до 1.0
+            float volumeScalar = volume / 100f;
 
             var deviceEnumerator = new MMDeviceEnumerator();
             var device = deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);

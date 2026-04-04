@@ -69,14 +69,12 @@ namespace Friday
         {
             string messageText = MessageTextBox.Text.Trim();
 
-            // Проверяем, что есть текст сообщения
             if (string.IsNullOrEmpty(messageText))
             {
                 ConsoleTextBox.AppendText("Сообщение не может быть пустым!" + Environment.NewLine);
                 return;
             }
 
-            // --- ДОБАВЛЕНО: Запрет отправки, пока ждем ответ сервера ---
             var app = (App)Application.Current;
             if (app.IsWaitingForServerResponse)
             {
@@ -84,18 +82,15 @@ namespace Friday
                 ConsoleTextBox.ScrollToEnd();
                 return;
             }
-            // -----------------------------------------------------------
 
             try
             {
                 string screenshotBase64 = null;
 
-                // Приоритет: сначала проверяем прикрепленный файл
                 if (_attachedFile != null)
                 {
                     screenshotBase64 = Convert.ToBase64String(_attachedFile.Data);
                 }
-                // Если файла нет, но включен режим скриншота - делаем скриншот
                 else if (IsScreenshotEnabled)
                 {
                     byte[] screenshotBytes = _voiceService.CaptureScreenshot();
@@ -105,7 +100,6 @@ namespace Friday
                     }
                 }
 
-                // Формируем объект сообщения
                 var message = new
                 {
                     type = "текстовое сообщение",
@@ -116,18 +110,13 @@ namespace Friday
                     screenshot = screenshotBase64
                 };
 
-                // Отправка через WebSocket
                 ((App)Application.Current).SendWebSocketMessage(message);
 
-                // Выводим сообщение в консоль
                 ((App)Application.Current).MarkAsWaitingForServer();
-                // -----------------------------------------------------
 
-                // Выводим сообщение в консоль
                 ConsoleTextBox.AppendText($"Вы: {messageText}{Environment.NewLine}");
                 ConsoleTextBox.ScrollToEnd();
 
-                // Очищаем поле ввода и информацию о файле
                 MessageTextBox.Text = "";
                 ClearAttachedFile();
             }
@@ -154,27 +143,22 @@ namespace Friday
             _voiceService.OnMessageReceived += OnMessageReceived;
             CustomCommandService.Initialize(_voiceService);
 
-            // Инициализируем Commands и подписыва  емся на изменение текста в SearchTextBox
             Commands = new ObservableCollection<Command>(_commandManager.GetCommands());
-            CommandsItemsControl.ItemsSource = Commands;  // Привязка к Commands, а не напрямую к _commandManager
-            SearchTextBox.TextChanged += SearchTextBox_TextChanged; // Подписываемся на событие изменения текста
+            CommandsItemsControl.ItemsSource = Commands;
+            SearchTextBox.TextChanged += SearchTextBox_TextChanged;
 
-            // Заполняем ActionTypes и ComboBox
             LoadActionTypes();
             ActionTypeComboBox.ItemsSource = ActionTypes;
             InputModeComboBox.SelectionChanged += InputModeComboBox_SelectionChanged;
 
-            DataContext = this; // Необходимо для работы привязки Commands
+            DataContext = this;
         }
 
         public void UpdateData(dynamic responseData)
         {
-            // Здесь обновляем данные в окне без его повторного открытия
-            // Например, обновляем статус соединения или другие элементы UI
             if (responseData != null)
             {
                 ConsoleTextBox.AppendText("Соединение восстановлено" + Environment.NewLine);
-                // Другие обновления по необходимости
             }
         }
 
@@ -189,7 +173,6 @@ namespace Friday
 
         private void SettingManager_SettingsChanged(object sender, SettingChangedEventArgs e)
         {
-            // Обновляем UI в основном потоке
             Dispatcher.Invoke(() =>
             {
                 if (!string.IsNullOrEmpty(e.AssistantName))
@@ -213,24 +196,20 @@ namespace Friday
 
         public static string GetMacAddress()
         {
-            // Получаем все сетевые интерфейсы
             NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
 
-            // Ищем первый активный интерфейс с физическим адресом
             foreach (NetworkInterface networkInterface in networkInterfaces)
             {
-                // Пропускаем интерфейсы, которые не работают (не активны) или не имеют физического адреса
                 if (networkInterface.OperationalStatus == OperationalStatus.Up &&
                     !string.IsNullOrEmpty(networkInterface.GetPhysicalAddress().ToString()))
                 {
-                    // Получаем MAC-адрес и форматируем его с дефисами
                     string macAddress = networkInterface.GetPhysicalAddress().ToString();
-                    if (macAddress.Length == 12) // Стандартная длина MAC без разделителей
+                    if (macAddress.Length == 12)
                     {
                         return string.Join("-", Enumerable.Range(0, 6)
                             .Select(i => macAddress.Substring(i * 2, 2)));
                     }
-                    return macAddress; // Если уже есть разделители, возвращаем как есть
+                    return macAddress;
                 }
             }
 
@@ -249,18 +228,14 @@ namespace Friday
                 if (string.IsNullOrEmpty(sender) || string.IsNullOrEmpty(text))
                     continue;
 
-                // Для сообщений от пользователя
                 if (sender == "Вы")
                 {
                     ConsoleTextBox.AppendText($"{sender}: {text}{Environment.NewLine}");
                 }
-                // Для сообщений от бота или устройств
                 else
                 {
-                    // Обрабатываем только сообщения, содержащие голосовые ответы
                     if (text.Contains("голосовой ответ|"))
                     {
-                        // Извлекаем все голосовые ответы
                         var voiceResponses = new List<string>();
                         var parts = text.Split('⸵');
 
@@ -272,7 +247,6 @@ namespace Friday
                             }
                         }
 
-                        // Если нашли голосовые ответы - объединяем их
                         if (voiceResponses.Count > 0)
                         {
                             string combinedResponse = string.Join(" ", voiceResponses);
@@ -281,7 +255,6 @@ namespace Friday
                     }
                     else if (text.Contains("текстовой ответ|"))
                     {
-                        // Извлекаем все голосовые ответы
                         var textResponses = new List<string>();
                         var parts = text.Split('⸵');
 
@@ -293,7 +266,6 @@ namespace Friday
                             }
                         }
 
-                        // Если нашли голосовые ответы - объединяем их
                         if (textResponses.Count > 0)
                         {
                             string combinedResponse = string.Join(" ", textResponses);
@@ -331,7 +303,6 @@ namespace Friday
 
                         Dispatcher.Invoke(() =>
                         {
-                            // Устройства аккаунта
                             if (responseObject.account_devices != null && responseObject.account_devices.Count > 0)
                             {
                                 AccountDevicesList.ItemsSource = responseObject.account_devices;
@@ -343,7 +314,6 @@ namespace Friday
                                 NoAccountDevicesText.Visibility = Visibility.Visible;
                             }
 
-                            // Подключенные устройства
                             if (responseObject.my_devices != null && responseObject.my_devices.Count > 0)
                             {
                                 ConnectedDevicesList.ItemsSource = responseObject.my_devices;
@@ -373,19 +343,17 @@ namespace Friday
             var button = sender as Button;
             if (button == null) return;
 
-            // MAC устройства, которое нужно отключить (из Tag кнопки)
             string targetMacAddress = button.Tag as string;
             if (string.IsNullOrEmpty(targetMacAddress)) return;
 
             try
             {
-                // Получаем MAC текущего устройства
                 string currentMacAddress = GetMacAddress();
 
                 var message = new
                 {
-                    requester_mac = currentMacAddress,  // MAC устройства, которое инициирует отключение
-                    target_mac = targetMacAddress      // MAC устройства, которое нужно отключить
+                    requester_mac = currentMacAddress,
+                    target_mac = targetMacAddress
                 };
 
                 using (var client = new HttpClient())
@@ -396,7 +364,6 @@ namespace Friday
                     var response = await client.PostAsync("https://friday-assistant.ru/disconnect_device", content);
                     response.EnsureSuccessStatusCode();
 
-                    // Обновляем список устройств
                     var devicesTab = (TabItem)this.FindName("DevicesTab");
                     TabControl_SelectionChanged(null, new SelectionChangedEventArgs(TabControl.SelectionChangedEvent,
                         new List<object>(), new List<object> { devicesTab }));
@@ -410,14 +377,12 @@ namespace Friday
 
         private void AttachFileButton_Click(object sender, RoutedEventArgs e)
         {
-            // Проверяем, не активирован ли режим скриншота
             if (ScreenshotButton.IsChecked == true)
             {
                 ConsoleTextBox.AppendText("Нельзя прикреплять файлы в режиме скриншота!" + Environment.NewLine);
                 return;
             }
 
-            // Создаем диалог выбора файла
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "Image Files (*.jpg; *.jpeg; *.png; *.bmp)|*.jpg; *.jpeg; *.png; *.bmp|All Files (*.*)|*.*";
             openFileDialog.Title = "Выберите файл для отправки";
@@ -426,25 +391,20 @@ namespace Friday
             {
                 try
                 {
-                    // Очищаем предыдущий файл
                     ClearAttachedFile();
 
-                    // Получаем информацию о файле
                     string filePath = openFileDialog.FileName;
                     string fileName = Path.GetFileName(filePath);
                     long fileSize = new FileInfo(filePath).Length;
 
-                    // Проверяем размер файла (например, ограничим 10 МБ)
                     if (fileSize > 10 * 1024 * 1024)
                     {
                         ConsoleTextBox.AppendText("Файл слишком большой! Максимальный размер: 10 МБ" + Environment.NewLine);
                         return;
                     }
 
-                    // Читаем файл в массив байтов
                     byte[] fileBytes = File.ReadAllBytes(filePath);
 
-                    // Сохраняем файл для последующей отправки
                     _attachedFile = new AttachedFile
                     {
                         Name = fileName,
@@ -452,7 +412,6 @@ namespace Friday
                         Size = fileSize
                     };
 
-                    // Отображаем миниатюру для изображений
                     if (IsImageFile(fileName))
                     {
                         DisplayImageThumbnail(filePath);
@@ -466,7 +425,6 @@ namespace Friday
             }
         }
 
-        // Вспомогательный метод для форматирования размера файла
         private string FormatFileSize(long bytes)
         {
             string[] sizes = { "B", "KB", "MB", "GB" };
@@ -480,7 +438,6 @@ namespace Friday
             return $"{len:0.##} {sizes[order]}";
         }
 
-        // Проверяем, является ли файл изображением
         private bool IsImageFile(string fileName)
         {
             string extension = Path.GetExtension(fileName).ToLower();
@@ -488,7 +445,6 @@ namespace Friday
                    extension == ".png" || extension == ".bmp";
         }
 
-        // Отображаем миниатюру изображения
         private void DisplayImageThumbnail(string imagePath)
         {
             try
@@ -496,12 +452,11 @@ namespace Friday
                 BitmapImage bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.UriSource = new Uri(imagePath);
-                bitmap.DecodePixelWidth = 150; // Увеличиваем размер миниатюры
+                bitmap.DecodePixelWidth = 150;
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.EndInit();
                 bitmap.Freeze();
 
-                // Создаем контейнер для миниатюры с возможностью закрытия
                 Border thumbnailContainer = new Border
                 {
                     Background = Brushes.Transparent,
@@ -509,25 +464,22 @@ namespace Friday
                     BorderThickness = new Thickness(1),
                     Margin = new Thickness(5),
                     CornerRadius = new CornerRadius(5),
-                    Width = 160, // Ширина контейнера
-                    Height = 160 // Высота контейнера
+                    Width = 160,
+                    Height = 160
                 };
 
-                // Создаем сетку для размещения изображения и кнопки закрытия
                 Grid grid = new Grid();
 
-                // Изображение
                 Image thumbnail = new Image
                 {
                     Source = bitmap,
-                    Stretch = Stretch.Uniform, // Сохраняем пропорции
+                    Stretch = Stretch.Uniform,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
                     MaxWidth = 150,
                     MaxHeight = 150
                 };
 
-                // Кнопка закрытия
                 Button closeButton = new Button
                 {
                     Content = "×",
@@ -545,14 +497,11 @@ namespace Friday
 
                 closeButton.Click += (s, e) => ClearAttachedFile();
 
-                // Добавляем элементы в сетку
                 grid.Children.Add(thumbnail);
                 grid.Children.Add(closeButton);
 
-                // Добавляем сетку в контейнер
                 thumbnailContainer.Child = grid;
 
-                // Добавляем контейнер в интерфейс
                 ThumbnailContainer.Items.Add(thumbnailContainer);
             }
             catch (Exception ex)
@@ -568,7 +517,6 @@ namespace Friday
             public long Size { get; set; }
         }
 
-        // Классы для десериализации JSON остаются без изменений
         public class DeviceResponse
         {
             public List<DeviceInfo> account_devices { get; set; }
@@ -590,7 +538,6 @@ namespace Friday
             var connectDeviceWindow = new ConnectDeviceWindow();
             if (connectDeviceWindow.ShowDialog() == true)
             {
-                // Обновить список устройств после успешного подключения
                 TabControl_SelectionChanged(null, new SelectionChangedEventArgs(
                     TabControl.SelectionChangedEvent,
                     new List<object>(),
@@ -602,20 +549,17 @@ namespace Friday
         {
             if (_userData != null)
             {
-                // Проверяем наличие user_login
                 if (_userData.user_login != null && !string.IsNullOrEmpty(_userData.user_login.ToString()))
                 {
                     ShowUserButton(_userData.user_login.ToString());
                 }
                 else
                 {
-                    // По умолчанию показываем кнопки авторизации
                     ShowAuthButtons();
                 }
             }
             else
             {
-                // Если данных нет, показываем кнопки авторизации
                 ShowAuthButtons();
             }
 
@@ -632,14 +576,12 @@ namespace Friday
 
             foreach (var line in lines)
             {
-                // Извлекаем основное содержимое после префикса
                 int contentStart = line.IndexOf("): ") + 3;
                 if (contentStart < 3) continue;
 
                 string content = line.Substring(contentStart);
                 string prefix = line.Substring(0, contentStart - 3);
 
-                // Упрощаем префиксы (убираем скобки с временем)
                 if (prefix.StartsWith("Вы ("))
                 {
                     result.AppendLine($"Вы: {content}");
@@ -650,7 +592,6 @@ namespace Friday
                 }
                 else
                 {
-                    // Для других устройств сохраняем оригинальный формат
                     result.AppendLine($"{prefix}: {content}");
                 }
             }
@@ -690,7 +631,6 @@ namespace Friday
         {
             try
             {
-                // Отправляем команду на сервер о выходе
                 var logoutCommand = new
                 {
                     MAC = GetMacAddress(),
@@ -764,22 +704,18 @@ namespace Friday
 
         public void LoadActionTypes()
         {
-            // Получаем все типы действий из команд
             var allActions = _commandManager.GetCommands()
                 .SelectMany(c => c.Actions)
-                .Select(a => a.ActionType) // Changed a.Type to a.ActionType
+                .Select(a => a.ActionType)
                 .Distinct()
                 .ToList();
 
-            // Добавляем пустой тип для отображения всех команд
             allActions.Insert(0, "All");
 
-            // Обновляем ActionTypes и вызываем PropertyChanged
             ActionTypes = allActions;
         }
 
 
-        // Реализация INotifyPropertyChanged
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName)
@@ -856,7 +792,6 @@ namespace Friday
 
         private void UpdateMicrophoneIcon(bool isListening)
         {
-            // Эмодзи для разных состояний
             ListenButton.Content = isListening ? "🔴" : "🎤";
             ListenButton.Foreground = isListening ? System.Windows.Media.Brushes.Red : System.Windows.Media.Brushes.White;
         }
@@ -882,7 +817,7 @@ namespace Friday
                 _commandManager.AddCommand(name, description, actions, isPasswordSet);
 
                 UpdateCommandsList();
-                LoadActionTypes(); //call it here
+                LoadActionTypes();
             }
         }
 
@@ -896,10 +831,9 @@ namespace Friday
 
         public void UpdateCommandsList()
         {
-            // После обновления команд в _commandManager, обновляем и Commands, чтобы отобразить изменения
             Commands = new ObservableCollection<Command>(_commandManager.GetCommands());
-            CommandsItemsControl.ItemsSource = Commands; // Обновляем ItemsSource
-            LoadActionTypes(); //call it here
+            CommandsItemsControl.ItemsSource = Commands;
+            LoadActionTypes();
         }
         public void EditCommandButton_Click(object sender, RoutedEventArgs e)
         {
@@ -929,8 +863,8 @@ namespace Friday
 
                                 _commandManager.EditCommand(commandToEdit.Id, newName, newDescription, newActions, isPasswordSet);
 
-                                UpdateCommandsList(); //call it here
-                                LoadActionTypes(); //call it here
+                                UpdateCommandsList();
+                                LoadActionTypes();
                             }
                         }
                     }
@@ -957,8 +891,8 @@ namespace Friday
                         {
                             _commandManager.DeleteCommand(commandName);
 
-                            UpdateCommandsList(); //call it here
-                            LoadActionTypes(); //call it here
+                            UpdateCommandsList();
+                            LoadActionTypes();
                         }
                     }
                 }
@@ -1004,7 +938,6 @@ namespace Friday
         }
         private void LoadSettings()
         {
-            // Существующие настройки...
             FridayNameTextBox.Text = SettingManager.Setting.AssistantName;
             foreach (ComboBoxItem item in VoiceTypeComboBox.Items)
             {
@@ -1016,7 +949,6 @@ namespace Friday
             }
             VolumeSlider.Value = SettingManager.Setting.Volume;
 
-            // Загрузка режима ввода
             string savedInputMode = SettingManager.Setting.InputMode;
             foreach (ComboBoxItem item in InputModeComboBox.Items)
             {
@@ -1123,7 +1055,6 @@ namespace Friday
             if (ScreenshotButton.IsChecked == true)
             {
                 _voiceService.IsScreenshotEnabled = true;
-                // Если был прикреплен файл, очищаем его
                 if (_attachedFile != null)
                 {
                     ConsoleTextBox.AppendText("Режим скриншота активирован. Прикрепленный файл удален." + Environment.NewLine);
@@ -1140,7 +1071,7 @@ namespace Friday
         public void ClearAttachedFile()
         {
             _attachedFile = null;
-            ThumbnailContainer.Items.Clear(); // Используем Items вместо Children
+            ThumbnailContainer.Items.Clear();
         }
 
         public void ChangedataButton_Click(object sender, RoutedEventArgs e)

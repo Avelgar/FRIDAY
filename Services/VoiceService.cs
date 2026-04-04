@@ -28,18 +28,15 @@ namespace Friday
     {
         private readonly BluetoothService _bluetoothService;
 
-        // Убрали SpeechSynthesizer
-        private readonly List<string> _stopWords = new List<string> { "стоп", "хватит", "довольно", "заткнись", "завали ебало", "заткнись", "закрой рот" };
+        private readonly List<string> _stopWords = new List<string> { "стоп", "хватит", "довольно", "заткнись", "закрой рот" };
         private PoseTrackingService _poseTrackingService;
         private CameraWindow _cameraWindow;
         private bool _isSpeaking = false;
         private string modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\model"));
 
-        // Пути к Piper (сделаны по аналогии с Vosk)
         private string _piperExePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\piper\piper.exe"));
         private string _modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\Models\ru_RU-irina-medium.onnx"));
 
-        // Для принудительной остановки речи
         private Process _piperProcess;
         private WaveOutEvent _waveOut;
 
@@ -50,7 +47,6 @@ namespace Friday
         private readonly ChangeVoiceService _changeVoiceService;
         private WaveInEvent _waveIn;
         private static MusicService musicService = new MusicService();
-        private static readonly HttpClient httpClient = new HttpClient();
         public ListeningState ListeningState { get; private set; }
 
         public event Action<string> OnMessageReceived;
@@ -80,8 +76,10 @@ namespace Friday
         {
             try
             {
-                _waveIn = new WaveInEvent();
-                _waveIn.WaveFormat = new WaveFormat(16000, 1);
+                _waveIn = new WaveInEvent()
+                {
+                    WaveFormat = new WaveFormat(16000, 1)
+                };
 
                 if (WaveIn.DeviceCount == 0)
                 {
@@ -695,7 +693,6 @@ namespace Friday
                     while (_waveOut != null && _waveOut.PlaybackState == PlaybackState.Playing)
                     {
                         Thread.Sleep(100);
-                        // Выход из цикла, если кто-то вызвал StopSpeaking
                         if (!_isSpeaking)
                         {
                             _waveOut.Stop();
@@ -712,7 +709,6 @@ namespace Friday
 
         public List<string> GetAvailableVoices()
         {
-            // Возвращаем модель Piper, чтобы UI не падал при запросе голосов
             return new List<string> { "Piper Neural Voice (ru_RU)" };
         }
 

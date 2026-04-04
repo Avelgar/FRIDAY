@@ -15,7 +15,6 @@ namespace Friday
             {
                 try
                 {
-                    //MessageBox.Show($"Пользователь отправил: {prompt}", "Запрос", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     var requestBody = new { prompt };
                     var json = JsonConvert.SerializeObject(requestBody);
                     var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -26,7 +25,6 @@ namespace Friday
                     var responseJson = await response.Content.ReadAsStringAsync();
                     var responseObject = JsonConvert.DeserializeObject<dynamic>(responseJson);
 
-                    //MessageBox.Show($"Гемини ответил: {responseObject.response}", "Ответ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return responseObject.response;
                 }
                 catch (HttpRequestException e)

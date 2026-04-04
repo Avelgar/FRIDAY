@@ -18,14 +18,12 @@ namespace Friday.Games
 
         private void CreateInterface()
         {
-            // Кнопка "Назад"
             _buttons.Add(new GameZone
             {
                 Area = new RectangleF(_screenWidth * 0.05f, _screenHeight * 0.05f, 100, 50),
                 GameName = "Назад"
             });
 
-            // Кнопка "Начать бой"
             _buttons.Add(new GameZone
             {
                 Area = new RectangleF(_screenWidth * 0.4f, _screenHeight * 0.4f, 200, 80),
@@ -35,25 +33,22 @@ namespace Friday.Games
 
         public override void DrawInterface(Mat frame)
         {
-            // Рисуем фон интерфейса
             CvInvoke.Rectangle(frame,
                 new Rectangle(0, 0, _screenWidth, _screenHeight),
-                new MCvScalar(30, 30, 60), // Темно-синий фон
+                new MCvScalar(30, 30, 60),
                 -1);
 
-            // Рисуем кнопки
             foreach (var button in _buttons)
             {
                 var buttonColor = button.IsHovered ?
-                    new MCvScalar(200, 50, 50) : // Красный при наведении
-                    new MCvScalar(100, 30, 30);  // Темно-красный
+                    new MCvScalar(200, 50, 50) :
+                    new MCvScalar(100, 30, 30);
 
                 CvInvoke.Rectangle(frame,
                     new Rectangle((int)button.Area.X, (int)button.Area.Y, (int)button.Area.Width, (int)button.Area.Height),
                     buttonColor,
                     -1);
 
-                // Добавляем текст на кнопки
                 using (Mat textImage = DrawingUtils.CreateTextImage(button.GameName,
                                                   new MCvScalar(255, 255, 255),
                                                   buttonColor,
@@ -86,10 +81,8 @@ namespace Friday.Games
                 }
             }
 
-            // Рисуем анимацию загрузки если нужно
             if (_hoverProgress > 0)
             {
-                // Находим наведенную кнопку
                 var hoveredButton = _buttons.FirstOrDefault(b => b.IsHovered);
                 if (hoveredButton != null)
                 {
@@ -107,17 +100,14 @@ namespace Friday.Games
         {
             if (keypoints == null || keypoints.Count < 17) return;
 
-            // Получаем координаты рук
             var leftHand = keypoints[9];
             var rightHand = keypoints[10];
 
-            // Сбрасываем состояние наведения для всех кнопок
             foreach (var button in _buttons)
             {
                 button.IsHovered = false;
             }
 
-            // Проверяем, находится ли какая-либо рука над кнопками
             foreach (var button in _buttons)
             {
                 if (!leftHand.IsEmpty && IsPointInZone(leftHand, button) ||
@@ -131,7 +121,6 @@ namespace Friday.Games
 
         public override void ProcessHover(float deltaTime)
         {
-            // Находим наведенную кнопку
             var hoveredButton = _buttons.FirstOrDefault(b => b.IsHovered);
 
             if (hoveredButton != null)
@@ -141,31 +130,25 @@ namespace Friday.Games
                     _hoverStartTime = DateTime.Now;
                 }
 
-                // Увеличиваем прогресс (2 секунды для полной загрузки)
                 _hoverProgress = Math.Min(1.0f, _hoverProgress + deltaTime / 2.0f);
 
-                // Если прогресс достиг 100%, выполняем действие
                 if (_hoverProgress >= 1.0f)
                 {
                     if (hoveredButton.GameName == "Назад")
                     {
-                        // Возвращаемся в главное меню через событие
                         ReturnToMainMenu();
                     }
                     else if (hoveredButton.GameName == "Начать бой")
                     {
-                        // Запускаем игру
                         StartBoxingGame();
                     }
 
-                    // Сбрасываем прогресс
                     _hoverProgress = 0;
                     _hoverStartTime = null;
                 }
             }
             else
             {
-                // Если рука убрана, сбрасываем прогресс
                 _hoverProgress = 0;
                 _hoverStartTime = null;
             }
@@ -173,11 +156,7 @@ namespace Friday.Games
 
         private void StartBoxingGame()
         {
-            // Здесь будет логика запуска игры в бокс
-            // Пока просто увеличим счет для демонстрации
             _bestScore += new Random().Next(5, 15);
         }
-
-        // Методы CreateTextImage и DrawProgressCircle нужно будет добавить или сделать общими
     }
 }

@@ -34,6 +34,8 @@ namespace Friday
         private CancellationTokenSource _cancellationTokenSource;
         private static Mutex _mutex;
 
+        private const string appName = "FridayAssistantApp";
+
         public bool IsWaitingForServerResponse { get; private set; } = false;
         private CancellationTokenSource _responseTimeoutCts;
 
@@ -42,7 +44,6 @@ namespace Friday
             SettingManager settingManager = new SettingManager();
             settingManager.LoadSettings();
             AppServices.Init();
-            const string appName = "FridayAssistantApp";
             bool createdNew;
 
             _mutex = new Mutex(true, appName, out createdNew);
@@ -55,18 +56,15 @@ namespace Friday
             }
             base.OnStartup(e);
 
-            // Удалена проверка и установка RHVoice
 
             string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\devisedata.json"));
 
             _cancellationTokenSource = new CancellationTokenSource();
 
-            // Инициализация WebSocket
             InitializeWebSocket();
 
             LoadDeviceData(filePath);
 
-            // Инициализация таймера пинга
             _keepAliveTimer = new System.Timers.Timer(15000);
             _keepAliveTimer.Elapsed += async (sender, e) => await CheckConnectionAndSendPingAsync();
             _keepAliveTimer.AutoReset = true;
@@ -145,7 +143,6 @@ namespace Friday
                 await _webSocket.ConnectAsync(new Uri("wss://friday-assistant.ru/ws"), _cancellationTokenSource.Token);
                 _isConnectionActive = true;
 
-                // После подключения отправляем регистрационные данные, если они есть
                 if (_deviceData != null)
                 {
                     var registrationData = new
@@ -157,7 +154,6 @@ namespace Friday
                     await SendDataInternal(registrationData);
                 }
 
-                // Запускаем задачу для прослушивания сообщений
                 _ = Task.Run(async () => await ReceiveMessages(_cancellationTokenSource.Token));
             }
             catch (Exception ex)
@@ -237,7 +233,6 @@ namespace Friday
             }
         }
 
-        // Обработка всех сообщений от WebSocket
         private void OnWebSocketMessage(string message)
         {
             try

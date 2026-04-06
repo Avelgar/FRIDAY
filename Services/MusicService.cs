@@ -1,6 +1,7 @@
 ﻿using Friday;
 using Friday.Services;
 using NAudio.Wave;
+using System;
 using System.IO;
 
 public class MusicService : Service
@@ -9,41 +10,48 @@ public class MusicService : Service
     private AudioFileReader _audioFileReader;
     private string[] _musicFiles;
     private int _currentTrackIndex;
-    private string _musicFolderPath = SettingManager.Setting.MusicFolderPath;
+    private string _musicFolderPath;
+
+    public MusicService()
+    {
+        _currentTrackIndex = 0;
+    }
 
     public override void Init()
     {
-        _musicFolderPath = SettingManager.Setting.MusicFolderPath;
-        _musicFiles = Directory.GetFiles(_musicFolderPath, "*.mp3");
+        LoadMusicFiles();
         base.Init();
     }
 
     public override void UpdateVariables()
     {
-        _musicFolderPath = SettingManager.Setting.MusicFolderPath;
-        _musicFiles = Directory.GetFiles(_musicFolderPath, "*.mp3");
+        LoadMusicFiles();
         base.UpdateVariables();
     }
 
-    public MusicService()
+    // Вынесли загрузку файлов в отдельный метод
+    public void LoadMusicFiles()
     {
-        if (!Directory.Exists(_musicFolderPath))
+        _musicFolderPath = SettingManager.Setting?.MusicFolderPath;
+
+        if (string.IsNullOrEmpty(_musicFolderPath) || !Directory.Exists(_musicFolderPath))
         {
-            throw new DirectoryNotFoundException("The specified folder does not exist: " + _musicFolderPath);
+            _musicFiles = new string[0]; // Чтобы не было null
+            return;
         }
 
-        _currentTrackIndex = 0;
+        _musicFiles = Directory.GetFiles(_musicFolderPath, "*.mp3");
+        _currentTrackIndex = 0; // Сбрасываем трек при смене папки
     }
 
     public void Play()
     {
         if (_musicFiles == null || _musicFiles.Length == 0)
         {
-            throw new InvalidOperationException("No music files available to play.");
+            throw new InvalidOperationException("В указанной папке нет mp3 файлов.");
         }
 
         Stop();
-
         PlayMusic(_musicFiles[_currentTrackIndex]);
     }
 
@@ -51,13 +59,17 @@ public class MusicService : Service
     {
         if (!File.Exists(filePath))
         {
-            throw new FileNotFoundException("File not found: " + filePath);
+            throw new FileNotFoundException("Файл не найден: " + filePath);
         }
 
         _wavePlayer?.Dispose();
         _audioFileReader?.Dispose();
+
         _wavePlayer = new WaveOutEvent();
         _audioFileReader = new AudioFileReader(filePath);
+
+        // Устанавливаем громкость из настроек (от 0.0 до 1.0)
+        _audioFileReader.Volume = SettingManager.Setting.Volume / 10f;
 
         _wavePlayer.Init(_audioFileReader);
         _wavePlayer.PlaybackStopped += OnPlaybackStopped;
@@ -80,7 +92,6 @@ public class MusicService : Service
         if (_wavePlayer != null)
         {
             _wavePlayer.PlaybackStopped -= OnPlaybackStopped;
-
             _wavePlayer.Stop();
             _wavePlayer.Dispose();
             _wavePlayer = null;

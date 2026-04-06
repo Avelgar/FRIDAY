@@ -46,7 +46,7 @@ namespace Friday
         private readonly SettingManager _settingManager;
         private readonly ChangeVoiceService _changeVoiceService;
         private WaveInEvent _waveIn;
-        private static MusicService musicService = new MusicService();
+        public static MusicService musicService;
         public ListeningState ListeningState { get; private set; }
 
         public event Action<string> OnMessageReceived;
@@ -70,6 +70,9 @@ namespace Friday
             _recognizer.SetWords(true);
 
             ListeningState = new ListeningState();
+
+            musicService = new MusicService();
+            musicService.Init();
         }
 
         public async Task StartListening()
@@ -283,22 +286,30 @@ namespace Friday
                     TakeScreenshot();
                     break;
                 case "музыка":
-                    if (action.ActionText.IndexOf("включить музыку", StringComparison.OrdinalIgnoreCase) >= 0)
+                    try
                     {
-                        musicService.Play();
+                        if (action.ActionText.IndexOf("включить", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            musicService.Play();
+                        }
+                        else if (action.ActionText.IndexOf("выключить", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            Thread.Sleep(1500);
+                            musicService.Stop();
+                        }
+                        else if (action.ActionText.IndexOf("следующий", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            musicService.NextTrack();
+                        }
+                        else if (action.ActionText.IndexOf("предыдущий", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            musicService.PreviousTrack();
+                        }
                     }
-                    else if (action.ActionText.IndexOf("выключить музыку", StringComparison.OrdinalIgnoreCase) >= 0)
+                    catch (Exception ex)
                     {
-                        Thread.Sleep(1500);
-                        musicService.Stop();
-                    }
-                    else if (action.ActionText.IndexOf("следующий трек", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        musicService.NextTrack();
-                    }
-                    else if (action.ActionText.IndexOf("предыдущий трек", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        musicService.PreviousTrack();
+                        await SpeakAsync("Бот", "Я не смогла найти музыку. Проверьте папку в настройках.");
+                        OnMessageReceived?.Invoke($"Ошибка музыки: {ex.Message}");
                     }
                     break;
                 case "погода":

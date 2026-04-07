@@ -1,4 +1,7 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
+using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Forms;
 
 namespace Friday
@@ -7,11 +10,22 @@ namespace Friday
     {
         public void SendNotification(string text)
         {
-            NotifyIcon notifyIcon = new NotifyIcon();
-            notifyIcon.Icon = SystemIcons.Information;
-            notifyIcon.Visible = true;
-            SettingManager _settingManager = new SettingManager();
-            notifyIcon.ShowBalloonTip(3000, SettingManager.Setting.AssistantName, text, ToolTipIcon.Info);
+            System.Windows.Application.Current.Dispatcher.Invoke(async () =>
+            {
+                NotifyIcon notifyIcon = new NotifyIcon();
+                notifyIcon.Icon = SystemIcons.Information;
+                notifyIcon.Visible = true;
+
+                notifyIcon.Text = SettingManager.Setting.AssistantName;
+
+                notifyIcon.ShowBalloonTip(3000, SettingManager.Setting.AssistantName, text, ToolTipIcon.Info);
+
+                await Task.Delay(4000);
+
+                notifyIcon.Visible = false;
+                notifyIcon.Icon = null;
+                notifyIcon.Dispose();
+            });
         }
     }
 }

@@ -103,7 +103,7 @@ namespace Friday.Services
             screenshot.Save(screenshotPath);
 
             string recognizedText = ProcessScreenshot(screenshotPath);
-            OnMessageReceived?.Invoke($"Распознанный текст: {recognizedText}");
+            //OnMessageReceived?.Invoke($"Распознанный текст: {recognizedText}");
             string text = $"Тебе прислали текст со скриншота: {recognizedText}. Это может быть задача или вопрос из теста, в любом случае постарайся дать ответ. Учти, что твой ответ будет озвучен, так что не добалвяй дополнительные символы в текст и дай ответ без переноса текста на следующую строку.";
             try
             {

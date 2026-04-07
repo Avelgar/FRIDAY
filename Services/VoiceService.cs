@@ -17,13 +17,6 @@ using Vosk;
 
 namespace Friday
 {
-    public interface IVoiceService
-    {
-        Task ProcessCommand(string command);
-        Task OnMessageReceived(string message);
-        Task SpeakAsync(string text);
-    }
-
     public class VoiceService
     {
         private readonly BluetoothService _bluetoothService;
@@ -86,7 +79,7 @@ namespace Friday
 
                 if (WaveIn.DeviceCount == 0)
                 {
-                    await DispatchToUI(() => OnMessageReceived?.Invoke("Нет доступных устройств для записи."));
+                    _mainWindow.ShowSystemMessage("Нет доступных устройств для записи.");
                     return;
                 }
 
@@ -117,6 +110,7 @@ namespace Friday
                             {
                                 inputMode = (InputMode)_mainWindow.InputModeComboBox.SelectedIndex;
                             });
+
                             if (_isSpeaking)
                             {
                                 if (!string.IsNullOrEmpty(recognizedText) &&
@@ -134,18 +128,15 @@ namespace Friday
                             else
                             {
                                 var app = (App)System.Windows.Application.Current;
-                                if (app.IsWaitingForServerResponse)
-                                {
-                                    return;
-                                }
+                                if (app.IsWaitingForServerResponse) return;
 
                                 switch (inputMode)
                                 {
                                     case InputMode.NameResponseCommand:
                                         if (recognizedText == _renameService.BotName.ToLower() && !isScreenshotModeActive)
                                         {
-                                            OnMessageReceived?.Invoke($"Вы: {recognizedText}");
-                                            _ = SpeakAsync("Бот", "Слушаю вас");
+                                            // Убрали печать "Вы: Пятница" и включили тихий режим озвучки
+                                            _ = SpeakAsync("Бот", "Слушаю вас", showInChat: false);
                                             ListeningState.StartListening();
                                             isListeningForCommands = true;
                                             lastRecognizedText = string.Empty;
@@ -183,7 +174,7 @@ namespace Friday
                     }
                     catch (Exception ex)
                     {
-                        DispatchToUI(() => OnMessageReceived?.Invoke($"Ошибка при обработке аудиоданных: {ex.Message}"));
+                        _mainWindow.ShowSystemMessage($"Ошибка при обработке аудиоданных: {ex.Message}");
                     }
                 };
 
@@ -192,7 +183,7 @@ namespace Friday
             }
             catch (Exception ex)
             {
-                await DispatchToUI(() => OnMessageReceived?.Invoke($"Ошибка при запуске записи: {ex.Message}"));
+                _mainWindow.ShowSystemMessage($"Ошибка при запуске записи: {ex.Message}");
             }
         }
 
@@ -210,21 +201,19 @@ namespace Friday
             catch { }
         }
 
-        private async Task DispatchToUI(Action action)
-        {
-            await _mainWindow.Dispatcher.InvokeAsync(action);
-        }
-
         public async Task ProcessAction(Actions action)
         {
+            if (action == null || string.IsNullOrEmpty(action.ActionType)) return;
+
+            string safeActionText = action.ActionText ?? string.Empty;
             switch (action.ActionType.ToLower())
             {
                 case "голосовой ответ":
-                    await SpeakAsync(action.Sender, action.ActionText);
+                    await SpeakAsync(action.Sender, safeActionText);
                     break;
 
                 case "текстовой ответ":
-                    OnMessageReceived?.Invoke($"{action.Sender}: {action.ActionText}");
+                    OnMessageReceived?.Invoke($"{action.Sender}: {safeActionText}");
                     break;
 
                 case "очистка истории":
@@ -232,47 +221,38 @@ namespace Friday
                     break;
 
                 case "открытие файла":
-                    var openservice = new AppProcessService();
-                    openservice.OpenFile(action.ActionText);
+                    new AppProcessService().OpenFile(safeActionText);
                     break;
 
                 case "завершение процесса":
-                    var appprocessservice = new AppProcessService();
-                    appprocessservice.KillProcess(action.ActionText);
+                    new AppProcessService().KillProcess(safeActionText);
                     break;
 
                 case "изменение громкости":
-                    var setvolumessservice = new AppProcessService();
-                    setvolumessservice.SetVolume(action.ActionText);
+                    new AppProcessService().SetVolume(safeActionText);
                     break;
 
                 case "изменение яркости":
-                    var setbrightnessservice = new AppProcessService();
-                    setbrightnessservice.SetBrightness(action.ActionText);
+                    new AppProcessService().SetBrightness(safeActionText);
                     break;
 
                 case "открытие ссылки":
-                    var browserService = new BrowserService();
-                    browserService.OpenLink(action.ActionText);
+                    new BrowserService().OpenLink(safeActionText);
                     break;
 
                 case "напечатать текст":
-                    var keyboardService = new KeyboardService();
-                    keyboardService.TypeText(action.ActionText);
+                    new KeyboardService().TypeText(safeActionText);
                     break;
 
                 case "отправить уведомление":
-                    var notificationService = new NotificationService();
-                    notificationService.SendNotification(action.ActionText);
+                    new NotificationService().SendNotification(safeActionText);
                     break;
 
                 case "нажать кнопку мыши":
-                    var mouseService = new MouseService();
-                    mouseService.PressMouseButton(action.ActionText);
+                    new MouseService().PressMouseButton(safeActionText);
                     break;
                 case "переместить мышь":
-                    var movemouseService = new MouseService();
-                    movemouseService.MoveMouse(action.ActionText);
+                    new MouseService().MoveMouse(safeActionText);
                     break;
                 case "режим камеры":
                     await StartCameraMode();
@@ -288,70 +268,50 @@ namespace Friday
                 case "музыка":
                     try
                     {
-                        if (action.ActionText.IndexOf("включить", StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
+                        if (safeActionText.IndexOf("включить", StringComparison.OrdinalIgnoreCase) >= 0)
                             musicService.Play();
-                        }
-                        else if (action.ActionText.IndexOf("выключить", StringComparison.OrdinalIgnoreCase) >= 0)
+                        else if (safeActionText.IndexOf("выключить", StringComparison.OrdinalIgnoreCase) >= 0)
                         {
                             Thread.Sleep(1500);
                             musicService.Stop();
                         }
-                        else if (action.ActionText.IndexOf("следующий", StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
+                        else if (safeActionText.IndexOf("следующий", StringComparison.OrdinalIgnoreCase) >= 0)
                             musicService.NextTrack();
-                        }
-                        else if (action.ActionText.IndexOf("предыдущий", StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
+                        else if (safeActionText.IndexOf("предыдущий", StringComparison.OrdinalIgnoreCase) >= 0)
                             musicService.PreviousTrack();
-                        }
                     }
                     catch (Exception ex)
                     {
                         await SpeakAsync("Бот", "Я не смогла найти музыку. Проверьте папку в настройках.");
-                        OnMessageReceived?.Invoke($"Ошибка музыки: {ex.Message}");
+                        _mainWindow.ShowSystemMessage($"Ошибка музыки: {ex.Message}");
                     }
                     break;
                 case "погода":
                     WeatherService weatherService = new WeatherService();
                     int dayOffset = 0;
-                    if (action.ActionText.IndexOf("сегодня", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        dayOffset = 0;
-                    }
-                    else if (action.ActionText.IndexOf("завтра", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        dayOffset = 1;
-                    }
-                    else if (action.ActionText.IndexOf("послезавтра", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        dayOffset = 2;
-                    }
+                    if (safeActionText.IndexOf("сегодня", StringComparison.OrdinalIgnoreCase) >= 0) dayOffset = 0;
+                    else if (safeActionText.IndexOf("завтра", StringComparison.OrdinalIgnoreCase) >= 0) dayOffset = 1;
+                    else if (safeActionText.IndexOf("послезавтра", StringComparison.OrdinalIgnoreCase) >= 0) dayOffset = 2;
 
                     await SpeakAsync("Бот", weatherService.GetWeatherForecast(dayOffset));
                     break;
                 case "смена имени":
-                    _renameService.BotName = action.ActionText;
-                    SettingManager.Setting.AssistantName = action.ActionText;
+                    _renameService.BotName = safeActionText;
+                    SettingManager.Setting.AssistantName = safeActionText;
                     _settingManager.SaveSettings();
                     break;
 
                 case "смена голоса":
-                    _changeVoiceService.ChangeVoice(action.ActionText);
+                    _changeVoiceService.ChangeVoice(safeActionText);
                     break;
 
                 case "управление блютусом":
-                    if (action.ActionText.IndexOf("включить", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
+                    if (safeActionText.IndexOf("включить", StringComparison.OrdinalIgnoreCase) >= 0)
                         _bluetoothService.SetBluetoothState("включить");
-                    }
-                    else if (action.ActionText.IndexOf("выключить", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
+                    else if (safeActionText.IndexOf("выключить", StringComparison.OrdinalIgnoreCase) >= 0)
                         _bluetoothService.SetBluetoothState("выключить");
-                    }
                     break;
             }
-
         }
 
         private async Task StartCameraMode()
@@ -371,17 +331,16 @@ namespace Friday
                     });
 
                     await Task.Run(() => _poseTrackingService.StartTracking());
-                    await SpeakAsync("Бот", "Режим камеры активирован");
+                    _mainWindow.ShowSystemMessage("Режим камеры активирован");
                 }
                 else
                 {
-                    await SpeakAsync("Бот", "Режим камеры уже активен");
+                    _mainWindow.ShowSystemMessage("Режим камеры активирован");
                 }
             }
             catch (Exception ex)
             {
-                OnMessageReceived?.Invoke($"Ошибка при запуске камеры: {ex.Message}");
-                await SpeakAsync("Бот", "Не удалось запустить режим камеры");
+                _mainWindow.ShowSystemMessage($"Ошибка при запуске камеры: {ex.Message}");
             }
         }
 
@@ -418,7 +377,7 @@ namespace Friday
             }
             catch (Exception ex)
             {
-                OnMessageReceived?.Invoke($"Ошибка при остановке камеры: {ex.Message}");
+                _mainWindow.ShowSystemMessage($"Ошибка при остановке камеры: {ex.Message}");
             }
         }
 
@@ -431,7 +390,7 @@ namespace Friday
 
                 if (screenshotForm.IsCancelled)
                 {
-                    OnMessageReceived?.Invoke("Скриншот отменен.");
+                    _mainWindow.ShowSystemMessage("Скриншот отменен.");
                     return;
                 }
             }
@@ -450,7 +409,7 @@ namespace Friday
             }
             catch (Exception ex)
             {
-                OnMessageReceived?.Invoke($"Ошибка при остановке записи: {ex.Message}");
+                _mainWindow.ShowSystemMessage($"Ошибка при остановке записи: {ex.Message}");
             }
         }
 
@@ -472,17 +431,15 @@ namespace Friday
                     return macAddress;
                 }
             }
-
             return string.Empty;
         }
 
         public async Task ProcessCommand(string command)
         {
-
             var app = (App)System.Windows.Application.Current;
             if (app.IsWaitingForServerResponse)
             {
-                OnMessageReceived?.Invoke("Система занята: ожидаю ответа от сервера.");
+                _mainWindow.ShowSystemMessage("Система занята: ожидаю ответа от сервера.");
                 return;
             }
             OnMessageReceived?.Invoke($"Вы: {command}");
@@ -505,20 +462,13 @@ namespace Friday
                 try
                 {
                     string screenshotBase64 = null;
-
                     var attachedFile = _mainWindow.GetAttachedFile();
 
-                    if (attachedFile != null)
-                    {
-                        screenshotBase64 = Convert.ToBase64String(attachedFile.Data);
-                    }
+                    if (attachedFile != null) screenshotBase64 = Convert.ToBase64String(attachedFile.Data);
                     else if (IsScreenshotEnabled)
                     {
                         byte[] screenshotBytes = CaptureScreenshot();
-                        if (screenshotBytes != null)
-                        {
-                            screenshotBase64 = Convert.ToBase64String(screenshotBytes);
-                        }
+                        if (screenshotBytes != null) screenshotBase64 = Convert.ToBase64String(screenshotBytes);
                     }
 
                     var message = new
@@ -538,7 +488,7 @@ namespace Friday
                 }
                 catch (Exception ex)
                 {
-                    OnMessageReceived?.Invoke($"Ошибка при отправке команды: {ex.Message}");
+                    _mainWindow.ShowSystemMessage($"Ошибка при отправке команды: {ex.Message}");
                 }
             }
         }
@@ -570,7 +520,7 @@ namespace Friday
             }
             catch (Exception ex)
             {
-                OnMessageReceived?.Invoke($"Ошибка при создании скриншота: {ex.Message}");
+                _mainWindow.ShowSystemMessage($"Ошибка при создании скриншота: {ex.Message}");
                 return null;
             }
         }
@@ -595,23 +545,16 @@ namespace Friday
                 }
 
                 string[] corners = {
-                    $"({0}, {0})",
-                    $"({bounds.Width}, {0})",
-                    $"({0}, {bounds.Height})",
-                    $"({bounds.Width}, {bounds.Height})"
+                    $"({0}, {0})", $"({bounds.Width}, {0})", $"({0}, {bounds.Height})", $"({bounds.Width}, {bounds.Height})"
                 };
 
                 System.Drawing.Point[] points = {
-                    new System.Drawing.Point(10, 10),
-                    new System.Drawing.Point(bounds.Width - 120, 10),
-                    new System.Drawing.Point(10, bounds.Height - 30),
-                    new System.Drawing.Point(bounds.Width - 120, bounds.Height - 30)
+                    new System.Drawing.Point(10, 10), new System.Drawing.Point(bounds.Width - 120, 10),
+                    new System.Drawing.Point(10, bounds.Height - 30), new System.Drawing.Point(bounds.Width - 120, bounds.Height - 30)
                 };
 
                 for (int i = 0; i < corners.Length; i++)
-                {
                     DrawTextWithBackground(g, corners[i], coordFont, textBrush, backgroundBrush, points[i].X, points[i].Y);
-                }
             }
         }
 
@@ -624,33 +567,28 @@ namespace Friday
             g.DrawString(text, font, textBrush, x + 2, y + 1);
         }
 
-        public async Task SpeakAsync(string sender, string text)
+        // ДОБАВЛЕН ПАРАМЕТР showInChat = true
+        public async Task SpeakAsync(string sender, string text, bool showInChat = true)
         {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                OnMessageReceived?.Invoke("Текст для озвучивания отсутствует");
-                return;
-            }
+            if (string.IsNullOrWhiteSpace(text)) return;
 
-            while (_isSpeaking)
-            {
-                await Task.Delay(100);
-            }
+            while (_isSpeaking) await Task.Delay(100);
 
             _isSpeaking = true;
-            OnMessageReceived?.Invoke($"{sender}: {text}");
+
+            if (showInChat)
+            {
+                OnMessageReceived?.Invoke($"{sender}: {text}");
+            }
 
             bool wasMusicPlaying = musicService.IsPlaying();
-            if (wasMusicPlaying)
-            {
-                musicService.Pause();
-            }
+            if (wasMusicPlaying) musicService.Pause();
 
             try
             {
                 if (!File.Exists(_piperExePath))
                 {
-                    OnMessageReceived?.Invoke($"Ошибка: Piper не найден по пути {_piperExePath}");
+                    _mainWindow.ShowSystemMessage($"Ошибка: Piper не найден по пути {_piperExePath}");
                     return;
                 }
 
@@ -658,15 +596,12 @@ namespace Friday
             }
             catch (Exception ex)
             {
-                OnMessageReceived?.Invoke($"Ошибка при воспроизведении Piper: {ex.Message}");
+                _mainWindow.ShowSystemMessage($"Ошибка при воспроизведении Piper: {ex.Message}");
             }
             finally
             {
                 _isSpeaking = false;
-                if (wasMusicPlaying)
-                {
-                    musicService.Resume();
-                }
+                if (wasMusicPlaying) musicService.Resume();
             }
         }
 
@@ -731,19 +666,7 @@ namespace Friday
         }
     }
 
-    public class RecognitionResponse
-    {
-        public Alternative[] Alternatives { get; set; }
-    }
-
-
-    public class Alternative
-    {
-        public string Text { get; set; }
-    }
-
-    public class SynthesisResponse
-    {
-        public string FileContents { get; set; }
-    }
+    public class RecognitionResponse { public Alternative[] Alternatives { get; set; } }
+    public class Alternative { public string Text { get; set; } }
+    public class SynthesisResponse { public string FileContents { get; set; } }
 }

@@ -12,6 +12,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Data;
+using System.Globalization;
 
 namespace Friday
 {
@@ -21,6 +23,10 @@ namespace Friday
         public static CommandManager _commandManager = new CommandManager();
         private static SettingManager _settingManager = new SettingManager();
         public AttachedFile _attachedFile;
+
+        // Переменная для хранения индекса редактируемого сообщения
+        private int _editingMessageIndex = -1;
+
         public AttachedFile GetAttachedFile()
         {
             return _attachedFile;
@@ -51,6 +57,7 @@ namespace Friday
         }
 
         public bool IsScreenshotEnabled => ScreenshotButton?.IsChecked == true;
+
         private async void SendMessageButton_Click(object sender, RoutedEventArgs e)
         {
             await SendCurrentMessageAsync();
@@ -63,6 +70,13 @@ namespace Friday
                 e.Handled = true;
                 SendCurrentMessageAsync().ConfigureAwait(false);
             }
+            // Отмена редактирования по нажатию Esc
+            else if (e.Key == Key.Escape && _editingMessageIndex != -1)
+            {
+                _editingMessageIndex = -1;
+                SendMessageButton.Content = "Отправить";
+                MessageTextBox.Text = "";
+            }
         }
 
         private async Task SendCurrentMessageAsync()
@@ -71,15 +85,32 @@ namespace Friday
 
             if (string.IsNullOrEmpty(messageText))
             {
-                ChatListBox.Items.Add("Сообщение не может быть пустым!" + Environment.NewLine);
+                ShowSystemMessage("Сообщение не может быть пустым!");
                 return;
+            }
+
+            // ЛОГИКА ЛОКАЛЬНОГО РЕДАКТИРОВАНИЯ
+            if (_editingMessageIndex >= 0 && _editingMessageIndex < ChatListBox.Items.Count)
+            {
+                string oldRawMessage = ChatListBox.Items[_editingMessageIndex] as string;
+                if (oldRawMessage != null)
+                {
+                    // Сохраняем префикс (отправителя)
+                    string prefix = oldRawMessage.StartsWith("Вы:") ? "Вы:" : "Бот:";
+                    ChatListBox.Items[_editingMessageIndex] = $"{prefix} {messageText}{Environment.NewLine}";
+
+                    // Сбрасываем режим редактирования
+                    _editingMessageIndex = -1;
+                    SendMessageButton.Content = "Отправить";
+                    MessageTextBox.Text = "";
+                    return; // На сервер пока не отправляем, как вы и просили
+                }
             }
 
             var app = (App)Application.Current;
             if (app.IsWaitingForServerResponse)
             {
-                ChatListBox.Items.Add("Ожидаю ответа от сервера. Пожалуйста, подождите..." + Environment.NewLine);
-                ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
+                ShowSystemMessage("Ожидаю ответа от сервера. Пожалуйста, подождите...");
                 return;
             }
 
@@ -122,7 +153,7 @@ namespace Friday
             }
             catch (Exception ex)
             {
-                ChatListBox.Items.Add($"Ошибка при отправке: {ex.Message}{Environment.NewLine}");
+                ShowSystemMessage($"Ошибка при отправке: {ex.Message}{Environment.NewLine}");
             }
         }
         public MainWindow(dynamic responseData = null)
@@ -158,7 +189,7 @@ namespace Friday
         {
             if (responseData != null)
             {
-                ChatListBox.Items.Add("Соединение восстановлено" + Environment.NewLine);
+                ShowSystemMessage("Соединение восстановлено");
             }
         }
 
@@ -220,59 +251,70 @@ namespace Friday
         {
             if (historyData == null) return;
 
-            foreach (var message in historyData)
+            try
             {
-                string sender = message.sender?.ToString();
-                string text = message.text?.ToString();
-
-                if (string.IsNullOrEmpty(sender) || string.IsNullOrEmpty(text))
-                    continue;
-
-                if (sender == "Вы")
+                foreach (var message in historyData)
                 {
-                    ChatListBox.Items.Add($"{sender}: {text}{Environment.NewLine}");
-                }
-                else
-                {
-                    if (text.Contains("голосовой ответ|"))
+                    string sender = message.sender?.ToString();
+                    string text = message.text?.ToString();
+
+                    if (string.IsNullOrEmpty(sender) || string.IsNullOrEmpty(text))
+                        continue;
+
+                    if (sender == "Вы")
                     {
-                        var voiceResponses = new List<string>();
-                        var parts = text.Split('⸵');
-
-                        foreach (var part in parts)
+                        ChatListBox.Items.Add($"{sender}: {text}{Environment.NewLine}");
+                    }
+                    else
+                    {
+                        if (text.Contains("голосовой ответ|"))
                         {
-                            if (part.StartsWith("голосовой ответ|"))
+                            var voiceResponses = new List<string>();
+                            var parts = text.Split('⸵');
+
+                            foreach (var part in parts)
                             {
-                                voiceResponses.Add(part.Substring("голосовой ответ|".Length));
+                                if (part.StartsWith("голосовой ответ|"))
+                                {
+                                    voiceResponses.Add(part.Substring("голосовой ответ|".Length));
+                                }
+                            }
+
+                            if (voiceResponses.Count > 0)
+                            {
+                                string combinedResponse = string.Join(" ", voiceResponses);
+                                ChatListBox.Items.Add($"Бот: {combinedResponse}{Environment.NewLine}");
                             }
                         }
-
-                        if (voiceResponses.Count > 0)
+                        else if (text.Contains("текстовой ответ|"))
                         {
-                            string combinedResponse = string.Join(" ", voiceResponses);
-                            ChatListBox.Items.Add($"{sender}: {combinedResponse}{Environment.NewLine}");
-                        }
-                    }
-                    else if (text.Contains("текстовой ответ|"))
-                    {
-                        var textResponses = new List<string>();
-                        var parts = text.Split('⸵');
+                            var textResponses = new List<string>();
+                            var parts = text.Split('⸵');
 
-                        foreach (var part in parts)
-                        {
-                            if (part.StartsWith("текстовой ответ|"))
+                            foreach (var part in parts)
                             {
-                                textResponses.Add(part.Substring("текстовой ответ|".Length));
+                                if (part.StartsWith("текстовой ответ|"))
+                                {
+                                    textResponses.Add(part.Substring("текстовой ответ|".Length));
+                                }
+                            }
+
+                            if (textResponses.Count > 0)
+                            {
+                                string combinedResponse = string.Join(" ", textResponses);
+                                ChatListBox.Items.Add($"Бот: {combinedResponse}{Environment.NewLine}");
                             }
                         }
-
-                        if (textResponses.Count > 0)
+                        else
                         {
-                            string combinedResponse = string.Join(" ", textResponses);
-                            ChatListBox.Items.Add($"{sender}: {combinedResponse}{Environment.NewLine}");
+                            ChatListBox.Items.Add($"Бот: {text}{Environment.NewLine}");
                         }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                ShowSystemMessage($"Ошибка при загрузке истории сообщений: {ex.Message}");
             }
         }
 
@@ -329,11 +371,11 @@ namespace Friday
                 }
                 catch (HttpRequestException ex)
                 {
-                    ChatListBox.Items.Add($"Ошибка при отправке запроса: {ex.Message}" + Environment.NewLine);
+                    ShowSystemMessage($"Ошибка при отправке запроса: {ex.Message}");
                 }
                 catch (Exception ex)
                 {
-                    ChatListBox.Items.Add($"Произошла ошибка: {ex.Message}" + Environment.NewLine);
+                    ShowSystemMessage($"Произошла ошибка: {ex.Message}");
                 }
             }
         }
@@ -371,7 +413,7 @@ namespace Friday
             }
             catch (Exception ex)
             {
-                ChatListBox.Items.Add($"Ошибка при отключении устройства: {ex.Message}" + Environment.NewLine);
+                ShowSystemMessage($"Ошибка при отключении устройства: {ex.Message}");
             }
         }
 
@@ -379,7 +421,7 @@ namespace Friday
         {
             if (ScreenshotButton.IsChecked == true)
             {
-                ChatListBox.Items.Add("Нельзя прикреплять файлы в режиме скриншота!" + Environment.NewLine);
+                ShowSystemMessage("Нельзя прикреплять файлы в режиме скриншота!");
                 return;
             }
 
@@ -399,7 +441,7 @@ namespace Friday
 
                     if (fileSize > 10 * 1024 * 1024)
                     {
-                        ChatListBox.Items.Add("Файл слишком большой! Максимальный размер: 10 МБ" + Environment.NewLine);
+                        ShowSystemMessage("Файл слишком большой! Максимальный размер: 10 МБ");
                         return;
                     }
 
@@ -420,7 +462,7 @@ namespace Friday
                 }
                 catch (Exception ex)
                 {
-                    ChatListBox.Items.Add($"Ошибка при загрузке файла: {ex.Message}" + Environment.NewLine);
+                    ShowSystemMessage($"Ошибка при загрузке файла: {ex.Message}");
                 }
             }
         }
@@ -506,7 +548,7 @@ namespace Friday
             }
             catch (Exception ex)
             {
-                ChatListBox.Items.Add($"Не удалось загрузить миниатюру: {ex.Message}" + Environment.NewLine);
+                ShowSystemMessage($"Не удалось загрузить миниатюру: {ex.Message}");
             }
         }
 
@@ -569,36 +611,6 @@ namespace Friday
             }
         }
 
-        private string ProcessHistory(string history)
-        {
-            var result = new StringBuilder();
-            var lines = history.Split('\n').Where(line => !string.IsNullOrWhiteSpace(line));
-
-            foreach (var line in lines)
-            {
-                int contentStart = line.IndexOf("): ") + 3;
-                if (contentStart < 3) continue;
-
-                string content = line.Substring(contentStart);
-                string prefix = line.Substring(0, contentStart - 3);
-
-                if (prefix.StartsWith("Вы ("))
-                {
-                    result.AppendLine($"Вы: {content}");
-                }
-                else if (prefix.StartsWith("Бот ("))
-                {
-                    result.AppendLine($"Бот: {content}");
-                }
-                else
-                {
-                    result.AppendLine($"{prefix}: {content}");
-                }
-            }
-
-            return result.ToString();
-        }
-
         public void ShowUserButton(string username)
         {
             UserButtonText.Text = username;
@@ -650,7 +662,7 @@ namespace Friday
 
                     if (responseObject.status != "success")
                     {
-                        ChatListBox.Items.Add($"Ошибка: {responseObject.message}" + Environment.NewLine);
+                        ShowSystemMessage($"Ошибка: {responseObject.message}");
                     }
                     else
                     {
@@ -660,11 +672,11 @@ namespace Friday
             }
             catch (HttpRequestException ex)
             {
-                ChatListBox.Items.Add($"Ошибка при выходе из аккаунта: {ex.Message}" + Environment.NewLine);
+                ShowSystemMessage($"Ошибка при выходе из аккаунта: {ex.Message}");
             }
             catch (Exception ex)
             {
-                ChatListBox.Items.Add($"Произошла ошибка: {ex.Message}" + Environment.NewLine);
+                ShowSystemMessage($"Произошла ошибка: {ex.Message}");
             }
         }
 
@@ -689,7 +701,7 @@ namespace Friday
                 LoginButton.Visibility = Visibility.Collapsed;
                 RegisterButton.Visibility = Visibility.Collapsed;
 
-                ChatListBox.Items.Add($"Добро пожаловать, {username}!" + Environment.NewLine);
+                ShowSystemMessage($"Добро пожаловать, {username}!");
             });
         }
 
@@ -699,6 +711,18 @@ namespace Friday
             {
                 ChatListBox.Items.Add(message + Environment.NewLine);
                 ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
+            });
+        }
+        public void ShowSystemMessage(string message)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    var notificationService = new NotificationService();
+                    notificationService.SendNotification(message);
+                }
+                catch { }
             });
         }
 
@@ -778,16 +802,13 @@ namespace Friday
                 _voiceService.ListeningState.StopListening();
                 _voiceService.StopListening();
                 UpdateMicrophoneIcon(false);
-                ChatListBox.Items.Add("Слушание остановлено." + Environment.NewLine);
             }
             else
             {
                 _voiceService.ListeningState.StartListening();
                 _voiceService.StartListening();
                 UpdateMicrophoneIcon(true);
-                ChatListBox.Items.Add("Начинаю слушать..." + Environment.NewLine);
             }
-            ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
         }
 
         private void UpdateMicrophoneIcon(bool isListening)
@@ -871,8 +892,6 @@ namespace Friday
                 }
             }
         }
-
-
 
         public void DeleteCommandButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1009,7 +1028,7 @@ namespace Friday
         public async void ClearHistory()
         {
             ChatListBox.Items.Clear();
-            ChatListBox.Items.Add("История успешно очищена" + Environment.NewLine);
+            ShowSystemMessage("История успешно очищена");
             try
             {
                 var message = new
@@ -1030,17 +1049,17 @@ namespace Friday
 
                     if (responseObject.status != "success")
                     {
-                        ChatListBox.Items.Add($"Ошибка: {responseObject.message}" + Environment.NewLine);
+                        ShowSystemMessage($"Ошибка: {responseObject.message}");
                     }
                 }
             }
             catch (HttpRequestException ex)
             {
-                ChatListBox.Items.Add($"Ошибка при отправке запроса: {ex.Message}" + Environment.NewLine);
+                ShowSystemMessage($"Ошибка при отправке запроса: {ex.Message}");
             }
             catch (Exception ex)
             {
-                ChatListBox.Items.Add($"Произошла ошибка: {ex.Message}" + Environment.NewLine);
+                ShowSystemMessage($"Произошла ошибка: {ex.Message}");
             }
         }
 
@@ -1057,7 +1076,7 @@ namespace Friday
                 _voiceService.IsScreenshotEnabled = true;
                 if (_attachedFile != null)
                 {
-                    ChatListBox.Items.Add("Режим скриншота активирован. Прикрепленный файл удален." + Environment.NewLine);
+                    ShowSystemMessage("Режим скриншота активирован. Прикрепленный файл удален.");
                     ClearAttachedFile();
                 }
             }
@@ -1065,7 +1084,6 @@ namespace Friday
             {
                 _voiceService.IsScreenshotEnabled = false;
             }
-            ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
         }
 
         public void ClearAttachedFile()
@@ -1089,16 +1107,13 @@ namespace Friday
 
         private void ChatListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (ChatListBox.SelectedItem != null)
-                fillMessageTextBox(ChatListBox.SelectedItem.ToString());
+            // Убираем заполнение текстового бокса при клике, чтобы не мешало редактированию
+            // if (ChatListBox.SelectedItem != null) fillMessageTextBox(ChatListBox.SelectedItem.ToString());
         }
 
         public void fillMessageTextBox(string selectedText)
         {
-            if (string.IsNullOrWhiteSpace(selectedText))
-            {
-                return;
-            }
+            if (string.IsNullOrWhiteSpace(selectedText)) return;
 
             selectedText = new string(selectedText.Where(c => !char.IsControl(c)).ToArray()).Replace("Вы:", "").Replace("Бот:", "");
             if (!string.IsNullOrEmpty(selectedText))
@@ -1107,83 +1122,55 @@ namespace Friday
             }
         }
 
-        private void ChatMessageContainer_MouseEnter(object sender, MouseEventArgs e)
+        // ЛОКАЛЬНОЕ УДАЛЕНИЕ
+        private void DeleteChatMessage_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not FrameworkElement messageContainer)
+            int index = GetChatMessageIndexFromSender(sender);
+            if (index >= 0)
             {
-                return;
-            }
-
-            if (messageContainer.FindName("RegenerateButton") is Button regenerateButton)
-            {
-                string messageText = messageContainer.DataContext as string;
-                regenerateButton.Visibility = IsLastBotMessage(messageText)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
+                ChatListBox.Items.RemoveAt(index);
             }
         }
 
-        private void ChatMessage_Click(object sender, MouseButtonEventArgs e)
-        {
-            if (sender is not FrameworkElement clickedElement)
-            {
-                return;
-            }
-
-            string messageText = clickedElement.DataContext as string;
-            fillMessageTextBox(messageText);
-        }
-
+        // ЛОКАЛЬНОЕ РЕДАКТИРОВАНИЕ
         private void EditChatMessage_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Редактирование временно недоступно.", "Заглушка", MessageBoxButton.OK, MessageBoxImage.Information);
+            int index = GetChatMessageIndexFromSender(sender);
+            if (index < 0) return;
+
+            string rawMessage = ChatListBox.Items[index] as string;
+            if (string.IsNullOrEmpty(rawMessage)) return;
+
+            string cleanText = ExtractMessageContent(rawMessage, rawMessage.StartsWith("Вы:") ? "Вы:" : "Бот:");
+
+            MessageTextBox.Text = cleanText;
+            _editingMessageIndex = index;
+            SendMessageButton.Content = "Сохранить";
         }
 
         private void CopyChatMessage_Click(object sender, RoutedEventArgs e)
         {
             string messageText = GetMessageFromSender(sender);
-            if (string.IsNullOrWhiteSpace(messageText))
-            {
-                return;
-            }
+            if (string.IsNullOrWhiteSpace(messageText)) return;
 
             string cleanText = new string(messageText.Where(c => !char.IsControl(c)).ToArray()).Trim();
-
-            if (cleanText.StartsWith("Вы:", StringComparison.OrdinalIgnoreCase))
-            {
-                cleanText = cleanText.Substring("Вы:".Length).Trim();
-            }
-            else if (cleanText.StartsWith("Бот:", StringComparison.OrdinalIgnoreCase))
-            {
-                cleanText = cleanText.Substring("Бот:".Length).Trim();
-            }
+            if (cleanText.StartsWith("Вы:", StringComparison.OrdinalIgnoreCase)) cleanText = cleanText.Substring("Вы:".Length).Trim();
+            else if (cleanText.StartsWith("Бот:", StringComparison.OrdinalIgnoreCase)) cleanText = cleanText.Substring("Бот:".Length).Trim();
 
             Clipboard.SetText(cleanText);
-        }
-
-        private void DeleteChatMessage_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Удаление временно недоступно.", "Заглушка", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private async void RegenerateChatMessage_Click(object sender, RoutedEventArgs e)
         {
             int botMessageIndex = GetChatMessageIndexFromSender(sender);
-            if (botMessageIndex < 0 || botMessageIndex >= ChatListBox.Items.Count)
-            {
-                return;
-            }
+            if (botMessageIndex < 0 || botMessageIndex >= ChatListBox.Items.Count) return;
 
-            if (ChatListBox.Items[botMessageIndex] is not string botMessage || !IsLastBotMessage(botMessage))
-            {
-                return;
-            }
+            if (ChatListBox.Items[botMessageIndex] is not string botMessage || !IsLastBotMessage(botMessage)) return;
 
             int previousUserIndex = FindPreviousUserMessageIndex(botMessageIndex);
             if (previousUserIndex < 0)
             {
-                ChatListBox.Items.Add("Не найдено предыдущее сообщение пользователя для перегенерации." + Environment.NewLine);
-                ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
+                ShowSystemMessage("Не найдено предыдущее сообщение пользователя для перегенерации.");
                 return;
             }
 
@@ -1192,48 +1179,33 @@ namespace Friday
 
             if (string.IsNullOrWhiteSpace(userText))
             {
-                ChatListBox.Items.Add("Не удалось извлечь текст запроса для перегенерации." + Environment.NewLine);
-                ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
+                ShowSystemMessage("Не удалось извлечь текст запроса для перегенерации.");
                 return;
             }
 
             MessageTextBox.Text = userText;
+            ChatListBox.Items.RemoveAt(botMessageIndex); // Удаляем ответ бота перед перегенерацией
             await SendCurrentMessageAsync();
         }
 
         private string GetMessageFromSender(object sender)
         {
-            if (sender is not DependencyObject source)
-            {
-                return null;
-            }
-
+            if (sender is not DependencyObject source) return null;
             ListBoxItem listBoxItem = FindParent<ListBoxItem>(source);
             return listBoxItem?.DataContext as string;
         }
 
         private int GetChatMessageIndexFromSender(object sender)
         {
-            if (sender is not DependencyObject source)
-            {
-                return -1;
-            }
-
+            if (sender is not DependencyObject source) return -1;
             ListBoxItem listBoxItem = FindParent<ListBoxItem>(source);
-            if (listBoxItem == null)
-            {
-                return -1;
-            }
-
+            if (listBoxItem == null) return -1;
             return ChatListBox.ItemContainerGenerator.IndexFromContainer(listBoxItem);
         }
 
         private bool IsLastBotMessage(string message)
         {
-            if (!IsBotMessage(message))
-            {
-                return false;
-            }
+            if (!IsBotMessage(message)) return false;
 
             for (int i = ChatListBox.Items.Count - 1; i >= 0; i--)
             {
@@ -1242,17 +1214,12 @@ namespace Friday
                     return string.Equals(current, message, StringComparison.Ordinal);
                 }
             }
-
             return false;
         }
 
         private bool IsBotMessage(string message)
         {
-            if (string.IsNullOrWhiteSpace(message))
-            {
-                return false;
-            }
-
+            if (string.IsNullOrWhiteSpace(message)) return false;
             string cleanMessage = new string(message.Where(c => !char.IsControl(c)).ToArray()).Trim();
             string assistantPrefix = $"{SettingManager.Setting.AssistantName}:";
 
@@ -1267,37 +1234,70 @@ namespace Friday
                 if (ChatListBox.Items[i] is string current)
                 {
                     string clean = new string(current.Where(c => !char.IsControl(c)).ToArray()).Trim();
-                    if (clean.StartsWith("Вы:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return i;
-                    }
+                    if (clean.StartsWith("Вы:", StringComparison.OrdinalIgnoreCase)) return i;
                 }
             }
-
             return -1;
         }
 
         private string ExtractMessageContent(string message, string prefix)
         {
-            if (string.IsNullOrWhiteSpace(message))
-            {
-                return string.Empty;
-            }
-
+            if (string.IsNullOrWhiteSpace(message)) return string.Empty;
             string clean = new string(message.Where(c => !char.IsControl(c)).ToArray());
-            if (clean.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                return clean.Substring(prefix.Length).Trim();
-            }
-
+            if (clean.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return clean.Substring(prefix.Length).Trim();
             return clean.Trim();
         }
     }
+
     public enum InputMode
     {
         NameResponseCommand,
         NamePlusCommand,
         Conversation
     }
-}
 
+    // --- КЛАССЫ КОНВЕРТЕРОВ ДЛЯ ВИЗУАЛА ЧАТА ---
+
+    public class MessageAlignmentConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is string text && text.StartsWith("Вы:", StringComparison.OrdinalIgnoreCase))
+                return HorizontalAlignment.Right;
+            return HorizontalAlignment.Left;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    }
+
+    public class MessageBackgroundConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            // Фиолетовый для пользователя, стандартный серый для бота
+            if (value is string text && text.StartsWith("Вы:", StringComparison.OrdinalIgnoreCase))
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#6A3D8B"));
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#625B71"));
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    }
+
+    public class MessageTextConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is string text)
+            {
+                if (text.StartsWith("Вы:", StringComparison.OrdinalIgnoreCase))
+                    return text.Substring(3).Trim();
+                if (text.StartsWith("Бот:", StringComparison.OrdinalIgnoreCase))
+                    return text.Substring(4).Trim();
+                return text;
+            }
+            return value;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    }
+}

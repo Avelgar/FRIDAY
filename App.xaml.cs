@@ -50,12 +50,11 @@ namespace Friday
 
             if (!createdNew)
             {
-                MessageBox.Show("Приложение уже запущено!");
+                MessageBox.Show("Приложение уже запущено!", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 Current.Shutdown();
                 return;
             }
             base.OnStartup(e);
-
 
             string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\devisedata.json"));
 
@@ -72,6 +71,22 @@ namespace Friday
 
             _openWindowsCount++;
         }
+
+        private void ShowAppNotification(string message)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (_mainWindow != null && _mainWindow.IsVisible)
+                {
+                    _mainWindow.ShowSystemMessage(message);
+                }
+                else
+                {
+                    MessageBox.Show(message, "Системное уведомление", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            });
+        }
+
         public async void SendWebSocketMessage(object data)
         {
             if (_webSocket?.State == WebSocketState.Open)
@@ -90,11 +105,6 @@ namespace Friday
             lock (_queueLock)
             {
                 _commandQueue.Enqueue(data);
-            }
-
-            if (!_isReconnecting)
-            {
-                //await Task.Run(() => ReconnectWebSocket());
             }
         }
 
@@ -116,7 +126,6 @@ namespace Friday
             }
         }
 
-
         private string EncodeToBase64(string plainText)
         {
             var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
@@ -130,11 +139,14 @@ namespace Friday
                 var base64EncodedBytes = Convert.FromBase64String(base64EncodedData);
                 return Encoding.UTF8.GetString(base64EncodedBytes);
             }
-            catch
+            catch (Exception ex)
             {
+                // Теперь ошибка не съедается молча
+                Console.WriteLine($"Критическая ошибка декодирования Base64: {ex.Message}");
                 return string.Empty;
             }
         }
+
         private async void InitializeWebSocket()
         {
             try
@@ -158,31 +170,49 @@ namespace Friday
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка подключения: {ex.Message}");
+                ShowAppNotification($"Ошибка подключения к серверу: {ex.Message}");
             }
         }
 
+        // === ИСПРАВЛЕННЫЙ МЕТОД: Собирает большие сообщения по кускам ===
         private async Task ReceiveMessages(CancellationToken cancellationToken)
         {
-            var buffer = new byte[4096];
+            var buffer = new byte[8192]; // Увеличил базовый буфер
             while (_webSocket?.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
-                    if (result.MessageType == WebSocketMessageType.Text)
+                    using (var ms = new MemoryStream())
                     {
-                        string message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                        Application.Current.Dispatcher.Invoke(() =>
+                        WebSocketReceiveResult result;
+                        do
                         {
-                            OnWebSocketMessage(message);
-                        });
-                    }
-                    else if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", cancellationToken);
-                        _isConnectionActive = false;
-                        ClearWaitingForServer();
+                            result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
+
+                            if (result.MessageType == WebSocketMessageType.Close)
+                            {
+                                await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", cancellationToken);
+                                _isConnectionActive = false;
+                                ClearWaitingForServer();
+                                return; // Выходим из цикла приема
+                            }
+
+                            ms.Write(buffer, 0, result.Count);
+                        }
+                        while (!result.EndOfMessage); // Читаем, пока сообщение не придет полностью!
+
+                        ms.Seek(0, SeekOrigin.Begin);
+                        if (result.MessageType == WebSocketMessageType.Text)
+                        {
+                            using (var reader = new StreamReader(ms, Encoding.UTF8))
+                            {
+                                string message = await reader.ReadToEndAsync();
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    OnWebSocketMessage(message);
+                                });
+                            }
+                        }
                     }
                 }
                 catch (OperationCanceledException)
@@ -238,6 +268,8 @@ namespace Friday
             try
             {
                 string answer = DecodeFromBase64(message);
+                if (string.IsNullOrEmpty(answer)) return; // Если не удалось декодировать - выходим
+
                 if (!answer.Contains("data_request") && !answer.Contains("ping"))
                 {
                     ClearWaitingForServer();
@@ -246,13 +278,13 @@ namespace Friday
                 if (answer.Contains("connection_timeout"))
                 {
                     _isConnectionActive = false;
-                    MessageBox.Show(answer.ToString(), "Ошибка соединения", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ShowAppNotification("Превышено время ожидания соединения сервером.");
                     return;
                 }
 
                 if (answer.Contains("Это имя устройства уже занято. Пожалуйста, выберите другое."))
                 {
-                    MessageBox.Show("Это имя устройства уже занято. Пожалуйста, выберите другое.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ShowAppNotification("Это имя устройства уже занято. Пожалуйста, выберите другое.");
                     if (_registrationWindow == null)
                     {
                         OpenRegistrationWindow();
@@ -263,7 +295,6 @@ namespace Friday
                     try
                     {
                         bool mainWindowExists = _mainWindow != null && _mainWindow.IsVisible;
-
                         var response = JsonConvert.DeserializeObject<dynamic>(answer);
 
                         if (_registrationWindow != null && _registrationWindow.IsVisible)
@@ -287,7 +318,8 @@ namespace Friday
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Ошибка обработки ответа: {ex.Message}");
+                        // Теперь, если ошибка случится прямо при создании главного окна, она не пропадет!
+                        ShowAppNotification($"Критическая ошибка при запуске интерфейса: {ex.Message}");
                     }
                 }
                 else if (answer.Contains("new_message"))
@@ -297,24 +329,31 @@ namespace Friday
                         _last_answer = answer;
                         var command_response = JsonConvert.DeserializeObject<CommandResponse>(answer);
 
-                        foreach (var action in command_response.Actions)
+                        if (command_response != null && command_response.Actions != null)
                         {
-                            var actionParts = action.Split(new[] { '|' }, 2);
-                            if (actionParts.Length == 2)
+                            foreach (var action in command_response.Actions)
                             {
-                                var actionItem = new VoiceService.Actions
+                                var actionParts = action.Split(new[] { '|' }, 2);
+                                if (actionParts.Length == 2)
                                 {
-                                    ActionType = actionParts[0].Trim(),
-                                    ActionText = actionParts[1].Trim(),
-                                    Sender = command_response.Sender
-                                };
-                                _ = VoiceService.ProcessAction(actionItem);
+                                    var actionItem = new VoiceService.Actions
+                                    {
+                                        ActionType = actionParts[0].Trim(),
+                                        ActionText = actionParts[1].Trim(),
+                                        Sender = command_response.Sender
+                                    };
+
+                                    if (VoiceService != null)
+                                    {
+                                        _ = VoiceService.ProcessAction(actionItem);
+                                    }
+                                }
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Ошибка обработки actions: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        ShowAppNotification($"Ошибка обработки actions: {ex.Message}");
                     }
                 }
                 else if (answer.Contains("data_request"))
@@ -358,7 +397,7 @@ namespace Friday
                 }
                 else
                 {
-                    MessageBox.Show(answer);
+                    Console.WriteLine($"Неизвестный пакет: {answer}");
                 }
             }
             catch (Exception ex)
@@ -514,8 +553,6 @@ namespace Friday
             {
                 await Task.Delay(5000);
 
-                Console.WriteLine("Попытка переподключения WebSocket...");
-
                 if (_webSocket != null)
                 {
                     try
@@ -601,7 +638,6 @@ namespace Friday
             IsWaitingForServerResponse = false;
             _responseTimeoutCts?.Cancel();
         }
-
 
         public class DataRequest
         {

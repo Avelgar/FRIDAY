@@ -13,6 +13,7 @@
         <local:MessageAlignmentConverter x:Key="AlignmentConverter" />
         <local:MessageBackgroundConverter x:Key="BgConverter" />
         <local:MessageTextConverter x:Key="TextConverter" />
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
         <FontFamily x:Key="IntroFridayFont">pack://FRIDAY//Assets//IntroFriday.ttf</FontFamily>
 
@@ -330,34 +331,39 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Grid Margin="10,5,10,5" HorizontalAlignment="Stretch">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
                                     <!-- Пузырь сообщения -->
-                                    <Border x:Name="MessageBorder"
-                                            HorizontalAlignment="{Binding Path=., Converter={StaticResource AlignmentConverter}}"
-                                            Background="{Binding Path=., Converter={StaticResource BgConverter}}"
-                                            CornerRadius="12"
-                                            Padding="12,8"
-                                            MaxWidth="800">
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Path=., Converter={StaticResource TextConverter}}"
-                                                       Foreground="White"
-                                                       FontSize="16"
-                                                       TextWrapping="Wrap"/>
+                                    <Border x:Name="MessageBorder" CornerRadius="12" Padding="12,8" MaxWidth="800"
+                    HorizontalAlignment="Left" Background="#625B71">
 
-                                            <!-- Кнопки внутри пузыря, появляются при наведении -->
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding DisplayText}" Foreground="White" FontSize="16" TextWrapping="Wrap"/>
+
+                                            <!-- Панель с кнопками -->
                                             <StackPanel x:Name="ActionButtons" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0" Visibility="Collapsed">
-                                                <Button Content="Удалить" Margin="0,0,4,0" Padding="6,2" Height="25" Click="DeleteChatMessage_Click" Background="#40000000" BorderThickness="0"/>
-                                                <Button Content="Правка" Margin="0,0,4,0" Padding="6,2" Height="25" Click="EditChatMessage_Click" Background="#40000000" BorderThickness="0"/>
-                                                <Button Content="Копировать" Margin="0,0,4,0" Padding="6,2" Height="25" Click="CopyChatMessage_Click" Background="#40000000" BorderThickness="0"/>
-                                                <Button x:Name="RegenerateButton" Content="🔄" Padding="6,2" Height="25" Click="RegenerateChatMessage_Click" Background="#40000000" BorderThickness="0"/>
+
+                                                <!-- Эти 3 кнопки показываем ТОЛЬКО если IsLocal = True -->
+                                                <StackPanel Orientation="Horizontal" Visibility="{Binding IsLocal, Converter={StaticResource BoolToVis}}">
+                                                    <Button Content="Удалить" Margin="0,0,4,0" Padding="6,2" Height="25" Click="DeleteChatMessage_Click" Background="#40000000"/>
+                                                    <Button Content="Правка" Margin="0,0,4,0" Padding="6,2" Height="25" Click="EditChatMessage_Click" Background="#40000000"/>
+                                                    <Button Content="Копировать" Margin="0,0,4,0" Padding="6,2" Height="25" Click="CopyChatMessage_Click" Background="#40000000"/>
+                                                </StackPanel>
+
+                                                <!-- Кнопка перегенерации для серверных ответов бота -->
+                                                <Button x:Name="RegenerateButton" Content="🔄" Padding="6,2" Height="25" Click="RegenerateChatMessage_Click" Background="#40000000"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
                                 </Grid>
                                 <DataTemplate.Triggers>
+                                    <!-- Если сообщение от Пользователя (Вы), меняем цвет и выравнивание -->
+                                    <DataTrigger Binding="{Binding IsUser}" Value="True">
+                                        <Setter TargetName="MessageBorder" Property="HorizontalAlignment" Value="Right"/>
+                                        <Setter TargetName="MessageBorder" Property="Background" Value="#6A3D8B"/>
+                                        <!-- Прячем кнопку перегенерации у сообщений пользователя -->
+                                        <Setter TargetName="RegenerateButton" Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+
+                                    <!-- Показываем кнопки только при наведении на сообщение -->
                                     <Trigger Property="IsMouseOver" Value="True">
                                         <Setter TargetName="ActionButtons" Property="Visibility" Value="Visible"/>
                                     </Trigger>

@@ -42,7 +42,7 @@ namespace Friday
         public static MusicService musicService;
         public ListeningState ListeningState { get; private set; }
 
-        public event Action<string> OnMessageReceived;
+        public event Action<ChatMessage> OnChatMessageReceived;
         private readonly MainWindow _mainWindow;
         public MainWindow.AttachedFile AttachedFile { get; set; }
 
@@ -135,8 +135,15 @@ namespace Friday
                                     case InputMode.NameResponseCommand:
                                         if (recognizedText == _renameService.BotName.ToLower() && !isScreenshotModeActive)
                                         {
-                                            // Убрали печать "Вы: Пятница" и включили тихий режим озвучки
-                                            _ = SpeakAsync("Бот", "Слушаю вас", showInChat: false);
+                                            OnChatMessageReceived?.Invoke(new ChatMessage
+                                            {
+                                                Id = Guid.NewGuid().ToString(),
+                                                Sender = "Вы",
+                                                Text = recognizedText,
+                                                IsLocal = true
+                                            });
+                                            _ = SpeakAsync("Бот", "Слушаю вас", showInChat: true, isLocal: true);
+
                                             ListeningState.StartListening();
                                             isListeningForCommands = true;
                                             lastRecognizedText = string.Empty;
@@ -209,11 +216,18 @@ namespace Friday
             switch (action.ActionType.ToLower())
             {
                 case "голосовой ответ":
-                    await SpeakAsync(action.Sender, safeActionText);
+                    await SpeakAsync(action.Sender, safeActionText, true, action.IsLocal, action.MessageId, action.UserMsgId);
                     break;
 
+
                 case "текстовой ответ":
-                    OnMessageReceived?.Invoke($"{action.Sender}: {safeActionText}");
+                    OnChatMessageReceived?.Invoke(new ChatMessage
+                    {
+                        Id = action.MessageId ?? Guid.NewGuid().ToString(),
+                        Sender = action.Sender,
+                        Text = safeActionText,
+                        IsLocal = action.IsLocal
+                    });
                     break;
 
                 case "очистка истории":
@@ -263,7 +277,7 @@ namespace Friday
                     break;
 
                 case "скриншот":
-                    TakeScreenshot();
+                    //TakeScreenshot();
                     break;
                 case "музыка":
                     try
@@ -385,8 +399,8 @@ namespace Friday
         {
             using (ScreenshotForm screenshotForm = new ScreenshotForm(this))
             {
-                screenshotForm.OnMessageReceived += (message) => OnMessageReceived?.Invoke(message);
-                screenshotForm.ShowDialog();
+                //screenshotForm.OnMessageReceived += (message) => OnMessageReceived?.Invoke(message);
+                //screenshotForm.ShowDialog();
 
                 if (screenshotForm.IsCancelled)
                 {
@@ -442,18 +456,35 @@ namespace Friday
                 _mainWindow.ShowSystemMessage("Система занята: ожидаю ответа от сервера.");
                 return;
             }
-            OnMessageReceived?.Invoke($"Вы: {command}");
 
             if (ListeningState.IsListeningForPassword)
             {
+                OnChatMessageReceived?.Invoke(new ChatMessage
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Sender = "Вы",
+                    Text = command,
+                    IsLocal = true
+                });
                 OnPasswordReceived?.Invoke(command);
                 return;
             }
 
+            // Сначала проверяем, есть ли такая локальная команда
             CommandManager commandManager = new CommandManager();
             var customCommand = commandManager.FindCommandByTrigger(command);
+            bool isLocalCommand = customCommand != null;
 
-            if (customCommand != null)
+            // Выводим сообщение в UI, указывая ПРАВИЛЬНЫЙ статус IsLocal
+            OnChatMessageReceived?.Invoke(new ChatMessage
+            {
+                Id = isLocalCommand ? Guid.NewGuid().ToString() : "pending",
+                Sender = "Вы",
+                Text = command,
+                IsLocal = isLocalCommand // <-- Если уйдет на сервер (false), кнопок не будет!
+            });
+
+            if (isLocalCommand)
             {
                 await CustomCommandService.ExecuteCommand(customCommand);
             }
@@ -461,6 +492,7 @@ namespace Friday
             {
                 try
                 {
+                    // Отправка на сервер (Gemini)
                     string screenshotBase64 = null;
                     var attachedFile = _mainWindow.GetAttachedFile();
 
@@ -568,17 +600,21 @@ namespace Friday
         }
 
         // ДОБАВЛЕН ПАРАМЕТР showInChat = true
-        public async Task SpeakAsync(string sender, string text, bool showInChat = true)
+        public async Task SpeakAsync(string sender, string text, bool showInChat = true, bool isLocal = true, string messageId = null, string userMsgId = null)
         {
             if (string.IsNullOrWhiteSpace(text)) return;
-
             while (_isSpeaking) await Task.Delay(100);
-
             _isSpeaking = true;
 
             if (showInChat)
             {
-                OnMessageReceived?.Invoke($"{sender}: {text}");
+                OnChatMessageReceived?.Invoke(new ChatMessage
+                {
+                    Id = messageId ?? Guid.NewGuid().ToString(),
+                    Sender = sender,
+                    Text = text,
+                    IsLocal = isLocal
+                });
             }
 
             bool wasMusicPlaying = musicService.IsPlaying();
@@ -663,6 +699,9 @@ namespace Friday
             public string ActionType { get; set; }
             public string ActionText { get; set; }
             public string Sender { get; set; }
+            public string MessageId { get; set; }
+            public string UserMsgId { get; set; }
+            public bool IsLocal { get; set; } = true; // По умолчанию локальное
         }
     }
 

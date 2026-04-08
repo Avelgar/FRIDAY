@@ -340,7 +340,10 @@ namespace Friday
                                     {
                                         ActionType = actionParts[0].Trim(),
                                         ActionText = actionParts[1].Trim(),
-                                        Sender = command_response.Sender
+                                        Sender = command_response.Sender,
+                                        MessageId = command_response.MessageId?.ToString(),
+                                        UserMsgId = command_response.UserMsgId?.ToString(),
+                                        IsLocal = false // Сообщение с сервера
                                     };
 
                                     if (VoiceService != null)
@@ -673,6 +676,12 @@ namespace Friday
             public List<string> Actions { get; set; }
             public string SourceDevice { get; set; }
             public string Timestamp { get; set; }
+
+            [JsonProperty("user_msg_id")]
+            public long? UserMsgId { get; set; }
+
+            [JsonProperty("message_id")]
+            public long? MessageId { get; set; }
         }
 
         public class DeviceData

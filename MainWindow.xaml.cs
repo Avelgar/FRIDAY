@@ -17,6 +17,25 @@ using System.Globalization;
 
 namespace Friday
 {
+    public class ChatMessage : INotifyPropertyChanged
+    {
+        public string Id { get; set; }
+        public string Sender { get; set; }
+        public string Text { get; set; }
+        public bool IsLocal { get; set; }
+
+        public bool IsUser => Sender == "Вы";
+
+        private string _displayText;
+        public string DisplayText
+        {
+            get => _displayText ?? Text;
+            set { _displayText = value; OnPropertyChanged(nameof(DisplayText)); }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private VoiceService _voiceService;
@@ -26,6 +45,8 @@ namespace Friday
 
         // Переменная для хранения индекса редактируемого сообщения
         private int _editingMessageIndex = -1;
+        public ObservableCollection<ChatMessage> ChatMessages { get; set; } = new ObservableCollection<ChatMessage>();
+        private ChatMessage _editingMessage = null;
 
         public AttachedFile GetAttachedFile()
         {
@@ -82,29 +103,18 @@ namespace Friday
         private async Task SendCurrentMessageAsync()
         {
             string messageText = MessageTextBox.Text.Trim();
+            if (string.IsNullOrEmpty(messageText)) return;
 
-            if (string.IsNullOrEmpty(messageText))
+            // РЕЖИМ РЕДАКТИРОВАНИЯ
+            if (_editingMessage != null)
             {
-                ShowSystemMessage("Сообщение не может быть пустым!");
+                _editingMessage.Text = messageText;
+                _editingMessage.DisplayText = messageText; // Обновит UI
+
+                _editingMessage = null;
+                SendMessageButton.Content = "Отправить";
+                MessageTextBox.Text = "";
                 return;
-            }
-
-            // ЛОГИКА ЛОКАЛЬНОГО РЕДАКТИРОВАНИЯ
-            if (_editingMessageIndex >= 0 && _editingMessageIndex < ChatListBox.Items.Count)
-            {
-                string oldRawMessage = ChatListBox.Items[_editingMessageIndex] as string;
-                if (oldRawMessage != null)
-                {
-                    // Сохраняем префикс (отправителя)
-                    string prefix = oldRawMessage.StartsWith("Вы:") ? "Вы:" : "Бот:";
-                    ChatListBox.Items[_editingMessageIndex] = $"{prefix} {messageText}{Environment.NewLine}";
-
-                    // Сбрасываем режим редактирования
-                    _editingMessageIndex = -1;
-                    SendMessageButton.Content = "Отправить";
-                    MessageTextBox.Text = "";
-                    return; // На сервер пока не отправляем, как вы и просили
-                }
             }
 
             var app = (App)Application.Current;
@@ -142,11 +152,11 @@ namespace Friday
                 };
 
                 ((App)Application.Current).SendWebSocketMessage(message);
-
                 ((App)Application.Current).MarkAsWaitingForServer();
 
-                ChatListBox.Items.Add($"Вы: {messageText}{Environment.NewLine}");
-                ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
+                // Добавляем сообщение со статусом Pending (серверного ID пока нет)
+                ChatMessages.Add(new ChatMessage { Id = "pending", Sender = "Вы", Text = messageText, IsLocal = false });
+                ChatListBox.ScrollIntoView(ChatMessages.Last());
 
                 MessageTextBox.Text = "";
                 ClearAttachedFile();
@@ -170,8 +180,8 @@ namespace Friday
 
             ((App)Application.Current).VoiceService = _voiceService;
             ((App)Application.Current).IncrementWindowCount();
-
-            _voiceService.OnMessageReceived += OnMessageReceived;
+            ChatListBox.ItemsSource = ChatMessages;
+            _voiceService.OnChatMessageReceived += OnChatMessageReceived;
             CustomCommandService.Initialize(_voiceService);
 
             Commands = new ObservableCollection<Command>(_commandManager.GetCommands());
@@ -250,72 +260,41 @@ namespace Friday
         private void ProcessHistoryMessages(dynamic historyData)
         {
             if (historyData == null) return;
-
             try
             {
                 foreach (var message in historyData)
                 {
+                    string id = message.id?.ToString();
                     string sender = message.sender?.ToString();
                     string text = message.text?.ToString();
 
-                    if (string.IsNullOrEmpty(sender) || string.IsNullOrEmpty(text))
-                        continue;
+                    if (string.IsNullOrEmpty(sender) || string.IsNullOrEmpty(text)) continue;
 
-                    if (sender == "Вы")
+                    // Извлекаем чистый текст из "голосовой ответ|текст"
+                    string cleanText = text;
+                    if (text.Contains("ответ|"))
                     {
-                        ChatListBox.Items.Add($"{sender}: {text}{Environment.NewLine}");
+                        var responses = new List<string>();
+                        foreach (var part in text.Split('⸵'))
+                        {
+                            if (part.Contains("|"))
+                                responses.Add(part.Split('|')[1]);
+                            else
+                                responses.Add(part);
+                        }
+                        cleanText = string.Join(" ", responses);
                     }
-                    else
+
+                    ChatMessages.Add(new ChatMessage
                     {
-                        if (text.Contains("голосовой ответ|"))
-                        {
-                            var voiceResponses = new List<string>();
-                            var parts = text.Split('⸵');
-
-                            foreach (var part in parts)
-                            {
-                                if (part.StartsWith("голосовой ответ|"))
-                                {
-                                    voiceResponses.Add(part.Substring("голосовой ответ|".Length));
-                                }
-                            }
-
-                            if (voiceResponses.Count > 0)
-                            {
-                                string combinedResponse = string.Join(" ", voiceResponses);
-                                ChatListBox.Items.Add($"Бот: {combinedResponse}{Environment.NewLine}");
-                            }
-                        }
-                        else if (text.Contains("текстовой ответ|"))
-                        {
-                            var textResponses = new List<string>();
-                            var parts = text.Split('⸵');
-
-                            foreach (var part in parts)
-                            {
-                                if (part.StartsWith("текстовой ответ|"))
-                                {
-                                    textResponses.Add(part.Substring("текстовой ответ|".Length));
-                                }
-                            }
-
-                            if (textResponses.Count > 0)
-                            {
-                                string combinedResponse = string.Join(" ", textResponses);
-                                ChatListBox.Items.Add($"Бот: {combinedResponse}{Environment.NewLine}");
-                            }
-                        }
-                        else
-                        {
-                            ChatListBox.Items.Add($"Бот: {text}{Environment.NewLine}");
-                        }
-                    }
+                        Id = id,
+                        Sender = sender,
+                        Text = cleanText,
+                        IsLocal = false // История всегда с сервера
+                    });
                 }
             }
-            catch (Exception ex)
-            {
-                ShowSystemMessage($"Ошибка при загрузке истории сообщений: {ex.Message}");
-            }
+            catch (Exception ex) { ShowSystemMessage($"Ошибка истории: {ex.Message}"); }
         }
 
 
@@ -713,6 +692,15 @@ namespace Friday
                 ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
             });
         }
+
+        private void OnChatMessageReceived(ChatMessage msg)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                ChatMessages.Add(msg);
+                ChatListBox.ScrollIntoView(msg);
+            });
+        }
         public void ShowSystemMessage(string message)
         {
             Dispatcher.Invoke(() =>
@@ -1027,7 +1015,7 @@ namespace Friday
 
         public async void ClearHistory()
         {
-            ChatListBox.Items.Clear();
+            ChatMessages.Clear();
             ShowSystemMessage("История успешно очищена");
             try
             {
@@ -1125,127 +1113,28 @@ namespace Friday
         // ЛОКАЛЬНОЕ УДАЛЕНИЕ
         private void DeleteChatMessage_Click(object sender, RoutedEventArgs e)
         {
-            int index = GetChatMessageIndexFromSender(sender);
-            if (index >= 0)
-            {
-                ChatListBox.Items.RemoveAt(index);
-            }
+            if ((sender as Button)?.DataContext is ChatMessage msg)
+                ChatMessages.Remove(msg);
         }
 
-        // ЛОКАЛЬНОЕ РЕДАКТИРОВАНИЕ
         private void EditChatMessage_Click(object sender, RoutedEventArgs e)
         {
-            int index = GetChatMessageIndexFromSender(sender);
-            if (index < 0) return;
-
-            string rawMessage = ChatListBox.Items[index] as string;
-            if (string.IsNullOrEmpty(rawMessage)) return;
-
-            string cleanText = ExtractMessageContent(rawMessage, rawMessage.StartsWith("Вы:") ? "Вы:" : "Бот:");
-
-            MessageTextBox.Text = cleanText;
-            _editingMessageIndex = index;
-            SendMessageButton.Content = "Сохранить";
+            if ((sender as Button)?.DataContext is ChatMessage msg)
+            {
+                MessageTextBox.Text = msg.Text;
+                _editingMessage = msg;
+                SendMessageButton.Content = "Сохранить";
+            }
         }
 
         private void CopyChatMessage_Click(object sender, RoutedEventArgs e)
         {
-            string messageText = GetMessageFromSender(sender);
-            if (string.IsNullOrWhiteSpace(messageText)) return;
-
-            string cleanText = new string(messageText.Where(c => !char.IsControl(c)).ToArray()).Trim();
-            if (cleanText.StartsWith("Вы:", StringComparison.OrdinalIgnoreCase)) cleanText = cleanText.Substring("Вы:".Length).Trim();
-            else if (cleanText.StartsWith("Бот:", StringComparison.OrdinalIgnoreCase)) cleanText = cleanText.Substring("Бот:".Length).Trim();
-
-            Clipboard.SetText(cleanText);
+            if ((sender as Button)?.DataContext is ChatMessage msg)
+                Clipboard.SetText(msg.Text);
         }
-
         private async void RegenerateChatMessage_Click(object sender, RoutedEventArgs e)
         {
-            int botMessageIndex = GetChatMessageIndexFromSender(sender);
-            if (botMessageIndex < 0 || botMessageIndex >= ChatListBox.Items.Count) return;
-
-            if (ChatListBox.Items[botMessageIndex] is not string botMessage || !IsLastBotMessage(botMessage)) return;
-
-            int previousUserIndex = FindPreviousUserMessageIndex(botMessageIndex);
-            if (previousUserIndex < 0)
-            {
-                ShowSystemMessage("Не найдено предыдущее сообщение пользователя для перегенерации.");
-                return;
-            }
-
-            string previousUserMessage = ChatListBox.Items[previousUserIndex] as string;
-            string userText = ExtractMessageContent(previousUserMessage, "Вы:");
-
-            if (string.IsNullOrWhiteSpace(userText))
-            {
-                ShowSystemMessage("Не удалось извлечь текст запроса для перегенерации.");
-                return;
-            }
-
-            MessageTextBox.Text = userText;
-            ChatListBox.Items.RemoveAt(botMessageIndex); // Удаляем ответ бота перед перегенерацией
-            await SendCurrentMessageAsync();
-        }
-
-        private string GetMessageFromSender(object sender)
-        {
-            if (sender is not DependencyObject source) return null;
-            ListBoxItem listBoxItem = FindParent<ListBoxItem>(source);
-            return listBoxItem?.DataContext as string;
-        }
-
-        private int GetChatMessageIndexFromSender(object sender)
-        {
-            if (sender is not DependencyObject source) return -1;
-            ListBoxItem listBoxItem = FindParent<ListBoxItem>(source);
-            if (listBoxItem == null) return -1;
-            return ChatListBox.ItemContainerGenerator.IndexFromContainer(listBoxItem);
-        }
-
-        private bool IsLastBotMessage(string message)
-        {
-            if (!IsBotMessage(message)) return false;
-
-            for (int i = ChatListBox.Items.Count - 1; i >= 0; i--)
-            {
-                if (ChatListBox.Items[i] is string current && IsBotMessage(current))
-                {
-                    return string.Equals(current, message, StringComparison.Ordinal);
-                }
-            }
-            return false;
-        }
-
-        private bool IsBotMessage(string message)
-        {
-            if (string.IsNullOrWhiteSpace(message)) return false;
-            string cleanMessage = new string(message.Where(c => !char.IsControl(c)).ToArray()).Trim();
-            string assistantPrefix = $"{SettingManager.Setting.AssistantName}:";
-
-            return cleanMessage.StartsWith("Бот:", StringComparison.OrdinalIgnoreCase)
-                || cleanMessage.StartsWith(assistantPrefix, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private int FindPreviousUserMessageIndex(int startIndex)
-        {
-            for (int i = startIndex - 1; i >= 0; i--)
-            {
-                if (ChatListBox.Items[i] is string current)
-                {
-                    string clean = new string(current.Where(c => !char.IsControl(c)).ToArray()).Trim();
-                    if (clean.StartsWith("Вы:", StringComparison.OrdinalIgnoreCase)) return i;
-                }
-            }
-            return -1;
-        }
-
-        private string ExtractMessageContent(string message, string prefix)
-        {
-            if (string.IsNullOrWhiteSpace(message)) return string.Empty;
-            string clean = new string(message.Where(c => !char.IsControl(c)).ToArray());
-            if (clean.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return clean.Substring(prefix.Length).Trim();
-            return clean.Trim();
+            
         }
     }
 

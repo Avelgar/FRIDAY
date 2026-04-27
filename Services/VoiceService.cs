@@ -19,7 +19,6 @@ namespace Friday
 {
     public class VoiceService
     {
-        private readonly BluetoothService _bluetoothService;
 
         private readonly List<string> _stopWords = new List<string> { "стоп", "хватит", "довольно", "заткнись", "закрой рот" };
         private PoseTrackingService _poseTrackingService;
@@ -28,7 +27,6 @@ namespace Friday
         private string modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\model"));
 
         private string _piperExePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\piper\piper.exe"));
-        private string _modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\Models\ru_RU-irina-medium.onnx"));
 
         private Process _piperProcess;
         private WaveOutEvent _waveOut;
@@ -36,7 +34,7 @@ namespace Friday
         public event Action<string> OnPasswordReceived;
         private readonly VoskRecognizer _recognizer;
         private readonly RenameService _renameService;
-        private readonly SettingManager _settingManager;
+        private SettingManager _settingManager;
         private readonly ChangeVoiceService _changeVoiceService;
         private WaveInEvent _waveIn;
         public static MusicService musicService;
@@ -50,7 +48,6 @@ namespace Friday
 
         public VoiceService(RenameService renameService, SettingManager settingManager, MainWindow mainWindow)
         {
-            _bluetoothService = new BluetoothService();
             _renameService = renameService;
             _settingManager = settingManager;
             _changeVoiceService = new ChangeVoiceService(settingManager);
@@ -129,7 +126,6 @@ namespace Friday
                             {
                                 var app = (App)System.Windows.Application.Current;
                                 if (app.IsWaitingForServerResponse) return;
-
                                 switch (inputMode)
                                 {
                                     case InputMode.NameResponseCommand:
@@ -258,7 +254,7 @@ namespace Friday
                     new KeyboardService().TypeText(safeActionText);
                     break;
 
-                case "отправить уведомление":
+                case "уведомление":
                     new NotificationService().SendNotification(safeActionText);
                     break;
 
@@ -277,7 +273,7 @@ namespace Friday
                     break;
 
                 case "скриншот":
-                    //TakeScreenshot();
+                    TakeScreenshot();
                     break;
                 case "музыка":
                     try
@@ -317,13 +313,6 @@ namespace Friday
 
                 case "смена голоса":
                     _changeVoiceService.ChangeVoice(safeActionText);
-                    break;
-
-                case "управление блютусом":
-                    if (safeActionText.IndexOf("включить", StringComparison.OrdinalIgnoreCase) >= 0)
-                        _bluetoothService.SetBluetoothState("включить");
-                    else if (safeActionText.IndexOf("выключить", StringComparison.OrdinalIgnoreCase) >= 0)
-                        _bluetoothService.SetBluetoothState("выключить");
                     break;
             }
         }
@@ -397,15 +386,29 @@ namespace Friday
 
         private void TakeScreenshot()
         {
-            using (ScreenshotForm screenshotForm = new ScreenshotForm(this))
+            using (ScreenshotForm screenshotForm = new ScreenshotForm())
             {
-                //screenshotForm.OnMessageReceived += (message) => OnMessageReceived?.Invoke(message);
-                //screenshotForm.ShowDialog();
+                screenshotForm.ShowDialog();
 
                 if (screenshotForm.IsCancelled)
                 {
-                    _mainWindow.ShowSystemMessage("Скриншот отменен.");
+                    _mainWindow.ShowSystemMessage("Выделение области отменено.");
                     return;
+                }
+
+                if (screenshotForm.CapturedImageBytes != null && screenshotForm.CapturedImageBytes.Length > 0)
+                {
+                    var attachedFile = new MainWindow.AttachedFile
+                    {
+                        Name = $"screenshot-{DateTime.Now:yyyyMMddHHmmss}.png",
+                        Data = screenshotForm.CapturedImageBytes,
+                        Size = screenshotForm.CapturedImageBytes.Length
+                    };
+
+                    _mainWindow.Dispatcher.Invoke(() =>
+                    {
+                        _mainWindow.AttachFileFromScreenshot(attachedFile);
+                    });
                 }
             }
         }
@@ -643,16 +646,21 @@ namespace Friday
 
         private void PlayWithPiper(string text)
         {
+            // Получаем АКТУАЛЬНЫЙ путь к модели ПЕРЕД запуском процесса
+            string currentModelPath = GetModelPath();
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = _piperExePath,
-                Arguments = $"--model \"{_modelPath}\" --length_scale 0.85 --sentence_silence 0.1 --output_raw",
+                // Используем новую переменную в аргументах
+                Arguments = $"--model \"{currentModelPath}\" --length_scale 0.85 --sentence_silence 0.1 --output_raw",
                 UseShellExecute = false,
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 CreateNoWindow = true,
                 StandardInputEncoding = Encoding.UTF8
             };
+
 
             using (_piperProcess = Process.Start(startInfo))
             {
@@ -689,9 +697,25 @@ namespace Friday
             }
         }
 
-        public List<string> GetAvailableVoices()
+        private string GetModelPath()
         {
-            return new List<string> { "Piper Neural Voice (ru_RU)" };
+            // Получаем имя голоса из настроек, приводя его к нижнему регистру
+            string voiceName = SettingManager.Setting.VoiceType.ToLower();
+
+            // Формируем имя файла модели на основе имени голоса
+            string modelFileName = $"ru_RU-{voiceName}-medium.onnx";
+
+            // Собираем полный путь
+            string modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\Models", modelFileName));
+
+            // Проверяем, существует ли файл. Если нет, возвращаем путь к Ирине по умолчанию.
+            if (!File.Exists(modelPath))
+            {
+                _mainWindow.ShowSystemMessage($"Модель для голоса '{voiceName}' не найдена. Используется голос по умолчанию.");
+                return Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\Models\ru_RU-irina-medium.onnx"));
+            }
+
+            return modelPath;
         }
 
         public class Actions

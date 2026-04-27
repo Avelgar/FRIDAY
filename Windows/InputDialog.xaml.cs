@@ -11,8 +11,12 @@ namespace Friday
         public string InputText { get; private set; }
         public string ActionType { get; private set; }
 
+        private bool isFirstLoad = true;
 
-        // Конструктор с параметрами
+        // Списки для настройки умного UI
+        private readonly string[] _parameterlessActions = { "Очистка истории", "Режим камеры", "Выключить режим камеры", "Скриншот" };
+        private readonly string[] _numericActions = { "Ожидание", "Изменение громкости", "Изменение яркости" };
+
         public InputDialog(string title, string commandText, string actionType)
         {
             InitializeComponent();
@@ -29,14 +33,10 @@ namespace Friday
             ProcessComboBox.SelectionChanged += ProcessComboBox_SelectionChanged;
         }
 
-        private bool isFirstLoad = true;
-
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ChangedButton == MouseButton.Left)
-            {
                 this.DragMove();
-            }
         }
 
         public void ActionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -51,91 +51,61 @@ namespace Friday
         private void ProcessComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (ProcessComboBox.SelectedItem != null)
-            {
-                string selectedProcessName = ProcessComboBox.SelectedItem.ToString();
-                InputTextBox.Text = selectedProcessName;
-            }
+                InputTextBox.Text = ProcessComboBox.SelectedItem.ToString();
         }
 
         private void UpdateInputField(string actionType)
         {
-            InputTextBox.MaxLength = actionType switch
-            {
-                "Голосовой ответ" => 100,
-                "Завершение процесса" => 0,
-                _ => 100
-            };
-
-            if (!isFirstLoad)
-            {
-                InputTextBox.Clear();
-            }
-
+            if (!isFirstLoad) InputTextBox.Clear();
             isFirstLoad = false;
 
+            // Настройка видимости кнопок
             FileButton.Visibility = actionType == "Открытие файла" ? Visibility.Visible : Visibility.Collapsed;
             SelectFolderButton.Visibility = actionType == "Открыть папку" ? Visibility.Visible : Visibility.Collapsed;
             ProcessComboBox.Visibility = actionType == "Завершение процесса" ? Visibility.Visible : Visibility.Collapsed;
-            InputTextBox.PreviewTextInput -= TextBox_PreviewTextInput_Numbers;
-            InputTextBox.PreviewTextInput -= TextBox_PreviewTextInput_Russian;
 
+            // Скрываем текстовое поле, если параметры не нужны
+            bool needsInput = !_parameterlessActions.Contains(actionType);
+            InputTextBox.Visibility = needsInput ? Visibility.Visible : Visibility.Collapsed;
+
+            // Отписываемся от старых событий
+            InputTextBox.PreviewTextInput -= TextBox_PreviewTextInput_Numbers;
+
+            // Подписываемся на нужные фильтры
             if (actionType == "Завершение процесса")
             {
                 LoadProcesses();
             }
-
-            if (actionType == "Голосовой ответ")
-            {
-                InputTextBox.PreviewTextInput += TextBox_PreviewTextInput_Russian;
-            }
-            else
+            else if (_numericActions.Contains(actionType))
             {
                 InputTextBox.PreviewTextInput += TextBox_PreviewTextInput_Numbers;
             }
         }
 
-
         private void LoadProcesses()
         {
-            //ProcessComboBox.Items.Clear();
-            //var processes = System.Diagnostics.Process.GetProcesses();
-            //foreach (var process in processes)
-            //{
-            //    ProcessComboBox.Items.Add(process.ProcessName);
-            //}
-            ProcessComboBox.Items.Clear(); // Очищаем предыдущие элементы
-            var processes = System.Diagnostics.Process.GetProcesses(); // Получаем все запущенные процессы
+            ProcessComboBox.Items.Clear();
+            var processes = System.Diagnostics.Process.GetProcesses();
 
             foreach (var process in processes)
             {
                 try
                 {
-                    // Проверяем, что у процесса есть окно и оно отображается
                     if (!string.IsNullOrEmpty(process.MainWindowTitle))
-                    {
-                        ProcessComboBox.Items.Add(process.ProcessName); // Добавляем имя процесса в ComboBox
-                    }
+                        ProcessComboBox.Items.Add(process.ProcessName);
                 }
-                catch (Exception ex)
-                {
-
-                }
+                catch { }
             }
         }
 
         private void TextBox_PreviewTextInput_Numbers(object sender, System.Windows.Input.TextCompositionEventArgs e)
         {
-            // e.Handled = !Regex.IsMatch(e.Text, @"^[0-9]+$"); // Разрешаем только цифры
-        }
-
-        private void TextBox_PreviewTextInput_Russian(object sender, System.Windows.Input.TextCompositionEventArgs e)
-        {
-            e.Handled = !Regex.IsMatch(e.Text, @"^[а-яё\s]+$"); // Разрешаем только русские строчные символы
+            // Разрешаем только цифры
+            e.Handled = !Regex.IsMatch(e.Text, @"^[0-9]+$");
         }
 
         public void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            // Проверяем, что выбран тип действия
             if (ActionTypeComboBox.SelectedItem == null)
             {
                 MessageBox.Show("Пожалуйста, выберите тип действия.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -143,59 +113,35 @@ namespace Friday
             }
 
             string selectedAction = (ActionTypeComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
+            bool needsInput = !_parameterlessActions.Contains(selectedAction);
 
-            // Проверяем, что текстовое поле не пустое
-            if (string.IsNullOrWhiteSpace(InputTextBox.Text))
+            if (needsInput && string.IsNullOrWhiteSpace(InputTextBox.Text))
             {
                 MessageBox.Show("Пожалуйста, введите необходимые данные.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            // Дополнительные проверки на корректность введённых данных
-            // if (selectedAction == "Изменение громкости" &&
-            //     (!Regex.IsMatch(InputTextBox.Text, @"^\d{1,3}$") ||
-            //     int.Parse(InputTextBox.Text) < 0 || int.Parse(InputTextBox.Text) > 100))
-            // {
-            //     MessageBox.Show("Введите корректное значение громкости от 0 до 100.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-            //     return;
-            // }
+            // Записываем пустую строку, если параметры не нужны, чтобы UI в конструкторе выглядел красиво
+            InputText = needsInput ? InputTextBox.Text : "";
+            ActionType = selectedAction;
 
-            // Сохраняем введенные данные и тип действия
-            InputText = InputTextBox.Text;
-            ActionType = selectedAction; // Сохраняем выбранный тип действия
-            DialogResult = true; // Устанавливаем результат диалога как успешный
-            Close(); // Закрываем диалог
+            DialogResult = true;
+            Close();
         }
 
-        private void Close_Click(object sender, RoutedEventArgs e)
-        {
-            this.Close(); // Закрытие окна
-        }
+        private void Close_Click(object sender, RoutedEventArgs e) => this.Close();
 
         private void FileButton_Click(object sender, RoutedEventArgs e)
         {
-            // Открываем диалог выбора файла
-            OpenFileDialog openFileDialog = new OpenFileDialog
-            {
-                Filter = "All Files (*.*)|*.*", // Фильтр файлов
-                Title = "Выберите файл"
-            };
-
-            if (openFileDialog.ShowDialog() == true)
-            {
-                InputTextBox.Text = openFileDialog.FileName; // Устанавливаем путь к выбранному файлу в текстовое поле
-            }
+            OpenFileDialog openFileDialog = new OpenFileDialog { Filter = "All Files (*.*)|*.*", Title = "Выберите файл" };
+            if (openFileDialog.ShowDialog() == true) InputTextBox.Text = openFileDialog.FileName;
         }
 
         private void SelectFolderButton_Click(object sender, RoutedEventArgs e)
         {
-            // Открываем диалог выбора папки
             var folderDialog = new System.Windows.Forms.FolderBrowserDialog();
             if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                InputTextBox.Text = folderDialog.SelectedPath; // Устанавливаем путь к выбранной папке в текстовое поле
-            }
+                InputTextBox.Text = folderDialog.SelectedPath;
         }
-
     }
 }

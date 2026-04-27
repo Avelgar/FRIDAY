@@ -1,4 +1,6 @@
-﻿namespace Friday
+﻿// RenameService.cs
+
+namespace Friday
 {
     public class RenameService
     {
@@ -7,15 +9,29 @@
 
         public string BotName
         {
-            get => _botName;
+            // Геттер теперь сначала синхронизирует имя из настроек,
+            // а потом возвращает его.
+            get
+            {
+                // Если имя в настройках изменилось, обновляем нашу "копию"
+                if (_botName != SettingManager.Setting.AssistantName)
+                {
+                    _botName = SettingManager.Setting.AssistantName;
+                }
+                return _botName;
+            }
+
             set
             {
                 if (!string.IsNullOrWhiteSpace(value))
                 {
-                    _botName = value;
+                    _botName = value; // Обновляем свою "копию"
+
+                    // Обновляем настройки и сохраняем
                     SettingManager.Setting.AssistantName = value;
                     _settingManager.SaveSettings();
 
+                    // Оповещаем UI
                     _settingManager.OnSettingsChanged(new SettingChangedEventArgs
                     {
                         AssistantName = value

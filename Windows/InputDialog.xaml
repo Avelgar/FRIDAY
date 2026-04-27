@@ -193,16 +193,28 @@
         <Grid>
             <StackPanel Margin="10">
                 <TextBlock Text="Выберите действие:"/>
-                <ComboBox x:Name="ActionTypeComboBox" SelectionChanged="ActionTypeComboBox_SelectionChanged" Margin="0,0,0,10"  >
+                <ComboBox x:Name="ActionTypeComboBox" SelectionChanged="ActionTypeComboBox_SelectionChanged" Margin="0,0,0,10">
                     <ComboBoxItem Content="Открытие файла"/>
-                    <ComboBoxItem Content="Голосовой ответ"/>
+                    <ComboBoxItem Content="Открыть папку"/>
                     <ComboBoxItem Content="Завершение процесса"/>
                     <ComboBoxItem Content="Открытие ссылки"/>
                     <ComboBoxItem Content="Напечатать текст"/>
                     <ComboBoxItem Content="Отправить уведомление"/>
                     <ComboBoxItem Content="Нажать кнопку мыши"/>
-                    <ComboBoxItem Content="Открыть папку"/>
-                    <!-- Новое действие -->
+                    <ComboBoxItem Content="Переместить мышь"/>
+                    <ComboBoxItem Content="Голосовой ответ"/>
+                    <ComboBoxItem Content="Текстовой ответ"/>
+                    <ComboBoxItem Content="Изменение громкости"/>
+                    <ComboBoxItem Content="Изменение яркости"/>
+                    <ComboBoxItem Content="Музыка"/>
+                    <ComboBoxItem Content="Погода"/>
+                    <ComboBoxItem Content="Смена имени"/>
+                    <ComboBoxItem Content="Смена голоса"/>
+                    <ComboBoxItem Content="Очистка истории"/>
+                    <ComboBoxItem Content="Режим камеры"/>
+                    <ComboBoxItem Content="Выключить режим камеры"/>
+                    <ComboBoxItem Content="Скриншот"/>
+                    <ComboBoxItem Content="Ожидание"/>
                 </ComboBox>
                 <ComboBox x:Name="ProcessComboBox" Margin="0,0,0,10" Visibility="Collapsed" />
 

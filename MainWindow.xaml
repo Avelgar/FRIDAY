@@ -337,19 +337,16 @@
 
                                         <StackPanel>
                                             <TextBlock Text="{Binding DisplayText}" Foreground="White" FontSize="16" TextWrapping="Wrap"/>
-
                                             <!-- Панель с кнопками -->
                                             <StackPanel x:Name="ActionButtons" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0" Visibility="Collapsed">
 
-                                                <!-- Эти 3 кнопки показываем ТОЛЬКО если IsLocal = True -->
-                                                <StackPanel Orientation="Horizontal" Visibility="{Binding IsLocal, Converter={StaticResource BoolToVis}}">
-                                                    <Button Content="Удалить" Margin="0,0,4,0" Padding="6,2" Height="25" Click="DeleteChatMessage_Click" Background="#40000000"/>
-                                                    <Button Content="Правка" Margin="0,0,4,0" Padding="6,2" Height="25" Click="EditChatMessage_Click" Background="#40000000"/>
-                                                    <Button Content="Копировать" Margin="0,0,4,0" Padding="6,2" Height="25" Click="CopyChatMessage_Click" Background="#40000000"/>
-                                                </StackPanel>
+                                                <!-- Теперь эти кнопки доступны ВСЕГДА -->
+                                                <Button Content="Удалить" Margin="0,0,4,0" Padding="6,2" Height="25" Click="DeleteChatMessage_Click" Background="#40000000" BorderThickness="0"/>
+                                                <Button Content="Правка" Margin="0,0,4,0" Padding="6,2" Height="25" Click="EditChatMessage_Click" Background="#40000000" BorderThickness="0"/>
+                                                <Button Content="Копировать" Margin="0,0,4,0" Padding="6,2" Height="25" Click="CopyChatMessage_Click" Background="#40000000" BorderThickness="0"/>
 
-                                                <!-- Кнопка перегенерации для серверных ответов бота -->
-                                                <Button x:Name="RegenerateButton" Content="🔄" Padding="6,2" Height="25" Click="RegenerateChatMessage_Click" Background="#40000000"/>
+                                                <!-- Кнопка перегенерации (скрывается для сообщений пользователя через триггеры ниже) -->
+                                                <Button x:Name="RegenerateButton" Content="🔄" Padding="6,2" Height="25" Click="RegenerateChatMessage_Click" Background="#40000000" BorderThickness="0"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
@@ -439,12 +436,9 @@
                         <TextBlock Text="Пароль:" Margin="0,5,0,5"/>
                         <TextBox x:Name="PasswordTextBox" Height="24" Margin="0,3,0,5"/>
                         <TextBlock Text="Озвучка:" Margin="0,5,0,5"/>
-                        <ComboBox x:Name="VoiceTypeComboBox" Margin="0,3,0,10"  Height="23">
+                        <ComboBox x:Name="VoiceTypeComboBox" Margin="0,3,0,10" Height="23">
                             <ComboBoxItem Content="Irina"/>
-                            <ComboBoxItem Content="Anna"/>
-                            <ComboBoxItem Content="Elena"/>
-                            <ComboBoxItem Content="Aleksandr"/>
-                            <ComboBoxItem Content="Dasha"/>
+                            <ComboBoxItem Content="Dmitri"/>
                         </ComboBox>
                         <TextBlock Text="Громкость:" Margin="0,5,0,10"/>
                         <Slider x:Name="VolumeSlider" Minimum="0" Maximum="10" SmallChange="1" />

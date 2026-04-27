@@ -1005,6 +1005,9 @@ namespace Friday
             }
 
             _settingManager.UpdateSettings(assistantName, password, voiceType, volume, inputMode, MusicFolderPathTextBox.Text);
+
+            // Метод UpdateSettingManager(_settingManager) больше не нужен
+
             MessageBox.Show("Настройки успешно обновлены!", "Успех!", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
@@ -1114,27 +1117,95 @@ namespace Friday
         private void DeleteChatMessage_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as Button)?.DataContext is ChatMessage msg)
+            {
+                if (!msg.IsLocal)
+                {
+                    MessageBox.Show("Функционал удаления для серверных сообщений будет добавлен позже.", "В разработке", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
                 ChatMessages.Remove(msg);
+            }
         }
 
         private void EditChatMessage_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as Button)?.DataContext is ChatMessage msg)
             {
+                if (!msg.IsLocal)
+                {
+                    MessageBox.Show("Функционал редактирования для серверных сообщений будет добавлен позже.", "В разработке", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
                 MessageTextBox.Text = msg.Text;
                 _editingMessage = msg;
                 SendMessageButton.Content = "Сохранить";
             }
         }
 
+
         private void CopyChatMessage_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as Button)?.DataContext is ChatMessage msg)
+            {
+                // Копирование текста можно оставить доступным и для серверных сообщений, 
+                // но если вы хотите заблокировать и его, раскомментируйте код ниже:
+
+                /*
+                if (!msg.IsLocal)
+                {
+                    MessageBox.Show("Функционал копирования для серверных сообщений будет добавлен позже.", "В разработке", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+                */
+
                 Clipboard.SetText(msg.Text);
+                ShowSystemMessage("Текст скопирован в буфер обмена");
+            }
         }
         private async void RegenerateChatMessage_Click(object sender, RoutedEventArgs e)
         {
             
+        }
+
+        public void AttachFileFromScreenshot(AttachedFile file)
+        {
+            // Очищаем предыдущие прикрепления
+            ClearAttachedFile();
+
+            _attachedFile = file;
+            _voiceService.AttachedFile = _attachedFile; // Передаем файл в VoiceService
+
+            // Отображаем миниатюру
+            try
+            {
+                using (var ms = new MemoryStream(file.Data))
+                {
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.StreamSource = ms;
+                    bitmap.EndInit();
+                    bitmap.Freeze();
+
+                    // Создаем UI элементы для миниатюры (аналогично DisplayImageThumbnail)
+                    // Этот код можно вынести в отдельный метод, если он повторяется
+                    Border thumbnailContainer = new Border { /* ... стили ... */ Width = 160, Height = 160, Margin = new Thickness(5), CornerRadius = new CornerRadius(5) };
+                    Grid grid = new Grid();
+                    Image thumbnail = new Image { Source = bitmap, Stretch = Stretch.Uniform, MaxWidth = 150, MaxHeight = 150 };
+                    Button closeButton = new Button { Content = "×", Width = 20, Height = 20, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top };
+                    closeButton.Click += (s, e) => ClearAttachedFile();
+                    grid.Children.Add(thumbnail);
+                    grid.Children.Add(closeButton);
+                    thumbnailContainer.Child = grid;
+                    ThumbnailContainer.Items.Add(thumbnailContainer);
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowSystemMessage($"Не удалось отобразить скриншот: {ex.Message}");
+            }
         }
     }
 

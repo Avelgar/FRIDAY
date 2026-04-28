@@ -1036,23 +1036,23 @@
             ══════════════════════════════════════ -->
             <TabItem x:Name="DevicesTab" Header="Устройства">
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
                     <Button x:Name="ConnectDeviceButton"
-                            Grid.Row="0"
+                            Grid.Column="4"
                             Content="+ Подключить новое устройство"
-                            HorizontalAlignment="Right"
-                            Height="36" Padding="20,0"
-                            Margin="0,0,0,16"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            FontFamily="{StaticResource UI}"
+                            FontSize="14" FontWeight="Bold"
+                            Margin="0,0,0,0"
                             Click="ConnectDeviceButton_Click"/>
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="12"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
 
                         <Border Grid.Column="0" Background="{StaticResource BgPanel}"
                                 BorderBrush="{StaticResource BorderDim}" BorderThickness="1" Padding="16">
@@ -1193,7 +1193,7 @@
                                 </ScrollViewer>
                             </Grid>
                         </Border>
-                    </Grid>
+                    <!-- End of 3 columns -->
                 </Grid>
             </TabItem>
         </TabControl>

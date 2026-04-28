@@ -131,7 +131,7 @@
             </Setter>
         </Style>
 
-        <!-- Кнопка — квадратная -->
+        <!-- Кнопка — скругленная -->
         <Style x:Key="ConnectBtn" TargetType="Button">
             <Setter Property="Background"       Value="{StaticResource Vibrant}"/>
             <Setter Property="Foreground"       Value="#D1FAE5"/>
@@ -146,7 +146,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="b"
-                                CornerRadius="0"
+                                CornerRadius="4"
                                 Background="{TemplateBinding Background}">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center"/>
@@ -353,11 +353,11 @@
                             <TextBox x:Name="PasswordBox" Margin="0,0,0,24"/>
                         </StackPanel>
 
-                        <!-- Кнопка — квадратная, полная ширина -->
+                        <!-- Кнопка по ширине полей -->
                         <Button Content="ПОДКЛЮЧИТЬ"
                                 Style="{StaticResource ConnectBtn}"
                                 Click="ConnectButton_Click"
-                                Margin="0"/>
+                                Margin="28,0,28,24"/>
 
                     </StackPanel>
                 </Border>

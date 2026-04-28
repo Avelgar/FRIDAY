@@ -298,9 +298,34 @@ namespace Friday
         }
 
 
+        private void AnimateTabContent()
+        {
+            if (MainTabControl?.Template?.FindName("ContentHost", MainTabControl) is FrameworkElement host)
+            {
+                var tt = new System.Windows.Media.TranslateTransform(0, 12);
+                host.RenderTransform = tt;
+
+                host.BeginAnimation(UIElement.OpacityProperty,
+                    new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.25))
+                    {
+                        EasingFunction = new System.Windows.Media.Animation.QuadraticEase
+                            { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+                    });
+
+                tt.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty,
+                    new System.Windows.Media.Animation.DoubleAnimation(12, 0, TimeSpan.FromSeconds(0.3))
+                    {
+                        EasingFunction = new System.Windows.Media.Animation.CubicEase
+                            { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+                    });
+            }
+        }
+
         private async void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (e.AddedItems.Count == 0) return;
+            // Only animate on actual tab changes, not inner ComboBox/ListBox changes
+            if (e.AddedItems[0] is TabItem) AnimateTabContent();
 
             if (e.AddedItems[0] is TabItem selectedTab && selectedTab.Header.ToString() == "Устройства")
             {

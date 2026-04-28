@@ -13,6 +13,14 @@ namespace Friday
             InitializeComponent();
         }
 
+        private void Window_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == System.Windows.Input.MouseButton.Left)
+                DragMove();
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+
         private async void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
             string deviceName = DeviceNameTextBox.Text;

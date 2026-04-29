@@ -6,24 +6,17 @@
         Height="820" Width="1280"
         MinHeight="640" MinWidth="1080"
         WindowStyle="None"
-        Background="#091510"
+        AllowsTransparency="True"
+        Background="Transparent"
         MouseDown="Window_MouseDown"
         UseLayoutRounding="True">
 
     <Window.Triggers>
         <EventTrigger RoutedEvent="Window.Loaded">
+
+            <!-- 1. АНИМАЦИЯ ПОЯВЛЕНИЯ ИНТЕРФЕЙСА (ОДИН РАЗ) -->
             <BeginStoryboard>
-                <Storyboard RepeatBehavior="Forever">
-                    <DoubleAnimation Storyboard.TargetName="OrbRing1" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" From="0.3" To="1.4" Duration="0:0:2.6"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing1" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" From="0.3" To="1.4" Duration="0:0:2.6"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing1" Storyboard.TargetProperty="Opacity" From="0.6" To="0" Duration="0:0:2.6"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing2" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" From="0.3" To="1.4" Duration="0:0:2.6" BeginTime="0:0:0.85"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing2" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" From="0.3" To="1.4" Duration="0:0:2.6" BeginTime="0:0:0.85"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing2" Storyboard.TargetProperty="Opacity" From="0.4" To="0" Duration="0:0:2.6" BeginTime="0:0:0.85"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing3" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" From="0.3" To="1.4" Duration="0:0:2.6" BeginTime="0:0:1.7"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing3" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" From="0.3" To="1.4" Duration="0:0:2.6" BeginTime="0:0:1.7"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing3" Storyboard.TargetProperty="Opacity" From="0.2" To="0" Duration="0:0:2.6" BeginTime="0:0:1.7"/>
-                    <!-- Window fade+slide in on load -->
+                <Storyboard>
                     <DoubleAnimation Storyboard.TargetName="RootGrid"
                                      Storyboard.TargetProperty="Opacity"
                                      From="0" To="1" Duration="0:0:0.45"/>
@@ -36,6 +29,22 @@
                     </DoubleAnimation>
                 </Storyboard>
             </BeginStoryboard>
+
+            <!-- 2. АНИМАЦИЯ КОЛЕЦ МИКРОФОНА (БЕСКОНЕЧНО) -->
+            <BeginStoryboard>
+                <Storyboard RepeatBehavior="Forever">
+                    <DoubleAnimation Storyboard.TargetName="OrbRing1" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" From="0.3" To="1.4" Duration="0:0:2.6"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing1" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" From="0.3" To="1.4" Duration="0:0:2.6"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing1" Storyboard.TargetProperty="Opacity" From="0.6" To="0" Duration="0:0:2.6"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing2" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" From="0.3" To="1.4" Duration="0:0:2.6" BeginTime="0:0:0.85"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing2" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" From="0.3" To="1.4" Duration="0:0:2.6" BeginTime="0:0:0.85"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing2" Storyboard.TargetProperty="Opacity" From="0.4" To="0" Duration="0:0:2.6" BeginTime="0:0:0.85"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing3" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" From="0.3" To="1.4" Duration="0:0:2.6" BeginTime="0:0:1.7"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing3" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" From="0.3" To="1.4" Duration="0:0:2.6" BeginTime="0:0:1.7"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing3" Storyboard.TargetProperty="Opacity" From="0.2" To="0" Duration="0:0:2.6" BeginTime="0:0:1.7"/>
+                </Storyboard>
+            </BeginStoryboard>
+
         </EventTrigger>
     </Window.Triggers>
 
@@ -818,613 +827,618 @@
             </Setter>
         </Style>
     </Window.Resources>
-
-    <Grid x:Name="RootGrid">
-        <Grid.RenderTransform><TranslateTransform/></Grid.RenderTransform>
-        <!-- Window chrome -->
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top"
-                    Panel.ZIndex="10" Height="36">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
-                <Button x:Name="LoginButton" Content="Войти" Width="80" Height="28"
-                        Style="{StaticResource DarkButtonStyle}"
-                        Click="LoginButton_Click" Visibility="Collapsed" Margin="0,0,6,0"/>
-                <Button x:Name="RegisterButton" Content="Регистрация" Width="110" Height="28"
-                        Style="{StaticResource DarkButtonStyle}"
-                        Click="RegisterButton_Click" Visibility="Collapsed" Margin="0,0,6,0"/>
-                <Button x:Name="UserButton" Height="28" Style="{StaticResource DarkButtonStyle}"
-                        Click="UserButton_Click" Visibility="Collapsed" Padding="12,0">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE77B;" FontFamily="{StaticResource Icons}"
-                                   FontSize="12" Foreground="{StaticResource AccentBright}"
-                                   VerticalAlignment="Center"/>
-                        <TextBlock x:Name="UserButtonText" Text="Пользователь"
-                                   Margin="8,0,0,0" VerticalAlignment="Center"
-                                   FontFamily="{StaticResource UI}" FontSize="12"
-                                   Foreground="{StaticResource TextHigh}"/>
+    <Border CornerRadius="12" Background="#091510" ClipToBounds="True">
+        <Border.Effect>
+            <DropShadowEffect Color="#000000" BlurRadius="30" ShadowDepth="5" Opacity="0.5"/>
+        </Border.Effect>
+            <Grid x:Name="RootGrid">
+                <Grid.RenderTransform><TranslateTransform/></Grid.RenderTransform>
+                <!-- Window chrome -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Panel.ZIndex="10" Height="36">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                        <Button x:Name="LoginButton" Content="Войти" Width="80" Height="28"
+                                Style="{StaticResource DarkButtonStyle}"
+                                Click="LoginButton_Click" Visibility="Collapsed" Margin="0,0,6,0"/>
+                        <Button x:Name="RegisterButton" Content="Регистрация" Width="110" Height="28"
+                                Style="{StaticResource DarkButtonStyle}"
+                                Click="RegisterButton_Click" Visibility="Collapsed" Margin="0,0,6,0"/>
+                        <Button x:Name="UserButton" Height="28" Style="{StaticResource DarkButtonStyle}"
+                                Click="UserButton_Click" Visibility="Collapsed" Padding="12,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE77B;" FontFamily="{StaticResource Icons}"
+                                           FontSize="12" Foreground="{StaticResource AccentBright}"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock x:Name="UserButtonText" Text="Пользователь"
+                                           Margin="8,0,0,0" VerticalAlignment="Center"
+                                           FontFamily="{StaticResource UI}" FontSize="12"
+                                           Foreground="{StaticResource TextHigh}"/>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
-                </Button>
-            </StackPanel>
-            <Button Content="&#xE921;" Click="Minimize_Click" Style="{StaticResource ChromeBtn}"/>
-            <Button Content="&#xE922;" Click="Maximize_Click" Style="{StaticResource ChromeBtn}"/>
-            <Button Content="&#xE8BB;" Click="Close_Click"    Style="{StaticResource CloseBtn}"/>
-        </StackPanel>
+                    <Button Content="&#xE921;" Click="Minimize_Click" Style="{StaticResource ChromeBtn}"/>
+                    <Button Content="&#xE922;" Click="Maximize_Click" Style="{StaticResource ChromeBtn}"/>
+                    <Button Content="&#xE8BB;" Click="Close_Click"    Style="{StaticResource CloseBtn}"/>
+                </StackPanel>
 
-        <TabControl x:Name="MainTabControl" SelectionChanged="TabControl_SelectionChanged">
+                <TabControl x:Name="MainTabControl" SelectionChanged="TabControl_SelectionChanged">
 
-            <!-- HOME -->
-            <TabItem Header="Home">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                    <!-- HOME -->
+                    <TabItem Header="Home">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0" Margin="0,0,0,16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                            <Grid Grid.Row="0" Margin="0,0,0,16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                        <!-- Orb -->
-                        <Grid Grid.Column="0" Width="72" Height="72" Margin="0,0,20,0">
-                            <Ellipse x:Name="OrbRing1" Width="72" Height="72"
-                                     Stroke="{StaticResource AccentBright}" StrokeThickness="1"
-                                     Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
-                                <Ellipse.RenderTransform><ScaleTransform/></Ellipse.RenderTransform>
-                            </Ellipse>
-                            <Ellipse x:Name="OrbRing2" Width="72" Height="72"
-                                     Stroke="{StaticResource AccentBright}" StrokeThickness="1"
-                                     Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
-                                <Ellipse.RenderTransform><ScaleTransform/></Ellipse.RenderTransform>
-                            </Ellipse>
-                            <Ellipse x:Name="OrbRing3" Width="72" Height="72"
-                                     Stroke="{StaticResource AccentBright}" StrokeThickness="1"
-                                     Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
-                                <Ellipse.RenderTransform><ScaleTransform/></Ellipse.RenderTransform>
-                            </Ellipse>
-                            <Ellipse Width="56" Height="56" Stroke="#1E4A32" StrokeThickness="1" Fill="Transparent"/>
-                            <Button x:Name="ListenButton" Width="44" Height="44"
-                                    Click="ListenButton_Click" ToolTip="Голосовой ввод"
-                                    Background="Transparent" BorderBrush="{x:Null}"
-                                    FocusVisualStyle="{x:Null}" Cursor="Hand">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Grid>
-                                            <Ellipse x:Name="OrbCore" Fill="{StaticResource OrbFill}">
-                                                <Ellipse.Effect>
-                                                    <DropShadowEffect Color="#22C55E" BlurRadius="22" ShadowDepth="0" Opacity="0.9"/>
-                                                </Ellipse.Effect>
-                                                <Ellipse.Triggers>
-                                                    <EventTrigger RoutedEvent="Ellipse.Loaded">
+                                <!-- Orb -->
+                                <Grid Grid.Column="0" Width="72" Height="72" Margin="0,0,20,0">
+                                    <Ellipse x:Name="OrbRing1" Width="72" Height="72"
+                                             Stroke="{StaticResource AccentBright}" StrokeThickness="1"
+                                             Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                                        <Ellipse.RenderTransform><ScaleTransform/></Ellipse.RenderTransform>
+                                    </Ellipse>
+                                    <Ellipse x:Name="OrbRing2" Width="72" Height="72"
+                                             Stroke="{StaticResource AccentBright}" StrokeThickness="1"
+                                             Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                                        <Ellipse.RenderTransform><ScaleTransform/></Ellipse.RenderTransform>
+                                    </Ellipse>
+                                    <Ellipse x:Name="OrbRing3" Width="72" Height="72"
+                                             Stroke="{StaticResource AccentBright}" StrokeThickness="1"
+                                             Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                                        <Ellipse.RenderTransform><ScaleTransform/></Ellipse.RenderTransform>
+                                    </Ellipse>
+                                    <Ellipse Width="56" Height="56" Stroke="#1E4A32" StrokeThickness="1" Fill="Transparent"/>
+                                    <Button x:Name="ListenButton" Width="44" Height="44"
+                                            Click="ListenButton_Click" ToolTip="Голосовой ввод"
+                                            Background="Transparent" BorderBrush="{x:Null}"
+                                            FocusVisualStyle="{x:Null}" Cursor="Hand">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Grid>
+                                                    <Ellipse x:Name="OrbCore" Fill="{StaticResource OrbFill}">
+                                                        <Ellipse.Effect>
+                                                            <DropShadowEffect Color="#22C55E" BlurRadius="22" ShadowDepth="0" Opacity="0.9"/>
+                                                        </Ellipse.Effect>
+                                                        <Ellipse.Triggers>
+                                                            <EventTrigger RoutedEvent="Ellipse.Loaded">
+                                                                <BeginStoryboard>
+                                                                    <Storyboard RepeatBehavior="Forever">
+                                                                        <DoubleAnimation Storyboard.TargetName="OrbCore"
+                                                                                         Storyboard.TargetProperty="Opacity"
+                                                                                         From="0.82" To="1.0" Duration="0:0:1.3"
+                                                                                         AutoReverse="True"/>
+                                                                    </Storyboard>
+                                                                </BeginStoryboard>
+                                                            </EventTrigger>
+                                                        </Ellipse.Triggers>
+                                                    </Ellipse>
+                                                    <TextBlock Text="🎤" FontFamily="Segoe UI Emoji" FontSize="16"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Grid>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="OrbCore" Property="Opacity" Value="0.85"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsPressed" Value="True">
+                                                        <Setter TargetName="OrbCore" Property="Opacity" Value="0.6"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </Grid>
+
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="Голосовой ассистент" FontFamily="{StaticResource BrandFont}"
+                                               FontSize="24" Foreground="{StaticResource TextHigh}"/>
+                                    <TextBlock Text="Нажми на орб или напечатай сообщение"
+                                               FontFamily="{StaticResource UI}" FontSize="12"
+                                               Foreground="{StaticResource TextLow}" Margin="1,4,0,0"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                            VerticalAlignment="Center" Margin="24,0,0,0">
+                                    <ComboBox x:Name="InputModeComboBox" Width="180" SelectedIndex="0" Margin="0,0,8,0">
+                                        <ComboBoxItem Content="Имя-ответ-команда"/>
+                                        <ComboBoxItem Content="Имя + команда"/>
+                                        <ComboBoxItem Content="Разговорный режим"/>
+                                    </ComboBox>
+                                    <ToggleButton x:Name="ScreenshotButton" Content="Скриншот"
+                                                  Style="{StaticResource ToggleOutline}"
+                                                  Click="ScreenshotButton_Click" Width="110" Margin="0,0,8,0"/>
+                                    <Button x:Name="ClearHistoryButton" Content="Очистить"
+                                            Style="{StaticResource DarkButtonStyle}"
+                                            Click="ClearHistoryButton_Click" Width="100"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Chat -->
+                            <Border Grid.Row="1" Background="{StaticResource BgPanel}"
+                                    BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                                    CornerRadius="4,4,0,0">
+                                <ListBox x:Name="ChatListBox" Background="Transparent" BorderThickness="0"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     VirtualizingPanel.ScrollUnit="Pixel" 
+                                     SelectionChanged="ChatListBox_SelectionChanged">
+                                    <ListBox.ItemContainerStyle>
+                                        <Style TargetType="ListBoxItem">
+                                            <Setter Property="Padding"                    Value="0"/>
+                                            <Setter Property="Margin"                     Value="0"/>
+                                            <Setter Property="BorderThickness"            Value="0"/>
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                            <Setter Property="Background"                 Value="Transparent"/>
+                                            <Setter Property="FocusVisualStyle"           Value="{x:Null}"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="ListBoxItem">
+                                                        <Border Background="Transparent"><ContentPresenter/></Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </ListBox.ItemContainerStyle>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="16,4,16,4">
+                                                <Border x:Name="MessageBorder" Padding="15,11" MaxWidth="780"
+                                                        HorizontalAlignment="Left" CornerRadius="18,18,18,4"
+                                                        Background="{StaticResource BgInput}">
+                                                    <StackPanel>
+                                                        <TextBlock x:Name="SenderLabel" Text="{Binding Sender}"
+                                                                   FontFamily="{StaticResource UI}" FontSize="10"
+                                                                   FontWeight="Bold" Foreground="{StaticResource TextMid}"
+                                                                   Margin="0,0,0,5"/>
+                                                        <TextBlock Text="{Binding DisplayText}"
+                                                                   FontFamily="{StaticResource UI}" FontSize="14"
+                                                                   Foreground="{StaticResource TextHigh}"
+                                                                   TextWrapping="Wrap" LineHeight="22"/>
+                                                        <StackPanel x:Name="ActionButtons" Orientation="Horizontal"
+                                                                    HorizontalAlignment="Right" Margin="0,8,0,0"
+                                                                    Visibility="Collapsed">
+                                                            <Button Content="Удалить"    Style="{StaticResource BubbleActionBtn}" Click="DeleteChatMessage_Click"/>
+                                                            <Button Content="Правка"     Style="{StaticResource BubbleActionBtn}" Click="EditChatMessage_Click"/>
+                                                            <Button Content="Копировать" Style="{StaticResource BubbleActionBtn}" Click="CopyChatMessage_Click"/>
+                                                            <Button x:Name="RegenerateButton" Content="↺"
+                                                                    Style="{StaticResource BubbleActionBtn}"
+                                                                    Click="RegenerateChatMessage_Click"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </Border>
+                                            </Grid>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsUser}" Value="True">
+                                                    <Setter TargetName="MessageBorder" Property="HorizontalAlignment" Value="Right"/>
+                                                    <Setter TargetName="MessageBorder" Property="Background"    Value="{StaticResource BgUserBubble}"/>
+                                                    <Setter TargetName="MessageBorder" Property="CornerRadius" Value="18,18,4,18"/>
+                                                    <Setter TargetName="SenderLabel"   Property="Foreground"   Value="{StaticResource AccentBright}"/>
+                                                    <Setter TargetName="RegenerateButton" Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="ActionButtons" Property="Visibility" Value="Visible"/>
+                                                </Trigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Border>
+
+                            <!-- Input bar -->
+                            <Border Grid.Row="2" Background="{StaticResource BgPanel}"
+                                    BorderBrush="{StaticResource BorderDim}" BorderThickness="1,0,1,1"
+                                    CornerRadius="0,0,4,4">
+                                <Grid Height="52">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="52"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="120"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button x:Name="AttachFileButton" Grid.Column="0"
+                                            Content="📎" FontFamily="Segoe UI Emoji" FontSize="16"
+                                            Height="52" Width="52" Click="AttachFileButton_Click"
+                                            ToolTip="Прикрепить файл" Background="Transparent"
+                                            BorderBrush="{StaticResource BorderDim}" BorderThickness="0,0,1,0"
+                                            FocusVisualStyle="{x:Null}" Cursor="Hand">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="b" Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="b" Property="Background" Value="#0E2018"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                    <TextBox x:Name="MessageTextBox" Grid.Column="1"
+                                             Height="52" FontSize="14" Padding="16,0"
+                                             BorderThickness="0" Background="Transparent"
+                                             VerticalContentAlignment="Center"
+                                             KeyDown="MessageTextBox_KeyDown"/>
+                                    <Button x:Name="SendMessageButton" Grid.Column="2"
+                                            Content="ОТПРАВИТЬ" Height="52" FontSize="12" FontWeight="Bold"
+                                            Click="SendMessageButton_Click"/>
+                                </Grid>
+                            </Border>
+
+                            <StackPanel Grid.Row="3" Margin="0,6,0,0">
+                                <ItemsControl x:Name="ThumbnailContainer">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                                <TextBlock x:Name="AttachedFileInfoTextBlock" FontFamily="{StaticResource UI}"
+                                           FontSize="11" Foreground="{StaticResource TextLow}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+                    </TabItem>
+
+                    <!-- КОМАНДЫ -->
+                    <TabItem Header="Команды">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0" Margin="0,0,0,16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="160"/>
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Content="+ Добавить"
+                                        Click="AddCommandButton_Click" Width="130" Margin="0,0,10,0"/>
+                                <TextBox x:Name="SearchTextBox" Grid.Column="1" Margin="0,0,10,0"/>
+                                <ComboBox x:Name="ActionTypeComboBox" Grid.Column="2"
+                                          SelectionChanged="ActionTypeComboBox_SelectionChanged">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" Foreground="{StaticResource TextHigh}"
+                                                       FontFamily="{StaticResource UI}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </Grid>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl x:Name="CommandsItemsControl" ItemsSource="{Binding Commands}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,0,0,8" Padding="16,12"
+                                                    Background="{StaticResource BgPanel}" BorderThickness="1">
+                                                <Border.BorderBrush>
+                                                    <SolidColorBrush x:Name="CmdBorder" Color="#1A3D28"/>
+                                                </Border.BorderBrush>
+                                                <Border.Triggers>
+                                                    <EventTrigger RoutedEvent="Border.MouseEnter">
                                                         <BeginStoryboard>
-                                                            <Storyboard RepeatBehavior="Forever">
-                                                                <DoubleAnimation Storyboard.TargetName="OrbCore"
-                                                                                 Storyboard.TargetProperty="Opacity"
-                                                                                 From="0.82" To="1.0" Duration="0:0:1.3"
-                                                                                 AutoReverse="True"/>
+                                                            <Storyboard>
+                                                                <ColorAnimation Storyboard.TargetName="CmdBorder"
+                                                                                Storyboard.TargetProperty="Color"
+                                                                                To="#22C55E" Duration="0:0:0.2"/>
                                                             </Storyboard>
                                                         </BeginStoryboard>
                                                     </EventTrigger>
-                                                </Ellipse.Triggers>
-                                            </Ellipse>
-                                            <TextBlock Text="🎤" FontFamily="Segoe UI Emoji" FontSize="16"
-                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        </Grid>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="OrbCore" Property="Opacity" Value="0.85"/>
-                                            </Trigger>
-                                            <Trigger Property="IsPressed" Value="True">
-                                                <Setter TargetName="OrbCore" Property="Opacity" Value="0.6"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
+                                                    <EventTrigger RoutedEvent="Border.MouseLeave">
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <ColorAnimation Storyboard.TargetName="CmdBorder"
+                                                                                Storyboard.TargetProperty="Color"
+                                                                                To="#1A3D28" Duration="0:0:0.35"/>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </EventTrigger>
+                                                </Border.Triggers>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Name}" FontFamily="{StaticResource UI}"
+                                                                   FontSize="14" FontWeight="Bold"
+                                                                   Foreground="{StaticResource TextHigh}"/>
+                                                        <TextBlock Text="{Binding Description}" FontFamily="{StaticResource UI}"
+                                                                   FontSize="12" Foreground="{StaticResource TextMid}"
+                                                                   Margin="0,4,0,0"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <Button Style="{StaticResource DarkButtonStyle}" Content="Изменить"
+                                                                Click="EditCommandButton_Click" Width="100" Height="34" Margin="0,0,6,0"/>
+                                                        <Button Style="{StaticResource DarkButtonStyle}" Content="Удалить"
+                                                                Click="DeleteCommandButton_Click" Width="90" Height="34"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
                         </Grid>
+                    </TabItem>
 
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="Голосовой ассистент" FontFamily="{StaticResource BrandFont}"
-                                       FontSize="24" Foreground="{StaticResource TextHigh}"/>
-                            <TextBlock Text="Нажми на орб или напечатай сообщение"
-                                       FontFamily="{StaticResource UI}" FontSize="12"
-                                       Foreground="{StaticResource TextLow}" Margin="1,4,0,0"/>
-                        </StackPanel>
+                    <!-- НАСТРОЙКИ -->
+                    <TabItem Header="Настройки">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel MaxWidth="560" HorizontalAlignment="Left">
+                                <TextBlock Text="Настройки" FontFamily="{StaticResource BrandFont}"
+                                           FontSize="24" Foreground="{StaticResource TextHigh}" Margin="0,0,0,20"/>
 
-                        <StackPanel Grid.Column="2" Orientation="Horizontal"
-                                    VerticalAlignment="Center" Margin="24,0,0,0">
-                            <ComboBox x:Name="InputModeComboBox" Width="180" SelectedIndex="0" Margin="0,0,8,0">
-                                <ComboBoxItem Content="Имя-ответ-команда"/>
-                                <ComboBoxItem Content="Имя + команда"/>
-                                <ComboBoxItem Content="Разговорный режим"/>
-                            </ComboBox>
-                            <ToggleButton x:Name="ScreenshotButton" Content="Скриншот"
-                                          Style="{StaticResource ToggleOutline}"
-                                          Click="ScreenshotButton_Click" Width="110" Margin="0,0,8,0"/>
-                            <Button x:Name="ClearHistoryButton" Content="Очистить"
-                                    Style="{StaticResource DarkButtonStyle}"
-                                    Click="ClearHistoryButton_Click" Width="100"/>
-                        </StackPanel>
-                    </Grid>
+                                <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}"
+                                        BorderThickness="1" Padding="20" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <Border Background="{StaticResource Accent}" Height="2" Margin="0,0,0,16"/>
+                                        <TextBlock Text="Имя помощника" FontFamily="{StaticResource UI}" FontSize="11"
+                                                   FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
+                                        <TextBox x:Name="FridayNameTextBox" Margin="0,0,0,14"/>
+                                        <TextBlock Text="Пароль" FontFamily="{StaticResource UI}" FontSize="11"
+                                                   FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
+                                        <TextBox x:Name="PasswordTextBox" Margin="0,0,0,14"/>
+                                        <TextBlock Text="Голос" FontFamily="{StaticResource UI}" FontSize="11"
+                                                   FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
+                                        <ComboBox x:Name="VoiceTypeComboBox" Margin="0,0,0,14">
+                                            <ComboBoxItem Content="Irina"/>
+                                            <ComboBoxItem Content="Dmitri"/>
+                                        </ComboBox>
+                                        <TextBlock Text="Громкость" FontFamily="{StaticResource UI}" FontSize="11"
+                                                   FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
+                                        <Slider x:Name="VolumeSlider" Minimum="0" Maximum="10" SmallChange="1"/>
+                                    </StackPanel>
+                                </Border>
 
-                    <!-- Chat -->
-                    <Border Grid.Row="1" Background="{StaticResource BgPanel}"
-                            BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
-                            CornerRadius="4,4,0,0">
-                        <ListBox x:Name="ChatListBox" Background="Transparent" BorderThickness="0"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                 SelectionChanged="ChatListBox_SelectionChanged">
-                            <ListBox.ItemContainerStyle>
-                                <Style TargetType="ListBoxItem">
-                                    <Setter Property="Padding"                    Value="0"/>
-                                    <Setter Property="Margin"                     Value="0"/>
-                                    <Setter Property="BorderThickness"            Value="0"/>
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                    <Setter Property="Background"                 Value="Transparent"/>
-                                    <Setter Property="FocusVisualStyle"           Value="{x:Null}"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="ListBoxItem">
-                                                <Border Background="Transparent"><ContentPresenter/></Border>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </ListBox.ItemContainerStyle>
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="16,4,16,4">
-                                        <Border x:Name="MessageBorder" Padding="15,11" MaxWidth="780"
-                                                HorizontalAlignment="Left" CornerRadius="18,18,18,4"
-                                                Background="{StaticResource BgInput}">
-                                            <StackPanel>
-                                                <TextBlock x:Name="SenderLabel" Text="{Binding Sender}"
-                                                           FontFamily="{StaticResource UI}" FontSize="10"
-                                                           FontWeight="Bold" Foreground="{StaticResource TextMid}"
-                                                           Margin="0,0,0,5"/>
-                                                <TextBlock Text="{Binding DisplayText}"
-                                                           FontFamily="{StaticResource UI}" FontSize="14"
-                                                           Foreground="{StaticResource TextHigh}"
-                                                           TextWrapping="Wrap" LineHeight="22"/>
-                                                <StackPanel x:Name="ActionButtons" Orientation="Horizontal"
-                                                            HorizontalAlignment="Right" Margin="0,8,0,0"
-                                                            Visibility="Collapsed">
-                                                    <Button Content="Удалить"    Style="{StaticResource BubbleActionBtn}" Click="DeleteChatMessage_Click"/>
-                                                    <Button Content="Правка"     Style="{StaticResource BubbleActionBtn}" Click="EditChatMessage_Click"/>
-                                                    <Button Content="Копировать" Style="{StaticResource BubbleActionBtn}" Click="CopyChatMessage_Click"/>
-                                                    <Button x:Name="RegenerateButton" Content="↺"
-                                                            Style="{StaticResource BubbleActionBtn}"
-                                                            Click="RegenerateChatMessage_Click"/>
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </Border>
-                                    </Grid>
-                                    <DataTemplate.Triggers>
-                                        <DataTrigger Binding="{Binding IsUser}" Value="True">
-                                            <Setter TargetName="MessageBorder" Property="HorizontalAlignment" Value="Right"/>
-                                            <Setter TargetName="MessageBorder" Property="Background"    Value="{StaticResource BgUserBubble}"/>
-                                            <Setter TargetName="MessageBorder" Property="CornerRadius" Value="18,18,4,18"/>
-                                            <Setter TargetName="SenderLabel"   Property="Foreground"   Value="{StaticResource AccentBright}"/>
-                                            <Setter TargetName="RegenerateButton" Property="Visibility" Value="Collapsed"/>
-                                        </DataTrigger>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="ActionButtons" Property="Visibility" Value="Visible"/>
-                                        </Trigger>
-                                    </DataTemplate.Triggers>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </Border>
-
-                    <!-- Input bar -->
-                    <Border Grid.Row="2" Background="{StaticResource BgPanel}"
-                            BorderBrush="{StaticResource BorderDim}" BorderThickness="1,0,1,1"
-                            CornerRadius="0,0,4,4">
-                        <Grid Height="52">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="52"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="120"/>
-                            </Grid.ColumnDefinitions>
-                            <Button x:Name="AttachFileButton" Grid.Column="0"
-                                    Content="📎" FontFamily="Segoe UI Emoji" FontSize="16"
-                                    Height="52" Width="52" Click="AttachFileButton_Click"
-                                    ToolTip="Прикрепить файл" Background="Transparent"
-                                    BorderBrush="{StaticResource BorderDim}" BorderThickness="0,0,1,0"
-                                    FocusVisualStyle="{x:Null}" Cursor="Hand">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border x:Name="b" Background="{TemplateBinding Background}"
-                                                BorderBrush="{TemplateBinding BorderBrush}"
-                                                BorderThickness="{TemplateBinding BorderThickness}">
-                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="b" Property="Background" Value="#0E2018"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
-                            <TextBox x:Name="MessageTextBox" Grid.Column="1"
-                                     Height="52" FontSize="14" Padding="16,0"
-                                     BorderThickness="0" Background="Transparent"
-                                     VerticalContentAlignment="Center"
-                                     KeyDown="MessageTextBox_KeyDown"/>
-                            <Button x:Name="SendMessageButton" Grid.Column="2"
-                                    Content="ОТПРАВИТЬ" Height="52" FontSize="12" FontWeight="Bold"
-                                    Click="SendMessageButton_Click"/>
-                        </Grid>
-                    </Border>
-
-                    <StackPanel Grid.Row="3" Margin="0,6,0,0">
-                        <ItemsControl x:Name="ThumbnailContainer">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                        <TextBlock x:Name="AttachedFileInfoTextBlock" FontFamily="{StaticResource UI}"
-                                   FontSize="11" Foreground="{StaticResource TextLow}" TextWrapping="Wrap"/>
-                    </StackPanel>
-                </Grid>
-            </TabItem>
-
-            <!-- КОМАНДЫ -->
-            <TabItem Header="Команды">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <Grid Grid.Row="0" Margin="0,0,0,16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="160"/>
-                        </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Content="+ Добавить"
-                                Click="AddCommandButton_Click" Width="130" Margin="0,0,10,0"/>
-                        <TextBox x:Name="SearchTextBox" Grid.Column="1" Margin="0,0,10,0"/>
-                        <ComboBox x:Name="ActionTypeComboBox" Grid.Column="2"
-                                  SelectionChanged="ActionTypeComboBox_SelectionChanged">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding}" Foreground="{StaticResource TextHigh}"
-                                               FontFamily="{StaticResource UI}"/>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </Grid>
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                        <ItemsControl x:Name="CommandsItemsControl" ItemsSource="{Binding Commands}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Margin="0,0,0,8" Padding="16,12"
-                                            Background="{StaticResource BgPanel}" BorderThickness="1">
-                                        <Border.BorderBrush>
-                                            <SolidColorBrush x:Name="CmdBorder" Color="#1A3D28"/>
-                                        </Border.BorderBrush>
-                                        <Border.Triggers>
-                                            <EventTrigger RoutedEvent="Border.MouseEnter">
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <ColorAnimation Storyboard.TargetName="CmdBorder"
-                                                                        Storyboard.TargetProperty="Color"
-                                                                        To="#22C55E" Duration="0:0:0.2"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </EventTrigger>
-                                            <EventTrigger RoutedEvent="Border.MouseLeave">
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <ColorAnimation Storyboard.TargetName="CmdBorder"
-                                                                        Storyboard.TargetProperty="Color"
-                                                                        To="#1A3D28" Duration="0:0:0.35"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </EventTrigger>
-                                        </Border.Triggers>
+                                <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}"
+                                        BorderThickness="1" Padding="20" Margin="0,0,0,16">
+                                    <StackPanel>
+                                        <Border Background="{StaticResource Accent}" Height="2" Margin="0,0,0,16"/>
+                                        <TextBlock Text="Папка с музыкой" FontFamily="{StaticResource UI}" FontSize="11"
+                                                   FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding Name}" FontFamily="{StaticResource UI}"
-                                                           FontSize="14" FontWeight="Bold"
-                                                           Foreground="{StaticResource TextHigh}"/>
-                                                <TextBlock Text="{Binding Description}" FontFamily="{StaticResource UI}"
-                                                           FontSize="12" Foreground="{StaticResource TextMid}"
-                                                           Margin="0,4,0,0"/>
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <Button Style="{StaticResource DarkButtonStyle}" Content="Изменить"
-                                                        Click="EditCommandButton_Click" Width="100" Height="34" Margin="0,0,6,0"/>
-                                                <Button Style="{StaticResource DarkButtonStyle}" Content="Удалить"
-                                                        Click="DeleteCommandButton_Click" Width="90" Height="34"/>
-                                            </StackPanel>
+                                            <TextBox x:Name="MusicFolderPathTextBox" IsReadOnly="True"/>
+                                            <Button Grid.Column="1" Content="Выбрать"
+                                                    Style="{StaticResource DarkButtonStyle}"
+                                                    Margin="8,0,0,0" Width="110"
+                                                    Click="ChooseMusicFolderButton_Click"/>
                                         </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </Grid>
-            </TabItem>
-
-            <!-- НАСТРОЙКИ -->
-            <TabItem Header="Настройки">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel MaxWidth="560" HorizontalAlignment="Left">
-                        <TextBlock Text="Настройки" FontFamily="{StaticResource BrandFont}"
-                                   FontSize="24" Foreground="{StaticResource TextHigh}" Margin="0,0,0,20"/>
-
-                        <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}"
-                                BorderThickness="1" Padding="20" Margin="0,0,0,10">
-                            <StackPanel>
-                                <Border Background="{StaticResource Accent}" Height="2" Margin="0,0,0,16"/>
-                                <TextBlock Text="Имя помощника" FontFamily="{StaticResource UI}" FontSize="11"
-                                           FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
-                                <TextBox x:Name="FridayNameTextBox" Margin="0,0,0,14"/>
-                                <TextBlock Text="Пароль" FontFamily="{StaticResource UI}" FontSize="11"
-                                           FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
-                                <TextBox x:Name="PasswordTextBox" Margin="0,0,0,14"/>
-                                <TextBlock Text="Голос" FontFamily="{StaticResource UI}" FontSize="11"
-                                           FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
-                                <ComboBox x:Name="VoiceTypeComboBox" Margin="0,0,0,14">
-                                    <ComboBoxItem Content="Irina"/>
-                                    <ComboBoxItem Content="Dmitri"/>
-                                </ComboBox>
-                                <TextBlock Text="Громкость" FontFamily="{StaticResource UI}" FontSize="11"
-                                           FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
-                                <Slider x:Name="VolumeSlider" Minimum="0" Maximum="10" SmallChange="1"/>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}"
-                                BorderThickness="1" Padding="20" Margin="0,0,0,16">
-                            <StackPanel>
-                                <Border Background="{StaticResource Accent}" Height="2" Margin="0,0,0,16"/>
-                                <TextBlock Text="Папка с музыкой" FontFamily="{StaticResource UI}" FontSize="11"
-                                           FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBox x:Name="MusicFolderPathTextBox" IsReadOnly="True"/>
-                                    <Button Grid.Column="1" Content="Выбрать"
-                                            Style="{StaticResource DarkButtonStyle}"
-                                            Margin="8,0,0,0" Width="110"
-                                            Click="ChooseMusicFolderButton_Click"/>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
-                        <WrapPanel>
-                            <Button Content="Сохранить" Width="130" Margin="0,0,8,0" Click="Save_Button_Click"/>
-                            <Button Content="Изменить данные" Width="160" Style="{StaticResource DarkButtonStyle}"
-                                    Margin="0,0,8,0" Click="ChangedataButton_Click"/>
-                            <Button Content="Управление приложениями" Width="200"
-                                    Style="{StaticResource DarkButtonStyle}" Click="ManageAppsButton_Click"/>
-                        </WrapPanel>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- УСТРОЙСТВА -->
-            <TabItem x:Name="DevicesTab" Header="Устройства">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-
-                    <Button x:Name="ConnectDeviceButton" Grid.Row="0"
-                            Content="+ Подключить новое устройство"
-                            HorizontalAlignment="Right" Height="36" Padding="20,0"
-                            Margin="0,0,0,16" Click="ConnectDeviceButton_Click"/>
-
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="14"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Account devices -->
-                        <Border Grid.Column="0" Background="{StaticResource BgPanel}"
-                                BorderBrush="{StaticResource BorderDim}" BorderThickness="1" Padding="16">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                                    <Border Background="{StaticResource Accent}" Height="2" Margin="0,0,0,10"/>
-                                    <TextBlock Text="Устройства аккаунта" FontFamily="{StaticResource UI}"
-                                               FontWeight="Bold" FontSize="13" Foreground="{StaticResource TextHigh}"/>
-                                </StackPanel>
-                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                                    <StackPanel>
-                                        <ItemsControl x:Name="AccountDevicesList">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Border Margin="0,0,0,6" Padding="12,10"
-                                                            Background="{StaticResource BgInput}" BorderThickness="1">
-                                                        <Border.BorderBrush>
-                                                            <SolidColorBrush x:Name="AccBorder" Color="#1A3D28"/>
-                                                        </Border.BorderBrush>
-                                                        <Border.Triggers>
-                                                            <EventTrigger RoutedEvent="Border.MouseEnter">
-                                                                <BeginStoryboard>
-                                                                    <Storyboard>
-                                                                        <ColorAnimation Storyboard.TargetName="AccBorder"
-                                                                                        Storyboard.TargetProperty="Color"
-                                                                                        To="#22C55E" Duration="0:0:0.2"/>
-                                                                    </Storyboard>
-                                                                </BeginStoryboard>
-                                                            </EventTrigger>
-                                                            <EventTrigger RoutedEvent="Border.MouseLeave">
-                                                                <BeginStoryboard>
-                                                                    <Storyboard>
-                                                                        <ColorAnimation Storyboard.TargetName="AccBorder"
-                                                                                        Storyboard.TargetProperty="Color"
-                                                                                        To="#1A3D28" Duration="0:0:0.35"/>
-                                                                    </Storyboard>
-                                                                </BeginStoryboard>
-                                                            </EventTrigger>
-                                                        </Border.Triggers>
-                                                        <Grid>
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                            </Grid.ColumnDefinitions>
-                                                            <StackPanel>
-                                                                <TextBlock Text="{Binding DeviceName}"
-                                                                           FontFamily="{StaticResource UI}"
-                                                                           FontWeight="Bold" FontSize="13"
-                                                                           Foreground="{StaticResource TextHigh}"/>
-                                                                <TextBlock Text="{Binding MacAddress}"
-                                                                           FontFamily="Consolas" FontSize="11"
-                                                                           Foreground="{StaticResource TextMid}"
-                                                                           Margin="0,3,0,0"/>
-                                                            </StackPanel>
-                                                            <TextBlock Grid.Column="1" VerticalAlignment="Center">
-                                                                <TextBlock.Style>
-                                                                    <Style TargetType="TextBlock">
-                                                                        <Setter Property="Text"       Value="● Оффлайн"/>
-                                                                        <Setter Property="FontFamily" Value="Gill Sans MT"/>
-                                                                        <Setter Property="FontSize"   Value="11"/>
-                                                                        <Setter Property="Foreground" Value="{StaticResource TextLow}"/>
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding IsOnline}" Value="True">
-                                                                                <Setter Property="Text"       Value="● Онлайн"/>
-                                                                                <Setter Property="Foreground" Value="{StaticResource AccentBright}"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </TextBlock.Style>
-                                                            </TextBlock>
-                                                        </Grid>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                        <TextBlock x:Name="NoAccountDevicesText"
-                                                   Text="У данного аккаунта нет устройств"
-                                                   FontFamily="{StaticResource UI}"
-                                                   Foreground="{StaticResource TextLow}"
-                                                   Visibility="Collapsed" Margin="0,8,0,0"/>
                                     </StackPanel>
-                                </ScrollViewer>
-                            </Grid>
-                        </Border>
+                                </Border>
 
-                        <!-- Connected devices -->
-                        <Border Grid.Column="2" Background="{StaticResource BgPanel}"
-                                BorderBrush="{StaticResource BorderDim}" BorderThickness="1" Padding="16">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                                    <Border Background="{StaticResource Accent}" Height="2" Margin="0,0,0,10"/>
-                                    <TextBlock Text="Подключенные устройства" FontFamily="{StaticResource UI}"
-                                               FontWeight="Bold" FontSize="13" Foreground="{StaticResource TextHigh}"/>
-                                </StackPanel>
-                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                                    <StackPanel>
-                                        <ItemsControl x:Name="ConnectedDevicesList">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Border Margin="0,0,0,6" Padding="12,10"
-                                                            Background="{StaticResource BgInput}" BorderThickness="1">
-                                                        <Border.BorderBrush>
-                                                            <SolidColorBrush x:Name="ConBorder" Color="#1A3D28"/>
-                                                        </Border.BorderBrush>
-                                                        <Border.Triggers>
-                                                            <EventTrigger RoutedEvent="Border.MouseEnter">
-                                                                <BeginStoryboard>
-                                                                    <Storyboard>
-                                                                        <ColorAnimation Storyboard.TargetName="ConBorder"
-                                                                                        Storyboard.TargetProperty="Color"
-                                                                                        To="#22C55E" Duration="0:0:0.2"/>
-                                                                    </Storyboard>
-                                                                </BeginStoryboard>
-                                                            </EventTrigger>
-                                                            <EventTrigger RoutedEvent="Border.MouseLeave">
-                                                                <BeginStoryboard>
-                                                                    <Storyboard>
-                                                                        <ColorAnimation Storyboard.TargetName="ConBorder"
-                                                                                        Storyboard.TargetProperty="Color"
-                                                                                        To="#1A3D28" Duration="0:0:0.35"/>
-                                                                    </Storyboard>
-                                                                </BeginStoryboard>
-                                                            </EventTrigger>
-                                                        </Border.Triggers>
-                                                        <Grid>
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                            </Grid.ColumnDefinitions>
-                                                            <StackPanel>
-                                                                <TextBlock Text="{Binding DeviceName}"
-                                                                           FontFamily="{StaticResource UI}"
-                                                                           FontWeight="Bold" FontSize="13"
-                                                                           Foreground="{StaticResource TextHigh}"/>
-                                                                <TextBlock Text="{Binding MacAddress}"
-                                                                           FontFamily="Consolas" FontSize="11"
-                                                                           Foreground="{StaticResource TextMid}"
-                                                                           Margin="0,3,0,0"/>
-                                                            </StackPanel>
-                                                            <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
-                                                                <TextBlock.Style>
-                                                                    <Style TargetType="TextBlock">
-                                                                        <Setter Property="Text"       Value="● Оффлайн"/>
-                                                                        <Setter Property="FontFamily" Value="Gill Sans MT"/>
-                                                                        <Setter Property="FontSize"   Value="11"/>
-                                                                        <Setter Property="Foreground" Value="{StaticResource TextLow}"/>
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding IsOnline}" Value="True">
-                                                                                <Setter Property="Text"       Value="● Онлайн"/>
-                                                                                <Setter Property="Foreground" Value="{StaticResource AccentBright}"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </TextBlock.Style>
-                                                            </TextBlock>
-                                                            <Button Grid.Column="2" Content="Отключить"
-                                                                    Style="{StaticResource DarkButtonStyle}"
-                                                                    Height="36" Padding="16,0"
-                                                                    Click="DisconnectDeviceButton_Click"
-                                                                    Tag="{Binding MacAddress}"
-                                                                    VerticalAlignment="Center"/>
-                                                        </Grid>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                        <TextBlock x:Name="NoConnectedDevicesText"
-                                                   Text="Нет подключенных устройств"
-                                                   FontFamily="{StaticResource UI}"
-                                                   Foreground="{StaticResource TextLow}"
-                                                   Visibility="Collapsed" Margin="0,8,0,0"/>
-                                    </StackPanel>
-                                </ScrollViewer>
-                            </Grid>
-                        </Border>
-                    </Grid>
-                </Grid>
-            </TabItem>
+                                <WrapPanel>
+                                    <Button Content="Сохранить" Width="130" Margin="0,0,8,0" Click="Save_Button_Click"/>
+                                    <Button Content="Изменить данные" Width="160" Style="{StaticResource DarkButtonStyle}"
+                                            Margin="0,0,8,0" Click="ChangedataButton_Click"/>
+                                    <Button Content="Управление приложениями" Width="200"
+                                            Style="{StaticResource DarkButtonStyle}" Click="ManageAppsButton_Click"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
 
-        </TabControl>
-    </Grid>
+                    <!-- УСТРОЙСТВА -->
+                    <TabItem x:Name="DevicesTab" Header="Устройства">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Button x:Name="ConnectDeviceButton" Grid.Row="0"
+                                    Content="+ Подключить новое устройство"
+                                    HorizontalAlignment="Right" Height="36" Padding="20,0"
+                                    Margin="0,0,0,16" Click="ConnectDeviceButton_Click"/>
+
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="14"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Account devices -->
+                                <Border Grid.Column="0" Background="{StaticResource BgPanel}"
+                                        BorderBrush="{StaticResource BorderDim}" BorderThickness="1" Padding="16">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                                            <Border Background="{StaticResource Accent}" Height="2" Margin="0,0,0,10"/>
+                                            <TextBlock Text="Устройства аккаунта" FontFamily="{StaticResource UI}"
+                                                       FontWeight="Bold" FontSize="13" Foreground="{StaticResource TextHigh}"/>
+                                        </StackPanel>
+                                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                            <StackPanel>
+                                                <ItemsControl x:Name="AccountDevicesList">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Margin="0,0,0,6" Padding="12,10"
+                                                                    Background="{StaticResource BgInput}" BorderThickness="1">
+                                                                <Border.BorderBrush>
+                                                                    <SolidColorBrush x:Name="AccBorder" Color="#1A3D28"/>
+                                                                </Border.BorderBrush>
+                                                                <Border.Triggers>
+                                                                    <EventTrigger RoutedEvent="Border.MouseEnter">
+                                                                        <BeginStoryboard>
+                                                                            <Storyboard>
+                                                                                <ColorAnimation Storyboard.TargetName="AccBorder"
+                                                                                                Storyboard.TargetProperty="Color"
+                                                                                                To="#22C55E" Duration="0:0:0.2"/>
+                                                                            </Storyboard>
+                                                                        </BeginStoryboard>
+                                                                    </EventTrigger>
+                                                                    <EventTrigger RoutedEvent="Border.MouseLeave">
+                                                                        <BeginStoryboard>
+                                                                            <Storyboard>
+                                                                                <ColorAnimation Storyboard.TargetName="AccBorder"
+                                                                                                Storyboard.TargetProperty="Color"
+                                                                                                To="#1A3D28" Duration="0:0:0.35"/>
+                                                                            </Storyboard>
+                                                                        </BeginStoryboard>
+                                                                    </EventTrigger>
+                                                                </Border.Triggers>
+                                                                <Grid>
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <StackPanel>
+                                                                        <TextBlock Text="{Binding DeviceName}"
+                                                                                   FontFamily="{StaticResource UI}"
+                                                                                   FontWeight="Bold" FontSize="13"
+                                                                                   Foreground="{StaticResource TextHigh}"/>
+                                                                        <TextBlock Text="{Binding MacAddress}"
+                                                                                   FontFamily="Consolas" FontSize="11"
+                                                                                   Foreground="{StaticResource TextMid}"
+                                                                                   Margin="0,3,0,0"/>
+                                                                    </StackPanel>
+                                                                    <TextBlock Grid.Column="1" VerticalAlignment="Center">
+                                                                        <TextBlock.Style>
+                                                                            <Style TargetType="TextBlock">
+                                                                                <Setter Property="Text"       Value="● Оффлайн"/>
+                                                                                <Setter Property="FontFamily" Value="Gill Sans MT"/>
+                                                                                <Setter Property="FontSize"   Value="11"/>
+                                                                                <Setter Property="Foreground" Value="{StaticResource TextLow}"/>
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding IsOnline}" Value="True">
+                                                                                        <Setter Property="Text"       Value="● Онлайн"/>
+                                                                                        <Setter Property="Foreground" Value="{StaticResource AccentBright}"/>
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBlock.Style>
+                                                                    </TextBlock>
+                                                                </Grid>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock x:Name="NoAccountDevicesText"
+                                                           Text="У данного аккаунта нет устройств"
+                                                           FontFamily="{StaticResource UI}"
+                                                           Foreground="{StaticResource TextLow}"
+                                                           Visibility="Collapsed" Margin="0,8,0,0"/>
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Connected devices -->
+                                <Border Grid.Column="2" Background="{StaticResource BgPanel}"
+                                        BorderBrush="{StaticResource BorderDim}" BorderThickness="1" Padding="16">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                                            <Border Background="{StaticResource Accent}" Height="2" Margin="0,0,0,10"/>
+                                            <TextBlock Text="Подключенные устройства" FontFamily="{StaticResource UI}"
+                                                       FontWeight="Bold" FontSize="13" Foreground="{StaticResource TextHigh}"/>
+                                        </StackPanel>
+                                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                            <StackPanel>
+                                                <ItemsControl x:Name="ConnectedDevicesList">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Margin="0,0,0,6" Padding="12,10"
+                                                                    Background="{StaticResource BgInput}" BorderThickness="1">
+                                                                <Border.BorderBrush>
+                                                                    <SolidColorBrush x:Name="ConBorder" Color="#1A3D28"/>
+                                                                </Border.BorderBrush>
+                                                                <Border.Triggers>
+                                                                    <EventTrigger RoutedEvent="Border.MouseEnter">
+                                                                        <BeginStoryboard>
+                                                                            <Storyboard>
+                                                                                <ColorAnimation Storyboard.TargetName="ConBorder"
+                                                                                                Storyboard.TargetProperty="Color"
+                                                                                                To="#22C55E" Duration="0:0:0.2"/>
+                                                                            </Storyboard>
+                                                                        </BeginStoryboard>
+                                                                    </EventTrigger>
+                                                                    <EventTrigger RoutedEvent="Border.MouseLeave">
+                                                                        <BeginStoryboard>
+                                                                            <Storyboard>
+                                                                                <ColorAnimation Storyboard.TargetName="ConBorder"
+                                                                                                Storyboard.TargetProperty="Color"
+                                                                                                To="#1A3D28" Duration="0:0:0.35"/>
+                                                                            </Storyboard>
+                                                                        </BeginStoryboard>
+                                                                    </EventTrigger>
+                                                                </Border.Triggers>
+                                                                <Grid>
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <StackPanel>
+                                                                        <TextBlock Text="{Binding DeviceName}"
+                                                                                   FontFamily="{StaticResource UI}"
+                                                                                   FontWeight="Bold" FontSize="13"
+                                                                                   Foreground="{StaticResource TextHigh}"/>
+                                                                        <TextBlock Text="{Binding MacAddress}"
+                                                                                   FontFamily="Consolas" FontSize="11"
+                                                                                   Foreground="{StaticResource TextMid}"
+                                                                                   Margin="0,3,0,0"/>
+                                                                    </StackPanel>
+                                                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                                        <TextBlock.Style>
+                                                                            <Style TargetType="TextBlock">
+                                                                                <Setter Property="Text"       Value="● Оффлайн"/>
+                                                                                <Setter Property="FontFamily" Value="Gill Sans MT"/>
+                                                                                <Setter Property="FontSize"   Value="11"/>
+                                                                                <Setter Property="Foreground" Value="{StaticResource TextLow}"/>
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding IsOnline}" Value="True">
+                                                                                        <Setter Property="Text"       Value="● Онлайн"/>
+                                                                                        <Setter Property="Foreground" Value="{StaticResource AccentBright}"/>
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBlock.Style>
+                                                                    </TextBlock>
+                                                                    <Button Grid.Column="2" Content="Отключить"
+                                                                            Style="{StaticResource DarkButtonStyle}"
+                                                                            Height="36" Padding="16,0"
+                                                                            Click="DisconnectDeviceButton_Click"
+                                                                            Tag="{Binding MacAddress}"
+                                                                            VerticalAlignment="Center"/>
+                                                                </Grid>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock x:Name="NoConnectedDevicesText"
+                                                           Text="Нет подключенных устройств"
+                                                           FontFamily="{StaticResource UI}"
+                                                           Foreground="{StaticResource TextLow}"
+                                                           Visibility="Collapsed" Margin="0,8,0,0"/>
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </TabItem>
+
+                </TabControl>
+            </Grid>
+    </Border>
 </Window>

@@ -19,6 +19,12 @@ namespace Friday
                 this.DragMove();
         }
 
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
+
+
         private async void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
             string email = EmailTextBox.Text.Trim();

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Windows;
+using System.Windows.Input;
 
 namespace Friday
 {
@@ -32,6 +33,19 @@ namespace Friday
                     DeviceNameTextBox.Text = deviceData.DeviceName;
                     PasswordTextBox.Text = deviceData.Password;
                 }
+            }
+        }
+
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
+
+        private void Window_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left)
+            {
+                this.DragMove();
             }
         }
 

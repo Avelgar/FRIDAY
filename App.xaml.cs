@@ -329,26 +329,35 @@ namespace Friday
                         _last_answer = answer;
                         var command_response = JsonConvert.DeserializeObject<CommandResponse>(answer);
 
-                        if (command_response != null && command_response.Actions != null)
+                        if (command_response != null)
                         {
-                            foreach (var action in command_response.Actions)
+                            if (command_response.UserMsgId.HasValue)
                             {
-                                var actionParts = action.Split(new[] { '|' }, 2);
-                                if (actionParts.Length == 2)
-                                {
-                                    var actionItem = new VoiceService.Actions
-                                    {
-                                        ActionType = actionParts[0].Trim(),
-                                        ActionText = actionParts[1].Trim(),
-                                        Sender = command_response.Sender,
-                                        MessageId = command_response.MessageId?.ToString(),
-                                        UserMsgId = command_response.UserMsgId?.ToString(),
-                                        IsLocal = false // Сообщение с сервера
-                                    };
+                                Application.Current.Dispatcher.Invoke(() => {
+                                    _mainWindow?.ConfirmPendingMessage(command_response.UserMsgId.ToString());
+                                });
+                            }
 
-                                    if (VoiceService != null)
+                            if (command_response.Actions != null)
+                            {
+                                foreach (var action in command_response.Actions)
+                                {
+                                    var actionParts = action.Split(new[] { '|' }, 2);
+                                    if (actionParts.Length == 2)
                                     {
-                                        _ = VoiceService.ProcessAction(actionItem);
+                                        var actionItem = new VoiceService.Actions
+                                        {
+                                            ActionType = actionParts[0].Trim(),
+                                            ActionText = actionParts[1].Trim(),
+                                            Sender = command_response.Sender,
+                                            MessageId = command_response.MessageId?.ToString(),
+                                            IsLocal = false
+                                        };
+
+                                        if (VoiceService != null)
+                                        {
+                                            _ = VoiceService.ProcessAction(actionItem);
+                                        }
                                     }
                                 }
                             }
@@ -365,6 +374,12 @@ namespace Friday
                     {
                         string processOutput = "";
                         var request = JsonConvert.DeserializeObject<DataRequest>(answer);
+                        if (request.UserMsgId.HasValue)
+                        {
+                            Application.Current.Dispatcher.Invoke(() => {
+                                _mainWindow?.ConfirmPendingMessage(request.UserMsgId.ToString());
+                            });
+                        }
 
                         if (request.NeedPrograms)
                         {
@@ -667,6 +682,9 @@ namespace Friday
 
             [JsonProperty("command_type")]
             public string command_type { get; set; }
+
+            [JsonProperty("user_msg_id")] 
+            public long? UserMsgId { get; set; }
         }
 
         public class CommandResponse

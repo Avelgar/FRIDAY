@@ -21,6 +21,11 @@ namespace Friday
                 this.DragMove();
         }
 
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
+
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
             string login = LoginTextBox.Text.Trim();
@@ -69,7 +74,6 @@ namespace Friday
                                         if (mainWindow != null)
                                         {
                                             mainWindow.ShowUserButton(responseObject.user_login.ToString());
-                                            mainWindow.ChatListBox.Items.Add($"Вход выполнен: {responseObject.user_login}" + Environment.NewLine);
                                         }
                                     });
 

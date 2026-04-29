@@ -26,6 +26,10 @@ namespace Friday
             loginWindow.Show();
             this.Close();
         }
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
 
         private async void ChangePasswordButton_Click(object sender, RoutedEventArgs e)
         {

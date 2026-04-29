@@ -108,9 +108,52 @@ namespace Friday
             // РЕЖИМ РЕДАКТИРОВАНИЯ
             if (_editingMessage != null)
             {
-                _editingMessage.Text = messageText;
-                _editingMessage.DisplayText = messageText; // Обновит UI
+                // Проверяем, серверное ли это сообщение (если ID состоит только из цифр)
+                if (long.TryParse(_editingMessage.Id, out long serverMsgId))
+                {
+                    try
+                    {
+                        var requestData = new
+                        {
+                            msg_id = serverMsgId,
+                            new_text = messageText,
+                            mac = GetMacAddress()
+                        };
 
+                        using (var client = new HttpClient())
+                        {
+                            var json = JsonConvert.SerializeObject(requestData);
+                            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                            var response = await client.PostAsync("https://friday-assistant.ru/edit_message", content);
+
+                            if (response.IsSuccessStatusCode)
+                            {
+                                // Успешно обновили на сервере, обновляем в UI
+                                _editingMessage.Text = messageText;
+                                _editingMessage.DisplayText = messageText;
+                            }
+                            else
+                            {
+                                ShowSystemMessage("Ошибка при сохранении сообщения на сервере.");
+                                return; // Прерываем процесс, не сбрасывая UI
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        ShowSystemMessage($"Ошибка сети при редактировании: {ex.Message}");
+                        return;
+                    }
+                }
+                else
+                {
+                    // Это локальное сообщение, просто обновляем текст
+                    _editingMessage.Text = messageText;
+                    _editingMessage.DisplayText = messageText;
+                }
+
+                // Сбрасываем режим редактирования
                 _editingMessage = null;
                 SendMessageButton.Content = "Отправить";
                 MessageTextBox.Text = "";
@@ -156,6 +199,7 @@ namespace Friday
 
                 // Добавляем сообщение со статусом Pending (серверного ID пока нет)
                 ChatMessages.Add(new ChatMessage { Id = "pending", Sender = "Вы", Text = messageText, IsLocal = false });
+                ChatListBox.UpdateLayout();
                 ChatListBox.ScrollIntoView(ChatMessages.Last());
 
                 MessageTextBox.Text = "";
@@ -723,6 +767,7 @@ namespace Friday
             Dispatcher.Invoke(() =>
             {
                 ChatMessages.Add(msg);
+                ChatListBox.UpdateLayout();
                 ChatListBox.ScrollIntoView(msg);
             });
         }
@@ -872,61 +917,32 @@ namespace Friday
         public void EditCommandButton_Click(object sender, RoutedEventArgs e)
         {
             var button = sender as Button;
-            if (button != null)
+            // DataContext кнопки — это объект Command, который отображается в этом Border
+            if (button?.DataContext is Command commandToEdit)
             {
-                var border = FindParent<Border>(button);
-                if (border != null)
+                var addCommandWindow = new AddCommandWindow("Изменить команду");
+                addCommandWindow.Initialize(commandToEdit.Name, commandToEdit.Description, commandToEdit.Actions, commandToEdit.IsPassword);
+
+                if (addCommandWindow.ShowDialog() == true)
                 {
-                    var nameTextBlock = FindChild<TextBlock>(border, "NameTextBlock");
-                    if (nameTextBlock != null)
-                    {
-                        string commandName = nameTextBlock.Text.Trim();
-                        var commandToEdit = _commandManager.GetCommands().FirstOrDefault(c => c.Name == commandName);
-
-                        if (commandToEdit != null)
-                        {
-                            var addCommandWindow = new AddCommandWindow("Изменить команду");
-                            addCommandWindow.Initialize(commandToEdit.Name, commandToEdit.Description, commandToEdit.Actions, commandToEdit.IsPassword);
-
-                            if (addCommandWindow.ShowDialog() == true)
-                            {
-                                string newName = addCommandWindow.CommandName;
-                                string newDescription = addCommandWindow.Description;
-                                var newActions = addCommandWindow.Actions;
-                                bool isPasswordSet = addCommandWindow.IsPasswordSet;
-
-                                _commandManager.EditCommand(commandToEdit.Id, newName, newDescription, newActions, isPasswordSet);
-
-                                UpdateCommandsList();
-                                LoadActionTypes();
-                            }
-                        }
-                    }
+                    _commandManager.EditCommand(commandToEdit.Id, addCommandWindow.CommandName,
+                                                addCommandWindow.Description, addCommandWindow.Actions,
+                                                addCommandWindow.IsPasswordSet);
+                    UpdateCommandsList();
                 }
             }
         }
 
         public void DeleteCommandButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
+            if (sender is Button button && button.DataContext is Command command)
             {
-                var border = FindParent<Border>(button);
-                if (border != null)
+                MessageBoxResult result = MessageBox.Show($"Вы уверены, что хотите удалить команду: {command.Name}?",
+                                                          "Подтверждение", MessageBoxButton.YesNo);
+                if (result == MessageBoxResult.Yes)
                 {
-                    var nameTextBlock = FindChild<TextBlock>(border, "NameTextBlock");
-                    if (nameTextBlock != null)
-                    {
-                        string commandName = nameTextBlock.Text.Trim();
-                        MessageBoxResult result = MessageBox.Show($"Вы уверены, что хотите удалить команду: {commandName}?", "Подтверждение удаления", MessageBoxButton.YesNo);
-
-                        if (result == MessageBoxResult.Yes)
-                        {
-                            _commandManager.DeleteCommand(commandName);
-
-                            UpdateCommandsList();
-                            LoadActionTypes();
-                        }
-                    }
+                    _commandManager.DeleteCommand(command.Name);
+                    UpdateCommandsList();
                 }
             }
         }
@@ -1138,53 +1154,69 @@ namespace Friday
             }
         }
 
-        // ЛОКАЛЬНОЕ УДАЛЕНИЕ
-        private void DeleteChatMessage_Click(object sender, RoutedEventArgs e)
+        // УДАЛЕНИЕ СООБЩЕНИЯ
+        private async void DeleteChatMessage_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as Button)?.DataContext is ChatMessage msg)
             {
-                if (!msg.IsLocal)
+                // Если ID числовой — значит это сообщение из БД
+                if (long.TryParse(msg.Id, out long serverMsgId))
                 {
-                    MessageBox.Show("Функционал удаления для серверных сообщений будет добавлен позже.", "В разработке", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
+                    try
+                    {
+                        var requestData = new
+                        {
+                            msg_id = serverMsgId,
+                            mac = GetMacAddress()
+                        };
 
-                ChatMessages.Remove(msg);
+                        using (var client = new HttpClient())
+                        {
+                            var json = JsonConvert.SerializeObject(requestData);
+                            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                            var response = await client.PostAsync("https://friday-assistant.ru/delete_message", content);
+
+                            if (response.IsSuccessStatusCode)
+                            {
+                                ChatMessages.Remove(msg);
+                            }
+                            else
+                            {
+                                ShowSystemMessage("Ошибка при удалении сообщения с сервера.");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        ShowSystemMessage($"Ошибка сети при удалении: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    // Если локальное (Guid или pending) — просто удаляем из списка
+                    ChatMessages.Remove(msg);
+                }
             }
         }
 
+        // РЕДАКТИРОВАНИЕ СООБЩЕНИЯ
         private void EditChatMessage_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as Button)?.DataContext is ChatMessage msg)
             {
-                if (!msg.IsLocal)
-                {
-                    MessageBox.Show("Функционал редактирования для серверных сообщений будет добавлен позже.", "В разработке", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
+                // Убрали проверку IsLocal! Теперь редактировать можно всё.
                 MessageTextBox.Text = msg.Text;
                 _editingMessage = msg;
                 SendMessageButton.Content = "Сохранить";
             }
         }
 
-
+        // КОПИРОВАНИЕ СООБЩЕНИЯ (Оставляем как есть, оно работало отлично)
         private void CopyChatMessage_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as Button)?.DataContext is ChatMessage msg)
             {
-                // Копирование текста можно оставить доступным и для серверных сообщений, 
-                // но если вы хотите заблокировать и его, раскомментируйте код ниже:
-
-                /*
-                if (!msg.IsLocal)
-                {
-                    MessageBox.Show("Функционал копирования для серверных сообщений будет добавлен позже.", "В разработке", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-                */
-
                 Clipboard.SetText(msg.Text);
                 ShowSystemMessage("Текст скопирован в буфер обмена");
             }
@@ -1192,6 +1224,18 @@ namespace Friday
         private async void RegenerateChatMessage_Click(object sender, RoutedEventArgs e)
         {
             
+        }
+
+        public void ConfirmPendingMessage(string realId)
+        {
+            if (string.IsNullOrEmpty(realId)) return;
+
+            // Ищем последнее сообщение пользователя со статусом pending
+            var pendingMsg = ChatMessages.LastOrDefault(m => m.IsUser && m.Id == "pending");
+            if (pendingMsg != null)
+            {
+                pendingMsg.Id = realId; // Заменяем "pending" на настоящий ID из базы!
+            }
         }
 
         public void AttachFileFromScreenshot(AttachedFile file)

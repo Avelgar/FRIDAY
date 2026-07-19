@@ -3,7 +3,6 @@
 public class ListeningState
 {
     private bool isListening;
-    public bool IsListeningForPassword { get; set; }
     private System.Timers.Timer commandTimer;
 
     public event Action OnTimeout;

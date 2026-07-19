@@ -25,7 +25,7 @@ namespace Friday
         {
             string deviceName = DeviceNameTextBox.Text;
             string password = PasswordBox.Text;
-            string macAddress = GetMacAddress();
+            string macAddress = App.GetMacAddress();
 
             if (string.IsNullOrWhiteSpace(deviceName))
             {
@@ -60,12 +60,21 @@ namespace Friday
                     var content = new StringContent(json, Encoding.UTF8, "application/json");
 
                     var response = await client.PostAsync("https://friday-assistant.ru/connect_device", content);
-                    response.EnsureSuccessStatusCode();
+
+                    // УБРАЛИ response.EnsureSuccessStatusCode(); 
+                    // Потому что сервер шлет 400/401/404 вместе с полезным JSON
 
                     var responseJson = await response.Content.ReadAsStringAsync();
+
+                    // Проверяем, вернул ли сервер хоть какой-то JSON (защита от 500/502 ошибок Nginx)
+                    if (string.IsNullOrWhiteSpace(responseJson) || !responseJson.StartsWith("{"))
+                    {
+                        response.EnsureSuccessStatusCode(); // Вызовет стандартную ошибку, если ответ не JSON
+                    }
+
                     var responseObject = JsonConvert.DeserializeObject<dynamic>(responseJson);
 
-                    if (responseObject.status == "success")
+                    if (responseObject != null && responseObject.status == "success")
                     {
                         MessageBox.Show("Устройство успешно подключено", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                         this.DialogResult = true;
@@ -73,7 +82,9 @@ namespace Friday
                     }
                     else
                     {
-                        MessageBox.Show(responseObject.message.ToString(), "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        // Теперь мы дойдем сюда и покажем текст "Неверный пароль" или "Устройство не найдено"
+                        string errorMsg = responseObject?.message?.ToString() ?? "Неизвестная ошибка сервера";
+                        MessageBox.Show(errorMsg, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }
@@ -81,32 +92,6 @@ namespace Friday
             {
                 MessageBox.Show($"Ошибка при подключении устройства: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        public static string GetMacAddress()
-        {
-            // Получаем все сетевые интерфейсы
-            NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
-
-            // Ищем первый активный интерфейс с физическим адресом
-            foreach (NetworkInterface networkInterface in networkInterfaces)
-            {
-                // Пропускаем интерфейсы, которые не работают (не активны) или не имеют физического адреса
-                if (networkInterface.OperationalStatus == OperationalStatus.Up &&
-                    !string.IsNullOrEmpty(networkInterface.GetPhysicalAddress().ToString()))
-                {
-                    // Получаем MAC-адрес и форматируем его с дефисами
-                    string macAddress = networkInterface.GetPhysicalAddress().ToString();
-                    if (macAddress.Length == 12) // Стандартная длина MAC без разделителей
-                    {
-                        return string.Join("-", Enumerable.Range(0, 6)
-                            .Select(i => macAddress.Substring(i * 2, 2)));
-                    }
-                    return macAddress; // Если уже есть разделители, возвращаем как есть
-                }
-            }
-
-            return string.Empty; // Возвращаем пустую строку, если не нашли MAC-адрес
         }
     }
 }

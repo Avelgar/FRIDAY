@@ -5,7 +5,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Net.Http;
-using System.Net.NetworkInformation;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Data;
 using System.Globalization;
+using System.Security.Cryptography;
 
 namespace Friday
 {
@@ -22,7 +22,6 @@ namespace Friday
         public string Id { get; set; }
         public string Sender { get; set; }
         public string Text { get; set; }
-        public bool IsLocal { get; set; }
 
         public bool IsUser => Sender == "Вы";
 
@@ -39,7 +38,6 @@ namespace Friday
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private VoiceService _voiceService;
-        public static CommandManager _commandManager = new CommandManager();
         private static SettingManager _settingManager = new SettingManager();
         public AttachedFile _attachedFile;
 
@@ -55,17 +53,6 @@ namespace Friday
 
         private dynamic _userData;
 
-        private ObservableCollection<Command> _commands;
-        public ObservableCollection<Command> Commands
-        {
-            get { return _commands; }
-            set
-            {
-                _commands = value;
-                OnPropertyChanged(nameof(Commands));
-            }
-        }
-
         private List<string> _actionTypes;
         public List<string> ActionTypes
         {
@@ -76,8 +63,6 @@ namespace Friday
                 OnPropertyChanged(nameof(ActionTypes));
             }
         }
-
-        public bool IsScreenshotEnabled => ScreenshotButton?.IsChecked == true;
 
         private async void SendMessageButton_Click(object sender, RoutedEventArgs e)
         {
@@ -108,7 +93,6 @@ namespace Friday
             // РЕЖИМ РЕДАКТИРОВАНИЯ
             if (_editingMessage != null)
             {
-                // Проверяем, серверное ли это сообщение (если ID состоит только из цифр)
                 if (long.TryParse(_editingMessage.Id, out long serverMsgId))
                 {
                     try
@@ -124,19 +108,17 @@ namespace Friday
                         {
                             var json = JsonConvert.SerializeObject(requestData);
                             var content = new StringContent(json, Encoding.UTF8, "application/json");
-
                             var response = await client.PostAsync("https://friday-assistant.ru/edit_message", content);
 
                             if (response.IsSuccessStatusCode)
                             {
-                                // Успешно обновили на сервере, обновляем в UI
                                 _editingMessage.Text = messageText;
                                 _editingMessage.DisplayText = messageText;
                             }
                             else
                             {
                                 ShowSystemMessage("Ошибка при сохранении сообщения на сервере.");
-                                return; // Прерываем процесс, не сбрасывая UI
+                                return;
                             }
                         }
                     }
@@ -148,12 +130,10 @@ namespace Friday
                 }
                 else
                 {
-                    // Это локальное сообщение, просто обновляем текст
                     _editingMessage.Text = messageText;
                     _editingMessage.DisplayText = messageText;
                 }
 
-                // Сбрасываем режим редактирования
                 _editingMessage = null;
                 SendMessageButton.Content = "Отправить";
                 MessageTextBox.Text = "";
@@ -171,17 +151,10 @@ namespace Friday
             {
                 string screenshotBase64 = null;
 
+                // 2. ПРОВЕРКА СКРИНШОТА ИЛИ ФОТО
                 if (_attachedFile != null)
                 {
                     screenshotBase64 = Convert.ToBase64String(_attachedFile.Data);
-                }
-                else if (IsScreenshotEnabled)
-                {
-                    byte[] screenshotBytes = _voiceService.CaptureScreenshot();
-                    if (screenshotBytes != null)
-                    {
-                        screenshotBase64 = Convert.ToBase64String(screenshotBytes);
-                    }
                 }
 
                 var message = new
@@ -191,14 +164,13 @@ namespace Friday
                     mac = GetMacAddress(),
                     timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                     name = SettingManager.Setting.AssistantName,
-                    screenshot = screenshotBase64
+                    voice_type = SettingManager.Setting.VoiceType, // 1. ПЕРЕДАЕМ ВЫБРАННЫЙ ГОЛОС
+                    screenshot = screenshotBase64                  // 2. ПЕРЕДАЕМ ФОТО
                 };
 
                 ((App)Application.Current).SendWebSocketMessage(message);
-                ((App)Application.Current).MarkAsWaitingForServer();
 
-                // Добавляем сообщение со статусом Pending (серверного ID пока нет)
-                ChatMessages.Add(new ChatMessage { Id = "pending", Sender = "Вы", Text = messageText, IsLocal = false });
+                ChatMessages.Add(new ChatMessage { Id = "pending", Sender = "Вы", Text = messageText });
                 ChatListBox.UpdateLayout();
                 ChatListBox.ScrollIntoView(ChatMessages.Last());
 
@@ -226,14 +198,6 @@ namespace Friday
             ((App)Application.Current).IncrementWindowCount();
             ChatListBox.ItemsSource = ChatMessages;
             _voiceService.OnChatMessageReceived += OnChatMessageReceived;
-            CustomCommandService.Initialize(_voiceService);
-
-            Commands = new ObservableCollection<Command>(_commandManager.GetCommands());
-            CommandsItemsControl.ItemsSource = Commands;
-            SearchTextBox.TextChanged += SearchTextBox_TextChanged;
-
-            LoadActionTypes();
-            ActionTypeComboBox.ItemsSource = ActionTypes;
             InputModeComboBox.SelectionChanged += InputModeComboBox_SelectionChanged;
 
             DataContext = this;
@@ -281,24 +245,48 @@ namespace Friday
 
         public static string GetMacAddress()
         {
-            NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
-
-            foreach (NetworkInterface networkInterface in networkInterfaces)
+            try
             {
-                if (networkInterface.OperationalStatus == OperationalStatus.Up &&
-                    !string.IsNullOrEmpty(networkInterface.GetPhysicalAddress().ToString()))
+                string registryPath = @"SOFTWARE\Microsoft\Cryptography";
+                string developerKey = "MachineGuid";
+
+                using (RegistryKey localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
                 {
-                    string macAddress = networkInterface.GetPhysicalAddress().ToString();
-                    if (macAddress.Length == 12)
+                    using (RegistryKey rgbKey = localKey.OpenSubKey(registryPath))
                     {
-                        return string.Join("-", Enumerable.Range(0, 6)
-                            .Select(i => macAddress.Substring(i * 2, 2)));
+                        if (rgbKey != null)
+                        {
+                            object value = rgbKey.GetValue(developerKey);
+                            if (value != null)
+                            {
+                                // Получаем уникальный GUID системы
+                                string machineGuid = value.ToString().Replace("-", "").ToUpper();
+
+                                // Хешируем его, чтобы получить фиксированную длину
+                                using (MD5 md5 = MD5.Create())
+                                {
+                                    byte[] hashBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(machineGuid));
+                                    StringBuilder sb = new StringBuilder();
+                                    // Берем первые 6 байт хеша и собираем аналог MAC-адреса с тире
+                                    for (int i = 0; i < 6; i++)
+                                    {
+                                        sb.Append(hashBytes[i].ToString("X2"));
+                                        if (i < 5) sb.Append("-");
+                                    }
+                                    return sb.ToString(); // Вернет стабильный XX-XX-XX-XX-XX-XX
+                                }
+                            }
+                        }
                     }
-                    return macAddress;
                 }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка получения HWID: {ex.Message}");
+            }
 
-            return string.Empty;
+            // Резервный вариант, если чтение реестра заблокировано политиками безопасности
+            return "00-11-22-33-44-55";
         }
 
         private void ProcessHistoryMessages(dynamic historyData)
@@ -334,7 +322,6 @@ namespace Friday
                         Id = id,
                         Sender = sender,
                         Text = cleanText,
-                        IsLocal = false // История всегда с сервера
                     });
                 }
             }
@@ -467,11 +454,6 @@ namespace Friday
 
         private void AttachFileButton_Click(object sender, RoutedEventArgs e)
         {
-            if (ScreenshotButton.IsChecked == true)
-            {
-                ShowSystemMessage("Нельзя прикреплять файлы в режиме скриншота!");
-                return;
-            }
 
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "Image Files (*.jpg; *.jpeg; *.png; *.bmp)|*.jpg; *.jpeg; *.png; *.bmp|All Files (*.*)|*.*";
@@ -513,19 +495,6 @@ namespace Friday
                     ShowSystemMessage($"Ошибка при загрузке файла: {ex.Message}");
                 }
             }
-        }
-
-        private string FormatFileSize(long bytes)
-        {
-            string[] sizes = { "B", "KB", "MB", "GB" };
-            int order = 0;
-            double len = bytes;
-            while (len >= 1024 && order < sizes.Length - 1)
-            {
-                order++;
-                len = len / 1024;
-            }
-            return $"{len:0.##} {sizes[order]}";
         }
 
         private bool IsImageFile(string fileName)
@@ -784,56 +753,12 @@ namespace Friday
             });
         }
 
-        public void LoadActionTypes()
-        {
-            var allActions = _commandManager.GetCommands()
-                .SelectMany(c => c.Actions)
-                .Select(a => a.ActionType)
-                .Distinct()
-                .ToList();
-
-            allActions.Insert(0, "All");
-
-            ActionTypes = allActions;
-        }
-
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-        public void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            FilterCommands();
-        }
-        public void ActionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            FilterCommands();
-        }
-
-        public void FilterCommands()
-        {
-            string searchText = SearchTextBox.Text;
-            string selectedActionType = ActionTypeComboBox.SelectedItem as string;
-
-            IEnumerable<Command> filteredCommands = _commandManager.GetCommands();
-
-            if (!string.IsNullOrEmpty(searchText) && searchText != "Search")
-            {
-                filteredCommands = filteredCommands.Where(c =>
-                    c.Name.ToLower().Contains(searchText.ToLower()) ||
-                    c.Description.ToLower().Contains(searchText.ToLower()));
-            }
-
-            if (!string.IsNullOrEmpty(selectedActionType) && selectedActionType != "All")
-            {
-                filteredCommands = filteredCommands.Where(c => c.Actions.Any(a => a.ActionType == selectedActionType)); // Changed a.Type to a.ActionType
-            }
-
-            Commands = new ObservableCollection<Command>(filteredCommands.ToList());
-            CommandsItemsControl.ItemsSource = Commands;
         }
         private void Minimize_Click(object sender, RoutedEventArgs e)
         {
@@ -875,75 +800,11 @@ namespace Friday
             ListenButton.Foreground = isListening ? System.Windows.Media.Brushes.Red : System.Windows.Media.Brushes.White;
         }
 
-        public void AddCommandButton_Click(object sender, RoutedEventArgs e)
-        {
-            var addCommandWindow = new AddCommandWindow("Добавить команду");
-
-            if (addCommandWindow.ShowDialog() == true)
-            {
-                string name = addCommandWindow.CommandName;
-                string description = addCommandWindow.Description;
-                var actions = addCommandWindow.Actions;
-                bool isPasswordSet = addCommandWindow.IsPasswordSet;
-
-                var customCommand = _commandManager.FindCommandByTrigger(name);
-                if (customCommand != null)
-                {
-                    MessageBox.Show("Команда уже существует!", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-                MessageBox.Show("Команда добавлена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                _commandManager.AddCommand(name, description, actions, isPasswordSet);
-
-                UpdateCommandsList();
-                LoadActionTypes();
-            }
-        }
-
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ChangedButton == MouseButton.Left)
             {
                 this.DragMove();
-            }
-        }
-
-        public void UpdateCommandsList()
-        {
-            Commands = new ObservableCollection<Command>(_commandManager.GetCommands());
-            CommandsItemsControl.ItemsSource = Commands;
-            LoadActionTypes();
-        }
-        public void EditCommandButton_Click(object sender, RoutedEventArgs e)
-        {
-            var button = sender as Button;
-            // DataContext кнопки — это объект Command, который отображается в этом Border
-            if (button?.DataContext is Command commandToEdit)
-            {
-                var addCommandWindow = new AddCommandWindow("Изменить команду");
-                addCommandWindow.Initialize(commandToEdit.Name, commandToEdit.Description, commandToEdit.Actions, commandToEdit.IsPassword);
-
-                if (addCommandWindow.ShowDialog() == true)
-                {
-                    _commandManager.EditCommand(commandToEdit.Id, addCommandWindow.CommandName,
-                                                addCommandWindow.Description, addCommandWindow.Actions,
-                                                addCommandWindow.IsPasswordSet);
-                    UpdateCommandsList();
-                }
-            }
-        }
-
-        public void DeleteCommandButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.DataContext is Command command)
-            {
-                MessageBoxResult result = MessageBox.Show($"Вы уверены, что хотите удалить команду: {command.Name}?",
-                                                          "Подтверждение", MessageBoxButton.YesNo);
-                if (result == MessageBoxResult.Yes)
-                {
-                    _commandManager.DeleteCommand(command.Name);
-                    UpdateCommandsList();
-                }
             }
         }
         private T FindParent<T>(DependencyObject child) where T : DependencyObject
@@ -1029,7 +890,6 @@ namespace Friday
         public void Save_Button_Click(object sender, RoutedEventArgs e)
         {
             string assistantName = FridayNameTextBox.Text;
-            string password = PasswordTextBox.Text;
             string voiceType = (VoiceTypeComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
             int volume = Convert.ToInt32(VolumeSlider.Value);
             string inputMode = (InputModeComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
@@ -1039,13 +899,6 @@ namespace Friday
                 MessageBox.Show("Поля не могут быть пустыми", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-
-            if (string.IsNullOrEmpty(password))
-            {
-                password = SettingManager.Setting.Password;
-            }
-
-            _settingManager.UpdateSettings(assistantName, password, voiceType, volume, inputMode, MusicFolderPathTextBox.Text);
 
             // Метод UpdateSettingManager(_settingManager) больше не нужен
 
@@ -1099,23 +952,6 @@ namespace Friday
         {
             var appPathsWindow = new Friday.Windows.AppPathsWindow();
             appPathsWindow.ShowDialog();
-        }
-
-        private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (ScreenshotButton.IsChecked == true)
-            {
-                _voiceService.IsScreenshotEnabled = true;
-                if (_attachedFile != null)
-                {
-                    ShowSystemMessage("Режим скриншота активирован. Прикрепленный файл удален.");
-                    ClearAttachedFile();
-                }
-            }
-            else
-            {
-                _voiceService.IsScreenshotEnabled = false;
-            }
         }
 
         public void ClearAttachedFile()
@@ -1280,7 +1116,6 @@ namespace Friday
 
     public enum InputMode
     {
-        NameResponseCommand,
         NamePlusCommand,
         Conversation
     }

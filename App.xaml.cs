@@ -1,12 +1,14 @@
 ﻿using Friday.Services;
+using Microsoft.Win32;
 using Newtonsoft.Json;
-using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Net.WebSockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace Friday
 {
@@ -36,8 +38,8 @@ namespace Friday
 
         private const string appName = "FridayAssistantApp";
 
-        public bool IsWaitingForServerResponse { get; private set; } = false;
-        private CancellationTokenSource _responseTimeoutCts;
+        public bool IsWaitingForServerResponse { get; private set; } = false; // Этот флаг больше не нужен
+        private CancellationTokenSource _responseTimeoutCts; // И это тоже не нужно
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -65,7 +67,7 @@ namespace Friday
             LoadDeviceData(filePath);
 
             _keepAliveTimer = new System.Timers.Timer(15000);
-            _keepAliveTimer.Elapsed += async (sender, e) => await CheckConnectionAndSendPingAsync();
+            _keepAliveTimer.Elapsed += async (sender, ev) => await CheckConnectionAndSendPingAsync();
             _keepAliveTimer.AutoReset = true;
             _keepAliveTimer.Enabled = true;
 
@@ -141,7 +143,6 @@ namespace Friday
             }
             catch (Exception ex)
             {
-                // Теперь ошибка не съедается молча
                 Console.WriteLine($"Критическая ошибка декодирования Base64: {ex.Message}");
                 return string.Empty;
             }
@@ -174,10 +175,9 @@ namespace Friday
             }
         }
 
-        // === ИСПРАВЛЕННЫЙ МЕТОД: Собирает большие сообщения по кускам ===
         private async Task ReceiveMessages(CancellationToken cancellationToken)
         {
-            var buffer = new byte[8192]; // Увеличил базовый буфер
+            var buffer = new byte[8192];
             while (_webSocket?.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
             {
                 try
@@ -193,13 +193,13 @@ namespace Friday
                             {
                                 await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", cancellationToken);
                                 _isConnectionActive = false;
-                                ClearWaitingForServer();
-                                return; // Выходим из цикла приема
+                                VoiceService.StopSpeaking(); // Останавливаем голос бота при дисконнекте
+                                return;
                             }
 
                             ms.Write(buffer, 0, result.Count);
                         }
-                        while (!result.EndOfMessage); // Читаем, пока сообщение не придет полностью!
+                        while (!result.EndOfMessage);
 
                         ms.Seek(0, SeekOrigin.Begin);
                         if (result.MessageType == WebSocketMessageType.Text)
@@ -222,7 +222,7 @@ namespace Friday
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Ошибка получения сообщения: {ex.Message}");
-                    ClearWaitingForServer();
+                    VoiceService.StopSpeaking(); // Останавливаем голос бота при ошибке
                     break;
                 }
             }
@@ -268,17 +268,13 @@ namespace Friday
             try
             {
                 string answer = DecodeFromBase64(message);
-                if (string.IsNullOrEmpty(answer)) return; // Если не удалось декодировать - выходим
-
-                if (!answer.Contains("data_request") && !answer.Contains("ping"))
-                {
-                    ClearWaitingForServer();
-                }
+                if (string.IsNullOrEmpty(answer)) return;
 
                 if (answer.Contains("connection_timeout"))
                 {
                     _isConnectionActive = false;
                     ShowAppNotification("Превышено время ожидания соединения сервером.");
+                    VoiceService.StopSpeaking();
                     return;
                 }
 
@@ -318,40 +314,122 @@ namespace Friday
                     }
                     catch (Exception ex)
                     {
-                        // Теперь, если ошибка случится прямо при создании главного окна, она не пропадет!
                         ShowAppNotification($"Критическая ошибка при запуске интерфейса: {ex.Message}");
                     }
                 }
+                // 1. ПОТОКОВЫЙ ЗВУК ОТ БОТА
+                else if (answer.Contains("\"type\":\"audio_chunk\"") || answer.Contains("\"type\": \"audio_chunk\""))
+                {
+                    var chunk = JsonConvert.DeserializeObject<AudioChunkMessage>(answer);
+                    if (VoiceService != null) VoiceService.AppendAudioChunk(chunk.AudioBase64);
+                    return;
+                }
+                // 2. ПОЛУЧЕНА ТРАНСКРИПЦИЯ ГОЛОСА ПОЛЬЗОВАТЕЛЯ ОТ ГУГЛА (ОБНОВЛЯЕМ НАШ БАББЛ)
+                else if (answer.Contains("\"type\":\"user_transcription\"") || answer.Contains("\"type\": \"user_transcription\""))
+                {
+                    try
+                    {
+                        var trans = JsonConvert.DeserializeObject<UserTranscriptionMessage>(answer);
+                        Application.Current.Dispatcher.Invoke(() => {
+                            // Ищем наш временный баббл по UiMsgId (client GUID)
+                            var msg = _mainWindow?.ChatMessages.LastOrDefault(m => m.IsUser && m.Id == trans.UiMsgId);
+
+                            if (msg != null)
+                            {
+                                // Заменяем песочные часы на распознанный текст!
+                                msg.Text = trans.Text;
+                                msg.DisplayText = trans.Text;
+                            }
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Ошибка парсинга STT: {ex.Message}");
+                    }
+                    return;
+                }
+                // 3. ЕДИНЫЙ ВХОД ДЛЯ ВСЕХ СООБЩЕНИЙ И КОМАНД БОТА
                 else if (answer.Contains("new_message"))
                 {
                     try
                     {
                         _last_answer = answer;
-                        var command_response = JsonConvert.DeserializeObject<CommandResponse>(answer);
+                        var cmdResp = JsonConvert.DeserializeObject<CommandResponse>(answer);
 
-                        if (command_response != null)
+                        if (cmdResp != null)
                         {
-                            if (command_response.UserMsgId.HasValue)
+                            // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: СРАЗУ СБРАСЫВАЕМ БЛОКИРОВКУ НА КЛИЕНТЕ!
+                            if (VoiceService != null)
                             {
-                                Application.Current.Dispatcher.Invoke(() => {
-                                    _mainWindow?.ConfirmPendingMessage(command_response.UserMsgId.ToString());
-                                });
+                                VoiceService.ResetWaitingForServer();
                             }
 
-                            if (command_response.Actions != null)
-                            {
-                                foreach (var action in command_response.Actions)
+                            Application.Current.Dispatcher.Invoke(() => {
+                                // Ищем последнее сообщение пользователя по его GUID
+                                var pendingMsg = _mainWindow?.ChatMessages.LastOrDefault(m => m.IsUser && m.Id == cmdResp.UiMsgId);
+                                if (pendingMsg != null)
                                 {
-                                    var actionParts = action.Split(new[] { '|' }, 2);
-                                    if (actionParts.Length == 2)
+                                    // Заменяем ID на нормальный серверный ID
+                                    pendingMsg.Id = cmdResp.UserMsgId?.ToString() ?? Guid.NewGuid().ToString();
+
+                                    // Если это было аудио без текста, заменяем надпись "⏳ Обработка..." на заглушку
+                                    if (pendingMsg.Text == "⏳ Распознавание...")
                                     {
+                                        pendingMsg.Text = "🎤 [Голосовое сообщение]";
+                                        pendingMsg.DisplayText = "🎤 [Голосовое сообщение]";
+                                    }
+                                }
+
+                                // ПЛАВНЫЙ СТРИМИНГ ТЕКСТА БОТА
+                                if (!string.IsNullOrEmpty(cmdResp.Text))
+                                {
+                                    var existingMsg = _mainWindow?.ChatMessages.FirstOrDefault(m => !m.IsUser && m.Id == cmdResp.MessageId?.ToString());
+                                    if (existingMsg != null)
+                                    {
+                                        existingMsg.Text += cmdResp.Text;
+                                        existingMsg.DisplayText = existingMsg.Text;
+                                    }
+                                    else
+                                    {
+                                        VoiceService?.ShowTextInChat(cmdResp.Sender ?? "Бот", cmdResp.Text, cmdResp.MessageId?.ToString());
+                                    }
+                                }
+                            });
+
+                            // Воспроизведение статического аудио (если это другое устройство)
+                            if (!string.IsNullOrEmpty(cmdResp.AudioBase64))
+                            {
+                                Task.Run(() => VoiceService?.PlayNativeAudio(cmdResp.AudioBase64));
+                            }
+
+                            // ОБРАБОТКА ДЕЙСТВИЙ (остается без изменений)
+                            if (cmdResp.Actions != null && VoiceService != null)
+                            {
+                                bool needsDataResponse = false;
+                                bool needProcesses = false;
+                                bool needPrograms = false;
+
+                                foreach (var action in cmdResp.Actions)
+                                {
+                                    if (action.ActionType?.ToLower() == "data_request")
+                                    {
+                                        needsDataResponse = true;
+                                        string val = action.ActionValue?.ToLower() ?? "";
+                                        if (val.Contains("process") || val.Contains("процесс")) needProcesses = true;
+                                        if (val.Contains("program") || val.Contains("app") || val.Contains("прилож")) needPrograms = true;
+                                    }
+                                    else
+                                    {
+                                        string aType = action.ActionType?.Trim().ToLower() ?? "";
                                         var actionItem = new VoiceService.Actions
                                         {
-                                            ActionType = actionParts[0].Trim(),
-                                            ActionText = actionParts[1].Trim(),
-                                            Sender = command_response.Sender,
-                                            MessageId = command_response.MessageId?.ToString(),
-                                            IsLocal = false
+                                            ActionType = action.ActionType?.Trim(),
+                                            ActionText = action.ActionValue?.Trim(),
+                                            Sender = cmdResp.Sender,
+                                            MessageId = cmdResp.MessageId?.ToString(),
+                                            UserMsgId = cmdResp.UserMsgId?.ToString(),
+                                            IsLocal = false,
+                                            AudioBase64 = cmdResp.AudioBase64
                                         };
 
                                         if (VoiceService != null)
@@ -360,57 +438,35 @@ namespace Friday
                                         }
                                     }
                                 }
+
+                                if (needsDataResponse)
+                                {
+                                    string processOutput = "";
+                                    if (needPrograms) InstalledApplications = GetInstalledApplications();
+                                    if (needProcesses)
+                                    {
+                                        var userApps = System.Diagnostics.Process.GetProcesses()
+                                            .Where(p => !string.IsNullOrEmpty(p.MainWindowTitle))
+                                            .Select(p => $"{p.ProcessName} (ID: {p.Id})").ToList();
+                                        processOutput = string.Join(", ", userApps);
+                                    }
+
+                                    var dataResponse = new
+                                    {
+                                        command_to_device = cmdResp.OriginalCommand,
+                                        processes = processOutput,
+                                        programs = InstalledApplications,
+                                        source_name = cmdResp.SourceDevice,
+                                        user_msg_id = cmdResp.UserMsgId
+                                    };
+                                    SendWebSocketMessage(dataResponse);
+                                }
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        ShowAppNotification($"Ошибка обработки actions: {ex.Message}");
-                    }
-                }
-                else if (answer.Contains("data_request"))
-                {
-                    try
-                    {
-                        string processOutput = "";
-                        var request = JsonConvert.DeserializeObject<DataRequest>(answer);
-                        if (request.UserMsgId.HasValue)
-                        {
-                            Application.Current.Dispatcher.Invoke(() => {
-                                _mainWindow?.ConfirmPendingMessage(request.UserMsgId.ToString());
-                            });
-                        }
-
-                        if (request.NeedPrograms)
-                        {
-                            InstalledApplications = GetInstalledApplications();
-                        }
-
-                        if (request.NeedProcesses)
-                        {
-                            var userApps = System.Diagnostics.Process.GetProcesses()
-                                .Where(p => !string.IsNullOrEmpty(p.MainWindowTitle))
-                                .Select(p => $"{p.ProcessName} (ID: {p.Id})")
-                                .ToList();
-
-                            processOutput = string.Join(", ", userApps);
-                        }
-
-                        var new_response = new
-                        {
-                            command_to_device = request.OriginalCommand,
-                            processes = processOutput,
-                            source_name = request.SourceDevice,
-                            name = request.Name,
-                            programs = InstalledApplications,
-                            command_type = request.command_type
-                        };
-
-                        SendWebSocketMessage(new_response);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Ошибка: {ex.Message}");
+                        ShowAppNotification($"Ошибка обработки сообщения: {ex.Message}");
                     }
                 }
                 else
@@ -444,7 +500,7 @@ namespace Friday
             if (_registrationWindow == null || !_registrationWindow.IsVisible)
             {
                 _registrationWindow = new RegistrationWindow();
-                _registrationWindow.Closed += (s, e) => { _registrationWindow = null; };
+                _registrationWindow.Closed += (s, ev) => { _registrationWindow = null; };
                 _registrationWindow.Show();
             }
         }
@@ -474,24 +530,44 @@ namespace Friday
 
         public static string GetMacAddress()
         {
-            NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
-
-            foreach (NetworkInterface networkInterface in networkInterfaces)
+            try
             {
-                if (networkInterface.OperationalStatus == OperationalStatus.Up &&
-                    !string.IsNullOrEmpty(networkInterface.GetPhysicalAddress().ToString()))
+                string registryPath = @"SOFTWARE\Microsoft\Cryptography";
+                string developerKey = "MachineGuid";
+
+                using (RegistryKey localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
                 {
-                    string macAddress = networkInterface.GetPhysicalAddress().ToString();
-                    if (macAddress.Length == 12)
+                    using (RegistryKey rgbKey = localKey.OpenSubKey(registryPath))
                     {
-                        return string.Join("-", Enumerable.Range(0, 6)
-                            .Select(i => macAddress.Substring(i * 2, 2)));
+                        if (rgbKey != null)
+                        {
+                            object value = rgbKey.GetValue(developerKey);
+                            if (value != null)
+                            {
+                                string machineGuid = value.ToString().Replace("-", "").ToUpper();
+
+                                using (MD5 md5 = MD5.Create())
+                                {
+                                    byte[] hashBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(machineGuid));
+                                    StringBuilder sb = new StringBuilder();
+                                    for (int i = 0; i < 6; i++)
+                                    {
+                                        sb.Append(hashBytes[i].ToString("X2"));
+                                        if (i < 5) sb.Append("-");
+                                    }
+                                    return sb.ToString();
+                                }
+                            }
+                        }
                     }
-                    return macAddress;
                 }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка получения HWID: {ex.Message}");
+            }
 
-            return string.Empty;
+            return "00-11-22-33-44-55";
         }
 
         private async Task CheckConnectionAndSendPingAsync()
@@ -550,7 +626,7 @@ namespace Friday
                     string vbsPath = Path.Combine(tempDir, $"{safeName}.vbs");
                     string script = $"Set WshShell = CreateObject(\"WScript.Shell\")\r\nWshShell.Run Chr(34) & \"{app.Path}\" & Chr(34), 1, False";
 
-                    File.WriteAllText(vbsPath, script, System.Text.Encoding.UTF8);
+                    File.WriteAllText(vbsPath, script, Encoding.UTF8);
                     appList.Add(vbsPath.Replace("\\", "\\\\"));
                 }
             }
@@ -638,24 +714,9 @@ namespace Friday
             }
         }
 
-        public void MarkAsWaitingForServer()
-        {
-            IsWaitingForServerResponse = true;
-            _responseTimeoutCts?.Cancel();
-            _responseTimeoutCts = new CancellationTokenSource();
-
-            Task.Delay(15000, _responseTimeoutCts.Token).ContinueWith(t =>
-            {
-                if (!t.IsCanceled && IsWaitingForServerResponse)
-                    IsWaitingForServerResponse = false;
-            });
-        }
-
-        public void ClearWaitingForServer()
-        {
-            IsWaitingForServerResponse = false;
-            _responseTimeoutCts?.Cancel();
-        }
+        // Этот флаг больше не нужен
+        // public bool IsWaitingForServerResponse { get; private set; } = false; 
+        // private CancellationTokenSource _responseTimeoutCts; 
 
         public class DataRequest
         {
@@ -667,6 +728,9 @@ namespace Friday
 
             [JsonProperty("need_programs")]
             public bool NeedPrograms { get; set; }
+
+            [JsonProperty("need_repeat")]
+            public bool NeedRepeat { get; set; }
 
             [JsonProperty("original_command")]
             public string OriginalCommand { get; set; }
@@ -683,23 +747,55 @@ namespace Friday
             [JsonProperty("command_type")]
             public string command_type { get; set; }
 
-            [JsonProperty("user_msg_id")] 
+            [JsonProperty("user_msg_id")]
             public long? UserMsgId { get; set; }
         }
 
         public class CommandResponse
         {
+            [JsonProperty("type")] public string Type { get; set; }
+            [JsonProperty("sender")] public string Sender { get; set; }
+            [JsonProperty("text")] public string Text { get; set; }
+            [JsonProperty("actions")] public List<DeviceAction> Actions { get; set; }
+            [JsonProperty("source_device")] public string SourceDevice { get; set; }
+            [JsonProperty("original_command")] public string OriginalCommand { get; set; }
+            [JsonProperty("user_msg_id")] public long? UserMsgId { get; set; }
+            [JsonProperty("ui_msg_id")] public string UiMsgId { get; set; }
+            [JsonProperty("message_id")] public long? MessageId { get; set; }
+            [JsonProperty("audio_base64")] public string AudioBase64 { get; set; }
+        }
+
+        public class DeviceAction
+        {
+            [JsonProperty("action_type")]
+            public string ActionType { get; set; }
+
+            [JsonProperty("action_value")]
+            public string ActionValue { get; set; }
+        }
+
+        public class UserTranscriptionMessage
+        {
+            [JsonProperty("type")]
             public string Type { get; set; }
-            public string Sender { get; set; }
-            public List<string> Actions { get; set; }
-            public string SourceDevice { get; set; }
-            public string Timestamp { get; set; }
 
             [JsonProperty("user_msg_id")]
             public long? UserMsgId { get; set; }
 
-            [JsonProperty("message_id")]
-            public long? MessageId { get; set; }
+            [JsonProperty("ui_msg_id")] // <--- ВОТ ЭТОГО НЕ ХВАТАЛО
+            public string UiMsgId { get; set; }
+
+            [JsonProperty("text")]
+            public string Text { get; set; }
+        }
+
+        public class AudioChunkMessage
+        {
+            [JsonProperty("type")]
+            public string Type { get; set; }
+
+            [JsonProperty("audio_base64")]
+            public string AudioBase64 { get; set; }
         }
 
         public class DeviceData

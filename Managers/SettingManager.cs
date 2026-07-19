@@ -34,7 +34,7 @@ namespace Friday
                     Password = "",
                     VoiceType = "Aleksandr",
                     Volume = 5,
-                    InputMode = "Имя-ответ-команда",
+                    InputMode = "Имя + команда",
                     MusicFolderPath = _defaultMusicFolderPath
                 };
                 SaveSettings();
@@ -51,7 +51,7 @@ namespace Friday
                     Password = "",
                     VoiceType = "Aleksandr",
                     Volume = 5,
-                    InputMode = "Имя-ответ-команда",
+                    InputMode = "Имя + команда",
                     MusicFolderPath = _defaultMusicFolderPath
                 };
                 SaveSettings();
@@ -80,7 +80,7 @@ namespace Friday
 
             if (string.IsNullOrWhiteSpace(Setting.InputMode))
             {
-                Setting.InputMode = "Имя-ответ-команда";
+                Setting.InputMode = "Имя + команда";
                 changed = true;
             }
 

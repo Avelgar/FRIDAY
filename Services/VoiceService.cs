@@ -1,17 +1,9 @@
-using Friday.Games;
 using Friday.Services;
 using NAudio.Wave;
 using Newtonsoft.Json;
-using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.IO;
-using System.Net.Http;
-using System.Net.NetworkInformation;
 using System.Text;
 using System.Windows;
-using System.Windows.Forms;
 using System.Windows.Media.Imaging;
 using Vosk;
 
@@ -19,19 +11,16 @@ namespace Friday
 {
     public class VoiceService
     {
-
         private readonly List<string> _stopWords = new List<string> { "стоп", "хватит", "довольно", "заткнись", "закрой рот" };
-        private PoseTrackingService _poseTrackingService;
-        private CameraWindow _cameraWindow;
+
         private bool _isSpeaking = false;
+        private bool _isWaitingForServer = false;
+        private bool _isRecordingCommand = false;
+        private string _currentCommandMsgId = null;
+
         private string modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\model"));
 
-        private string _piperExePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\piper\piper.exe"));
-
-        private Process _piperProcess;
         private WaveOutEvent _waveOut;
-
-        public event Action<string> OnPasswordReceived;
         private readonly VoskRecognizer _recognizer;
         private readonly RenameService _renameService;
         private SettingManager _settingManager;
@@ -45,6 +34,13 @@ namespace Friday
         public MainWindow.AttachedFile AttachedFile { get; set; }
 
         public bool IsScreenshotEnabled { get; set; } = false;
+
+        private BufferedWaveProvider _waveProvider;
+        private bool _isAudioStreamPlaying = false;
+        private readonly object _audioLock = new object();
+
+        // БУФЕР ДЛЯ ЗАПИСИ ГОЛОСА (Пишем локально на ПК)
+        private MemoryStream _audioBuffer = new MemoryStream();
 
         public VoiceService(RenameService renameService, SettingManager settingManager, MainWindow mainWindow)
         {
@@ -60,662 +56,313 @@ namespace Friday
             _recognizer.SetWords(true);
 
             ListeningState = new ListeningState();
-
             musicService = new MusicService();
             musicService.Init();
+        }
+
+        private void InitAudioStream()
+        {
+            if (_waveOut == null)
+            {
+                _waveOut = new WaveOutEvent();
+                _waveProvider = new BufferedWaveProvider(new WaveFormat(24000, 16, 1));
+                _waveProvider.BufferDuration = TimeSpan.FromMinutes(2);
+                _waveProvider.DiscardOnBufferOverflow = true;
+                _waveOut.Init(_waveProvider);
+            }
         }
 
         public async Task StartListening()
         {
             try
             {
-                _waveIn = new WaveInEvent()
-                {
-                    WaveFormat = new WaveFormat(16000, 1)
-                };
-
                 if (WaveIn.DeviceCount == 0)
                 {
                     _mainWindow.ShowSystemMessage("Нет доступных устройств для записи.");
                     return;
                 }
 
-                _waveIn.DeviceNumber = 0;
+                // 1. ИЩЕМ ПРАВИЛЬНЫЙ МИКРОФОН (А не просто 0)
+                int selectedDeviceIndex = 0;
+                Console.WriteLine("=== ДОСТУПНЫЕ МИКРОФОНЫ ===");
+                for (int i = 0; i < WaveIn.DeviceCount; i++)
+                {
+                    var caps = WaveIn.GetCapabilities(i);
+                    Console.WriteLine($"[{i}] {caps.ProductName}");
+                    // Если хочешь, можешь потом жестко вписать сюда нужный индекс,
+                    // но обычно 0 - это "Sound Mapper" (микрофон по умолчанию в Windows)
+                }
+
+                _waveIn = new WaveInEvent()
+                {
+                    WaveFormat = new WaveFormat(16000, 1),
+                    DeviceNumber = selectedDeviceIndex
+                };
+
                 string lastRecognizedText = string.Empty;
-                bool isListeningForCommands = false;
 
                 _waveIn.DataAvailable += (sender, e) =>
                 {
                     try
                     {
-                        if (_recognizer.AcceptWaveform(e.Buffer, e.BytesRecorded))
+                        // 1. ОТЛАВЛИВАЕМ СТОП-СЛОВА (когда бот говорит)
+                        if (_isSpeaking)
                         {
-                            var result = _recognizer.Result();
-                            var response = JsonConvert.DeserializeObject<RecognitionResponse>(result);
-                            var recognizedText = response?.Alternatives.FirstOrDefault()?.Text;
-
-                            if (ListeningState.IsListeningForPassword)
+                            if (_recognizer.AcceptWaveform(e.Buffer, e.BytesRecorded))
                             {
-                                OnPasswordReceived?.Invoke(recognizedText);
-                                return;
-                            }
-
-                            InputMode inputMode = InputMode.NameResponseCommand;
-                            bool isScreenshotModeActive = ScreenshotForm.IsActive;
-
-                            _mainWindow.Dispatcher.Invoke(() =>
-                            {
-                                inputMode = (InputMode)_mainWindow.InputModeComboBox.SelectedIndex;
-                            });
-
-                            if (_isSpeaking)
-                            {
-                                if (!string.IsNullOrEmpty(recognizedText) &&
-                                    _stopWords.Any(stopWord => recognizedText.ToLower().Contains(stopWord)))
-                                {
-                                    var app = (App)System.Windows.Application.Current;
-                                    string lastAnswer = app._last_answer.ToLower();
-
-                                    if (!_stopWords.Any(stopWord => lastAnswer.Contains(stopWord)))
-                                    {
-                                        StopSpeaking();
-                                    }
-                                }
+                                var res = JsonConvert.DeserializeObject<RecognitionResponse>(_recognizer.Result());
+                                if (res?.Alternatives.FirstOrDefault()?.Text is string text && _stopWords.Any(w => text.ToLower().Contains(w)))
+                                    StopSpeaking();
                             }
                             else
                             {
-                                var app = (App)System.Windows.Application.Current;
-                                if (app.IsWaitingForServerResponse) return;
-                                switch (inputMode)
-                                {
-                                    case InputMode.NameResponseCommand:
-                                        if (recognizedText == _renameService.BotName.ToLower() && !isScreenshotModeActive)
-                                        {
-                                            OnChatMessageReceived?.Invoke(new ChatMessage
-                                            {
-                                                Id = Guid.NewGuid().ToString(),
-                                                Sender = "Вы",
-                                                Text = recognizedText,
-                                                IsLocal = true
-                                            });
-                                            _ = SpeakAsync("Бот", "Слушаю вас", showInChat: true, isLocal: true);
+                                var partialRes = JsonConvert.DeserializeObject<RecognitionPartialResponse>(_recognizer.PartialResult());
+                                if (partialRes?.Partial is string text && _stopWords.Any(w => text.ToLower().Contains(w)))
+                                    StopSpeaking();
+                            }
+                            return;
+                        }
 
-                                            ListeningState.StartListening();
-                                            isListeningForCommands = true;
-                                            lastRecognizedText = string.Empty;
-                                        }
-                                        else if (isListeningForCommands && !string.IsNullOrEmpty(recognizedText) && recognizedText != lastRecognizedText)
-                                        {
-                                            _ = ProcessCommand(recognizedText);
-                                            isListeningForCommands = false;
-                                            lastRecognizedText = recognizedText;
-                                        }
-                                        break;
+                        // Если ждем ответа от сервера — микрофон заблокирован
+                        if (_isWaitingForServer) return;
 
-                                    case InputMode.NamePlusCommand:
-                                        if (!isScreenshotModeActive && recognizedText != null &&
-                                            recognizedText.ToLower().Contains(_renameService.BotName.ToLower()))
-                                        {
-                                            if (!string.IsNullOrEmpty(recognizedText))
-                                            {
-                                                _ = ProcessCommand(recognizedText);
-                                            }
-                                        }
-                                        break;
+                        // Получаем промежуточный текст от Vosk, чтобы понять, начал ли человек говорить
+                        var partialResponse = JsonConvert.DeserializeObject<RecognitionPartialResponse>(_recognizer.PartialResult());
+                        string partialText = partialResponse?.Partial?.ToLower() ?? "";
 
-                                    case InputMode.Conversation:
-                                        if (!isScreenshotModeActive && !string.IsNullOrEmpty(recognizedText) &&
-                                            recognizedText != lastRecognizedText)
-                                        {
-                                            _ = ProcessCommand(recognizedText);
-                                            lastRecognizedText = recognizedText;
-                                        }
-                                        break;
-                                }
+                        // КОПИМ УСИЛЕННЫЙ ЗВУК В ЛОКАЛЬНЫЙ БУФЕР
+                        _audioBuffer.Write(e.Buffer, 0, e.BytesRecorded);
+
+                        // === УМНОЕ ОБРЕЗАНИЕ НАЧАЛЬНОЙ ТИШИНЫ ===
+                        // Пока человек молчит (partialText пустой) и запись команды еще не началась,
+                        // мы держим в буфере не более 0.5 секунд звука (16000 байт), чтобы не срезать первый слог фразы,
+                        // но при этом постоянно сбрасываем накопленные секунды тишины!
+                        if (string.IsNullOrEmpty(partialText) && !_isRecordingCommand)
+                        {
+                            if (_audioBuffer.Length > 16000)
+                            {
+                                _audioBuffer.SetLength(0); // Очищаем буфер от старой тишины
+                            }
+                        }
+                        else
+                        {
+                            _isRecordingCommand = true; // Фиксируем старт реального говорения!
+                        }
+
+                        // VOSK ОПРЕДЕЛИЛ КОНЕЦ ФРАЗЫ (ТИШИНА)
+                        if (_recognizer.AcceptWaveform(e.Buffer, e.BytesRecorded) && _isRecordingCommand)
+                        {
+                            _isRecordingCommand = false;
+
+                            var result = _recognizer.Result();
+                            var response = JsonConvert.DeserializeObject<RecognitionResponse>(result);
+                            string recognizedText = response?.Alternatives.FirstOrDefault()?.Text?.ToLower() ?? "";
+
+                            // Забираем идеально чистый звук фразы (без тишины на старте)
+                            byte[] pcmData = _audioBuffer.ToArray();
+                            _audioBuffer.SetLength(0);
+
+                            if (string.IsNullOrEmpty(recognizedText)) return;
+
+                            InputMode inputMode = InputMode.NamePlusCommand;
+                            _mainWindow.Dispatcher.Invoke(() => {
+                                inputMode = (InputMode)_mainWindow.InputModeComboBox.SelectedIndex;
+                            });
+
+                            string botName = _renameService.BotName.ToLower();
+                            bool shouldSend = false;
+
+                            if (inputMode == InputMode.NamePlusCommand && recognizedText.Contains(botName))
+                            {
+                                shouldSend = true;
+                            }
+                            else if (inputMode == InputMode.Conversation)
+                            {
+                                shouldSend = true;
+                            }
+
+                            if (shouldSend)
+                            {
+                                _isWaitingForServer = true;
+                                _currentCommandMsgId = Guid.NewGuid().ToString();
+
+                                // Отправляем готовый чистый PCM файл на сервер!
+                                _ = SendAudioCommand(pcmData);
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        _mainWindow.ShowSystemMessage($"Ошибка при обработке аудиоданных: {ex.Message}");
+                        Console.WriteLine($"Ошибка аудио: {ex.Message}");
                     }
                 };
 
                 _waveIn.StartRecording();
                 await Task.Delay(Timeout.Infinite);
             }
+            catch (Exception ex) { _mainWindow.ShowSystemMessage($"Ошибка микрофона: {ex.Message}"); }
+        }
+
+        public async Task SendAudioCommand(byte[] pcmData)
+        {
+            var app = (App)Application.Current;
+            if (app.IsWaitingForServerResponse) return;
+
+            string pendingMsgId = Guid.NewGuid().ToString();
+            OnChatMessageReceived?.Invoke(new ChatMessage { Id = pendingMsgId, Sender = "Вы", Text = "⏳ Распознавание..." });
+
+            try
+            {
+                string screenshotBase64 = null;
+                var attachedFile = _mainWindow.GetAttachedFile();
+                if (attachedFile != null) screenshotBase64 = Convert.ToBase64String(attachedFile.Data);
+
+                // ИСПРАВЛЕНИЕ: ОТПРАВЛЯЕМ ЧИСТЫЙ PCM (БЕЗ ЗАГОЛОВКОВ WAV)
+                string audioBase64 = Convert.ToBase64String(pcmData);
+
+                var message = new
+                {
+                    type = "голосовое сообщение",
+                    command = "",
+                    audio_base64 = audioBase64,
+                    mac = App.GetMacAddress(),
+                    timestamp = DateTime.Now,
+                    name = _renameService.BotName,
+                    voice_type = SettingManager.Setting.VoiceType,
+                    screenshot = screenshotBase64,
+                    ui_msg_id = pendingMsgId
+                };
+
+                app.SendWebSocketMessage(message);
+                System.Windows.Application.Current.Dispatcher.Invoke(() => _mainWindow.ClearAttachedFile());
+            }
             catch (Exception ex)
             {
-                _mainWindow.ShowSystemMessage($"Ошибка при запуске записи: {ex.Message}");
+                _mainWindow.ShowSystemMessage($"Ошибка аудио: {ex.Message}");
+                _isWaitingForServer = false;
             }
         }
 
-        public void StopSpeaking()
+        public void AppendAudioChunk(string base64Audio)
         {
-            _isSpeaking = false;
-            try
+            if (string.IsNullOrEmpty(base64Audio)) return;
+
+            InitAudioStream();
+            byte[] pcmData = Convert.FromBase64String(base64Audio);
+            _waveProvider.AddSamples(pcmData, 0, pcmData.Length);
+
+            lock (_audioLock)
             {
-                _waveOut?.Stop();
-                if (_piperProcess != null && !_piperProcess.HasExited)
+                if (!_isAudioStreamPlaying)
                 {
-                    _piperProcess.Kill();
+                    _isAudioStreamPlaying = true;
+                    _isSpeaking = true;
+
+                    bool wasMusicPlaying = musicService.IsPlaying();
+                    if (wasMusicPlaying) musicService.Pause();
+
+                    _waveOut.Play();
+
+                    Task.Run(async () =>
+                    {
+                        while (_isAudioStreamPlaying)
+                        {
+                            if (_waveProvider.BufferedBytes == 0)
+                            {
+                                await Task.Delay(300);
+                                if (_waveProvider.BufferedBytes == 0)
+                                {
+                                    _waveOut.Stop();
+                                    _isAudioStreamPlaying = false;
+                                    _isSpeaking = false;
+                                    _isWaitingForServer = false; // РАЗБЛОКИРУЕМ МИКРОФОН ПОСЛЕ ОТВЕТА БОТА
+
+                                    if (wasMusicPlaying) musicService.Resume();
+                                    break;
+                                }
+                            }
+                            await Task.Delay(100);
+                        }
+                    });
                 }
             }
-            catch { }
+        }
+
+        public void ShowTextInChat(string sender, string text, string messageId = null)
+        {
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                OnChatMessageReceived?.Invoke(new ChatMessage { Id = messageId ?? Guid.NewGuid().ToString(), Sender = sender, Text = text });
+            }
+        }
+
+        public void PlayNativeAudio(string base64Audio)
+        {
+            try
+            {
+                byte[] pcmData = Convert.FromBase64String(base64Audio);
+                var format = new WaveFormat(24000, 16, 1);
+                using (var ms = new MemoryStream(pcmData))
+                using (var provider = new RawSourceWaveStream(ms, format))
+                using (var waveOut = new WaveOutEvent())
+                {
+                    waveOut.Init(provider);
+                    _isSpeaking = true;
+                    waveOut.Play();
+                    while (waveOut.PlaybackState == PlaybackState.Playing) Thread.Sleep(100);
+                    _isSpeaking = false;
+                    _isWaitingForServer = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка: {ex.Message}");
+                _isWaitingForServer = false;
+            }
+        }
+
+        public void StopListening() { try { if (_waveIn != null) { _waveIn.StopRecording(); _waveIn.Dispose(); _waveIn = null; } } catch { } }
+        public void StopSpeaking() => _isSpeaking = false;
+
+        // НОВЫЙ МЕТОД: Принудительный разблокировщик микрофона
+        public void ResetWaitingForServer()
+        {
+            _isWaitingForServer = false;
         }
 
         public async Task ProcessAction(Actions action)
         {
             if (action == null || string.IsNullOrEmpty(action.ActionType)) return;
-
             string safeActionText = action.ActionText ?? string.Empty;
             switch (action.ActionType.ToLower())
             {
-                case "голосовой ответ":
-                    await SpeakAsync(action.Sender, safeActionText, true, action.IsLocal, action.MessageId, action.UserMsgId);
-                    break;
-
-
-                case "текстовой ответ":
-                    OnChatMessageReceived?.Invoke(new ChatMessage
-                    {
-                        Id = action.MessageId ?? Guid.NewGuid().ToString(),
-                        Sender = action.Sender,
-                        Text = safeActionText,
-                        IsLocal = action.IsLocal
-                    });
-                    break;
-
-                case "очистка истории":
-                    _mainWindow.ClearHistory();
-                    break;
-
-                case "открытие файла":
-                    new AppProcessService().OpenFile(safeActionText);
-                    break;
-
-                case "завершение процесса":
-                    new AppProcessService().KillProcess(safeActionText);
-                    break;
-
-                case "изменение громкости":
-                    new AppProcessService().SetVolume(safeActionText);
-                    break;
-
-                case "изменение яркости":
-                    new AppProcessService().SetBrightness(safeActionText);
-                    break;
-
-                case "открытие ссылки":
-                    new BrowserService().OpenLink(safeActionText);
-                    break;
-
-                case "напечатать текст":
-                    new KeyboardService().TypeText(safeActionText);
-                    break;
-
-                case "уведомление":
-                    new NotificationService().SendNotification(safeActionText);
-                    break;
-
-                case "нажать кнопку мыши":
-                    new MouseService().PressMouseButton(safeActionText);
-                    break;
-                case "переместить мышь":
-                    new MouseService().MoveMouse(safeActionText);
-                    break;
-                case "режим камеры":
-                    await StartCameraMode();
-                    break;
-
-                case "выключить режим камеры":
-                    StopCameraMode();
-                    break;
-
-                case "скриншот":
-                    TakeScreenshot();
-                    break;
-                case "музыка":
-                    try
-                    {
-                        if (safeActionText.IndexOf("включить", StringComparison.OrdinalIgnoreCase) >= 0)
-                            musicService.Play();
-                        else if (safeActionText.IndexOf("выключить", StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            Thread.Sleep(1500);
-                            musicService.Stop();
-                        }
-                        else if (safeActionText.IndexOf("следующий", StringComparison.OrdinalIgnoreCase) >= 0)
-                            musicService.NextTrack();
-                        else if (safeActionText.IndexOf("предыдущий", StringComparison.OrdinalIgnoreCase) >= 0)
-                            musicService.PreviousTrack();
-                    }
-                    catch (Exception ex)
-                    {
-                        await SpeakAsync("Бот", "Я не смогла найти музыку. Проверьте папку в настройках.");
-                        _mainWindow.ShowSystemMessage($"Ошибка музыки: {ex.Message}");
-                    }
-                    break;
-                case "погода":
-                    WeatherService weatherService = new WeatherService();
-                    int dayOffset = 0;
-                    if (safeActionText.IndexOf("сегодня", StringComparison.OrdinalIgnoreCase) >= 0) dayOffset = 0;
-                    else if (safeActionText.IndexOf("завтра", StringComparison.OrdinalIgnoreCase) >= 0) dayOffset = 1;
-                    else if (safeActionText.IndexOf("послезавтра", StringComparison.OrdinalIgnoreCase) >= 0) dayOffset = 2;
-
-                    await SpeakAsync("Бот", weatherService.GetWeatherForecast(dayOffset));
-                    break;
+                case "очистка истории": _mainWindow.ClearHistory(); break;
+                case "открытие файла": new AppProcessService().OpenFile(safeActionText); break;
+                case "завершение процесса": new AppProcessService().KillProcess(safeActionText); break;
+                case "изменение громкости": new AppProcessService().SetVolume(safeActionText); break;
+                case "изменение яркости": new AppProcessService().SetBrightness(safeActionText); break;
+                case "открытие ссылки": new BrowserService().OpenLink(safeActionText); break;
+                case "напечатать текст": new KeyboardService().TypeText(safeActionText); break;
+                case "уведомление": new NotificationService().SendNotification(safeActionText); break;
+                case "нажать кнопку мыши": new MouseService().PressMouseButton(safeActionText); break;
+                case "переместить мышь": new MouseService().MoveMouse(safeActionText); break;
                 case "смена имени":
                     _renameService.BotName = safeActionText;
                     SettingManager.Setting.AssistantName = safeActionText;
                     _settingManager.SaveSettings();
                     break;
-
-                case "смена голоса":
-                    _changeVoiceService.ChangeVoice(safeActionText);
+                case "смена голоса": _changeVoiceService.ChangeVoice(safeActionText); break;
+                case "музыка":
+                    try
+                    {
+                        if (safeActionText.IndexOf("включить", StringComparison.OrdinalIgnoreCase) >= 0) musicService.Play();
+                        else if (safeActionText.IndexOf("выключить", StringComparison.OrdinalIgnoreCase) >= 0) { Thread.Sleep(1500); musicService.Stop(); }
+                        else if (safeActionText.IndexOf("следующий", StringComparison.OrdinalIgnoreCase) >= 0) musicService.NextTrack();
+                        else if (safeActionText.IndexOf("предыдущий", StringComparison.OrdinalIgnoreCase) >= 0) musicService.PreviousTrack();
+                    }
+                    catch (Exception) { }
                     break;
             }
-        }
-
-        private async Task StartCameraMode()
-        {
-            try
-            {
-                if (_poseTrackingService == null)
-                {
-                    _poseTrackingService = new PoseTrackingService();
-                    _poseTrackingService.OnImageUpdated += UpdateCameraWindow;
-
-                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        _cameraWindow = new CameraWindow(_poseTrackingService.CameraBitmap);
-                        _cameraWindow.Closed += (s, e) => StopCameraMode();
-                        _cameraWindow.Show();
-                    });
-
-                    await Task.Run(() => _poseTrackingService.StartTracking());
-                    _mainWindow.ShowSystemMessage("Режим камеры активирован");
-                }
-                else
-                {
-                    _mainWindow.ShowSystemMessage("Режим камеры активирован");
-                }
-            }
-            catch (Exception ex)
-            {
-                _mainWindow.ShowSystemMessage($"Ошибка при запуске камеры: {ex.Message}");
-            }
-        }
-
-        private void UpdateCameraWindow(WriteableBitmap image)
-        {
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                if (_cameraWindow != null && _cameraWindow.IsVisible)
-                {
-                    _cameraWindow.UpdateImage(image);
-                }
-            });
-        }
-
-        private void StopCameraMode()
-        {
-            try
-            {
-                if (_poseTrackingService != null)
-                {
-                    _poseTrackingService.OnImageUpdated -= UpdateCameraWindow;
-                    _poseTrackingService.Dispose();
-                    _poseTrackingService = null;
-                }
-
-                System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                {
-                    if (_cameraWindow != null)
-                    {
-                        _cameraWindow.Close();
-                        _cameraWindow = null;
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                _mainWindow.ShowSystemMessage($"Ошибка при остановке камеры: {ex.Message}");
-            }
-        }
-
-        private void TakeScreenshot()
-        {
-            using (ScreenshotForm screenshotForm = new ScreenshotForm())
-            {
-                screenshotForm.ShowDialog();
-
-                if (screenshotForm.IsCancelled)
-                {
-                    _mainWindow.ShowSystemMessage("Выделение области отменено.");
-                    return;
-                }
-
-                if (screenshotForm.CapturedImageBytes != null && screenshotForm.CapturedImageBytes.Length > 0)
-                {
-                    var attachedFile = new MainWindow.AttachedFile
-                    {
-                        Name = $"screenshot-{DateTime.Now:yyyyMMddHHmmss}.png",
-                        Data = screenshotForm.CapturedImageBytes,
-                        Size = screenshotForm.CapturedImageBytes.Length
-                    };
-
-                    _mainWindow.Dispatcher.Invoke(() =>
-                    {
-                        _mainWindow.AttachFileFromScreenshot(attachedFile);
-                    });
-                }
-            }
-        }
-
-        public void StopListening()
-        {
-            try
-            {
-                if (_waveIn != null)
-                {
-                    _waveIn.StopRecording();
-                    _waveIn.Dispose();
-                    _waveIn = null;
-                }
-            }
-            catch (Exception ex)
-            {
-                _mainWindow.ShowSystemMessage($"Ошибка при остановке записи: {ex.Message}");
-            }
-        }
-
-        public static string GetMacAddress()
-        {
-            NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
-
-            foreach (NetworkInterface networkInterface in networkInterfaces)
-            {
-                if (networkInterface.OperationalStatus == OperationalStatus.Up &&
-                    !string.IsNullOrEmpty(networkInterface.GetPhysicalAddress().ToString()))
-                {
-                    string macAddress = networkInterface.GetPhysicalAddress().ToString();
-                    if (macAddress.Length == 12)
-                    {
-                        return string.Join("-", Enumerable.Range(0, 6)
-                            .Select(i => macAddress.Substring(i * 2, 2)));
-                    }
-                    return macAddress;
-                }
-            }
-            return string.Empty;
-        }
-
-        public async Task ProcessCommand(string command)
-        {
-            var app = (App)System.Windows.Application.Current;
-            if (app.IsWaitingForServerResponse)
-            {
-                _mainWindow.ShowSystemMessage("Система занята: ожидаю ответа от сервера.");
-                return;
-            }
-
-            if (ListeningState.IsListeningForPassword)
-            {
-                OnChatMessageReceived?.Invoke(new ChatMessage
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Sender = "Вы",
-                    Text = command,
-                    IsLocal = true
-                });
-                OnPasswordReceived?.Invoke(command);
-                return;
-            }
-
-            // Сначала проверяем, есть ли такая локальная команда
-            CommandManager commandManager = new CommandManager();
-            var customCommand = commandManager.FindCommandByTrigger(command);
-            bool isLocalCommand = customCommand != null;
-
-            // Выводим сообщение в UI, указывая ПРАВИЛЬНЫЙ статус IsLocal
-            OnChatMessageReceived?.Invoke(new ChatMessage
-            {
-                Id = isLocalCommand ? Guid.NewGuid().ToString() : "pending",
-                Sender = "Вы",
-                Text = command,
-                IsLocal = isLocalCommand // <-- Если уйдет на сервер (false), кнопок не будет!
-            });
-
-            if (isLocalCommand)
-            {
-                await CustomCommandService.ExecuteCommand(customCommand);
-            }
-            else
-            {
-                try
-                {
-                    // Отправка на сервер (Gemini)
-                    string screenshotBase64 = null;
-                    var attachedFile = _mainWindow.GetAttachedFile();
-
-                    if (attachedFile != null) screenshotBase64 = Convert.ToBase64String(attachedFile.Data);
-                    else if (IsScreenshotEnabled)
-                    {
-                        byte[] screenshotBytes = CaptureScreenshot();
-                        if (screenshotBytes != null) screenshotBase64 = Convert.ToBase64String(screenshotBytes);
-                    }
-
-                    var message = new
-                    {
-                        type = "голосовое сообщение",
-                        command = command,
-                        mac = GetMacAddress(),
-                        timestamp = DateTime.Now,
-                        name = _renameService.BotName,
-                        screenshot = screenshotBase64
-                    };
-
-                    ((App)System.Windows.Application.Current).SendWebSocketMessage(message);
-                    app.MarkAsWaitingForServer();
-
-                    System.Windows.Application.Current.Dispatcher.Invoke(() => _mainWindow.ClearAttachedFile());
-                }
-                catch (Exception ex)
-                {
-                    _mainWindow.ShowSystemMessage($"Ошибка при отправке команды: {ex.Message}");
-                }
-            }
-        }
-
-        public byte[]? CaptureScreenshot()
-        {
-            try
-            {
-                Screen primaryScreen = Screen.PrimaryScreen ?? Screen.AllScreens.FirstOrDefault()
-                                    ?? throw new InvalidOperationException("Не удалось определить экран для скриншота.");
-                Rectangle bounds = primaryScreen.Bounds;
-
-                using (Bitmap bitmap = new Bitmap(bounds.Width, bounds.Height))
-                {
-                    using (Graphics g = Graphics.FromImage(bitmap))
-                    {
-                        g.CopyFromScreen(bounds.Location, System.Drawing.Point.Empty, bounds.Size);
-                        g.SmoothingMode = SmoothingMode.AntiAlias;
-                        g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                        DrawCoordinateMarkings(g, bounds);
-                    }
-
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        bitmap.Save(ms, ImageFormat.Png);
-                        return ms.ToArray();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _mainWindow.ShowSystemMessage($"Ошибка при создании скриншота: {ex.Message}");
-                return null;
-            }
-        }
-
-        private void DrawCoordinateMarkings(Graphics g, Rectangle bounds)
-        {
-            using (Pen gridPen = new Pen(Color.FromArgb(120, Color.Red), 1))
-            using (Font coordFont = new Font("Arial", 10))
-            using (Brush textBrush = new SolidBrush(Color.White))
-            using (Brush backgroundBrush = new SolidBrush(Color.FromArgb(100, Color.Black)))
-            {
-                for (int x = 0; x < bounds.Width; x += 50)
-                {
-                    g.DrawLine(gridPen, x, 0, x, bounds.Height);
-                    DrawTextWithBackground(g, $"{x}", coordFont, textBrush, backgroundBrush, x, 5);
-                }
-
-                for (int y = 0; y < bounds.Height; y += 50)
-                {
-                    g.DrawLine(gridPen, 0, y, bounds.Width, y);
-                    DrawTextWithBackground(g, $"{y}", coordFont, textBrush, backgroundBrush, 5, y);
-                }
-
-                string[] corners = {
-                    $"({0}, {0})", $"({bounds.Width}, {0})", $"({0}, {bounds.Height})", $"({bounds.Width}, {bounds.Height})"
-                };
-
-                System.Drawing.Point[] points = {
-                    new System.Drawing.Point(10, 10), new System.Drawing.Point(bounds.Width - 120, 10),
-                    new System.Drawing.Point(10, bounds.Height - 30), new System.Drawing.Point(bounds.Width - 120, bounds.Height - 30)
-                };
-
-                for (int i = 0; i < corners.Length; i++)
-                    DrawTextWithBackground(g, corners[i], coordFont, textBrush, backgroundBrush, points[i].X, points[i].Y);
-            }
-        }
-
-        private void DrawTextWithBackground(Graphics g, string text, Font font, Brush textBrush, Brush backgroundBrush, int x, int y)
-        {
-            SizeF textSize = g.MeasureString(text, font);
-            RectangleF backgroundRect = new RectangleF(x, y, textSize.Width + 4, textSize.Height + 2);
-
-            g.FillRectangle(backgroundBrush, backgroundRect);
-            g.DrawString(text, font, textBrush, x + 2, y + 1);
-        }
-
-        // ДОБАВЛЕН ПАРАМЕТР showInChat = true
-        public async Task SpeakAsync(string sender, string text, bool showInChat = true, bool isLocal = true, string messageId = null, string userMsgId = null)
-        {
-            if (string.IsNullOrWhiteSpace(text)) return;
-            while (_isSpeaking) await Task.Delay(100);
-            _isSpeaking = true;
-
-            if (showInChat)
-            {
-                OnChatMessageReceived?.Invoke(new ChatMessage
-                {
-                    Id = messageId ?? Guid.NewGuid().ToString(),
-                    Sender = sender,
-                    Text = text,
-                    IsLocal = isLocal
-                });
-            }
-
-            bool wasMusicPlaying = musicService.IsPlaying();
-            if (wasMusicPlaying) musicService.Pause();
-
-            try
-            {
-                if (!File.Exists(_piperExePath))
-                {
-                    _mainWindow.ShowSystemMessage($"Ошибка: Piper не найден по пути {_piperExePath}");
-                    return;
-                }
-
-                await Task.Run(() => PlayWithPiper(text));
-            }
-            catch (Exception ex)
-            {
-                _mainWindow.ShowSystemMessage($"Ошибка при воспроизведении Piper: {ex.Message}");
-            }
-            finally
-            {
-                _isSpeaking = false;
-                if (wasMusicPlaying) musicService.Resume();
-            }
-        }
-
-        private void PlayWithPiper(string text)
-        {
-            // Получаем АКТУАЛЬНЫЙ путь к модели ПЕРЕД запуском процесса
-            string currentModelPath = GetModelPath();
-
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = _piperExePath,
-                // Используем новую переменную в аргументах
-                Arguments = $"--model \"{currentModelPath}\" --length_scale 0.85 --sentence_silence 0.1 --output_raw",
-                UseShellExecute = false,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true,
-                StandardInputEncoding = Encoding.UTF8
-            };
-
-
-            using (_piperProcess = Process.Start(startInfo))
-            {
-                if (_piperProcess == null) return;
-
-                using (var sw = _piperProcess.StandardInput)
-                {
-                    sw.WriteLine(text);
-                }
-
-                var waveFormat = new WaveFormat(22050, 16, 1);
-
-                using (_waveOut = new WaveOutEvent())
-                using (var rawStream = _piperProcess.StandardOutput.BaseStream)
-                using (var waveStream = new RawSourceWaveStream(rawStream, waveFormat))
-                {
-                    _waveOut.Init(waveStream);
-                    _waveOut.Play();
-
-                    while (_waveOut != null && _waveOut.PlaybackState == PlaybackState.Playing)
-                    {
-                        Thread.Sleep(100);
-                        if (!_isSpeaking)
-                        {
-                            _waveOut.Stop();
-                            break;
-                        }
-                    }
-                }
-
-                if (!_piperProcess.HasExited) _piperProcess.Kill();
-                _piperProcess = null;
-                _waveOut = null;
-            }
-        }
-
-        private string GetModelPath()
-        {
-            // Получаем имя голоса из настроек, приводя его к нижнему регистру
-            string voiceName = SettingManager.Setting.VoiceType.ToLower();
-
-            // Формируем имя файла модели на основе имени голоса
-            string modelFileName = $"ru_RU-{voiceName}-medium.onnx";
-
-            // Собираем полный путь
-            string modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\Models", modelFileName));
-
-            // Проверяем, существует ли файл. Если нет, возвращаем путь к Ирине по умолчанию.
-            if (!File.Exists(modelPath))
-            {
-                _mainWindow.ShowSystemMessage($"Модель для голоса '{voiceName}' не найдена. Используется голос по умолчанию.");
-                return Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\Models\ru_RU-irina-medium.onnx"));
-            }
-
-            return modelPath;
         }
 
         public class Actions
@@ -725,11 +372,11 @@ namespace Friday
             public string Sender { get; set; }
             public string MessageId { get; set; }
             public string UserMsgId { get; set; }
-            public bool IsLocal { get; set; } = true; // По умолчанию локальное
+            public bool IsLocal { get; set; } = true;
+            public string AudioBase64 { get; set; }
         }
     }
-
     public class RecognitionResponse { public Alternative[] Alternatives { get; set; } }
+    public class RecognitionPartialResponse { public string Partial { get; set; } }
     public class Alternative { public string Text { get; set; } }
-    public class SynthesisResponse { public string FileContents { get; set; } }
 }

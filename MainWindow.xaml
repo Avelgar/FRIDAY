@@ -1112,11 +1112,13 @@
                                     <TextBox x:Name="FridayNameTextBox" Margin="0,0,0,14"/>
                                     <TextBlock Text="Голос" FontFamily="{StaticResource UI}" FontSize="11"
                                                    FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
-                                        <ComboBox x:Name="VoiceTypeComboBox" Margin="0,0,0,14">
-                                            <ComboBoxItem Content="Irina"/>
-                                            <ComboBoxItem Content="Dmitri"/>
-                                        </ComboBox>
-                                        <TextBlock Text="Громкость" FontFamily="{StaticResource UI}" FontSize="11"
+                                    <ComboBox x:Name="VoiceTypeComboBox" Margin="0,0,0,14">
+                                        <ComboBoxItem Content="Aoede"/>
+                                        <ComboBoxItem Content="Puck"/>
+                                        <ComboBoxItem Content="Kore"/>
+                                        <ComboBoxItem Content="Charon"/>
+                                    </ComboBox>
+                                    <TextBlock Text="Громкость" FontFamily="{StaticResource UI}" FontSize="11"
                                                    FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
                                         <Slider x:Name="VolumeSlider" Minimum="0" Maximum="10" SmallChange="1"/>
                                     </StackPanel>

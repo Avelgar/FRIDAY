@@ -2,6 +2,7 @@
 using Friday.Services;
 using Newtonsoft.Json;
 using System.IO;
+using System.Collections.Generic;
 
 namespace Friday
 {
@@ -30,11 +31,11 @@ namespace Friday
             {
                 Setting = new Setting
                 {
-                    AssistantName = "пятница",
+                    AssistantName = "Пятница",
                     Password = "",
-                    VoiceType = "Aleksandr",
+                    VoiceType = "Aoede",
                     Volume = 5,
-                    InputMode = "Имя + команда",
+                    InputMode = "Разговорный режим",
                     MusicFolderPath = _defaultMusicFolderPath
                 };
                 SaveSettings();
@@ -47,11 +48,11 @@ namespace Friday
             {
                 Setting = new Setting
                 {
-                    AssistantName = "пятница",
+                    AssistantName = "Пятница",
                     Password = "",
-                    VoiceType = "Aleksandr",
+                    VoiceType = "Aoede",
                     Volume = 5,
-                    InputMode = "Имя + команда",
+                    InputMode = "Разговорный режим",
                     MusicFolderPath = _defaultMusicFolderPath
                 };
                 SaveSettings();
@@ -62,7 +63,7 @@ namespace Friday
 
             if (string.IsNullOrWhiteSpace(Setting.AssistantName))
             {
-                Setting.AssistantName = "пятница";
+                Setting.AssistantName = "Пятница";
                 changed = true;
             }
 
@@ -72,15 +73,17 @@ namespace Friday
                 changed = true;
             }
 
-            if (string.IsNullOrWhiteSpace(Setting.VoiceType))
+            // === АВТО-ИСПРАВЛЕНИЕ СТАРЫХ ГОЛОСОВ (Дмитрий, Aleksandr и т.д.) ===
+            var validVoices = new List<string> { "Aoede", "Puck", "Kore", "Charon" };
+            if (string.IsNullOrWhiteSpace(Setting.VoiceType) || !validVoices.Contains(Setting.VoiceType))
             {
-                Setting.VoiceType = "Aleksandr";
+                Setting.VoiceType = "Aoede";
                 changed = true;
             }
 
             if (string.IsNullOrWhiteSpace(Setting.InputMode))
             {
-                Setting.InputMode = "Имя + команда";
+                Setting.InputMode = "Разговорный режим";
                 changed = true;
             }
 

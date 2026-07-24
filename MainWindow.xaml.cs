@@ -893,6 +893,7 @@ namespace Friday
             string voiceType = (VoiceTypeComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
             int volume = Convert.ToInt32(VolumeSlider.Value);
             string inputMode = (InputModeComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
+            string musicFolder = MusicFolderPathTextBox.Text; // Не забываем путь к музыке!
 
             if (string.IsNullOrEmpty(assistantName) || string.IsNullOrEmpty(voiceType) || string.IsNullOrEmpty(inputMode))
             {
@@ -900,7 +901,15 @@ namespace Friday
                 return;
             }
 
-            // Метод UpdateSettingManager(_settingManager) больше не нужен
+            // Вызываем правильный метод обновления
+            _settingManager.UpdateSettings(
+                assistantName,
+                SettingManager.Setting.Password, // Сохраняем текущий пароль
+                voiceType,
+                volume,
+                inputMode,
+                musicFolder
+            );
 
             MessageBox.Show("Настройки успешно обновлены!", "Успех!", MessageBoxButton.OK, MessageBoxImage.Information);
         }

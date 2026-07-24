@@ -324,31 +324,40 @@ namespace Friday
                     if (VoiceService != null) VoiceService.AppendAudioChunk(chunk.AudioBase64);
                     return;
                 }
-                // 2. ПОЛУЧЕНА ТРАНСКРИПЦИЯ ГОЛОСА ПОЛЬЗОВАТЕЛЯ ОТ ГУГЛА (ОБНОВЛЯЕМ НАШ БАББЛ)
+                // 2. ПОЛУЧЕНА ТРАНСКРИПЦИЯ ГОЛОСА ПОЛЬЗОВАТЕЛЯ
                 else if (answer.Contains("\"type\":\"user_transcription\"") || answer.Contains("\"type\": \"user_transcription\""))
                 {
                     try
                     {
                         var trans = JsonConvert.DeserializeObject<UserTranscriptionMessage>(answer);
                         Application.Current.Dispatcher.Invoke(() => {
-                            // Ищем наш временный баббл по UiMsgId (client GUID)
                             var msg = _mainWindow?.ChatMessages.LastOrDefault(m => m.IsUser && m.Id == trans.UiMsgId);
-
                             if (msg != null)
                             {
-                                // Заменяем песочные часы на распознанный текст!
                                 msg.Text = trans.Text;
                                 msg.DisplayText = trans.Text;
                             }
                         });
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Ошибка парсинга STT: {ex.Message}");
-                    }
+                    catch (Exception ex) { Console.WriteLine($"Ошибка парсинга STT: {ex.Message}"); }
                     return;
                 }
-                // 3. ЕДИНЫЙ ВХОД ДЛЯ ВСЕХ СООБЩЕНИЙ И КОМАНД БОТА
+                // 3. УДАЛЕНИЕ СООБЩЕНИЯ (ЕСЛИ БОТ УПАЛ ИЛИ НЕ ОТВЕТИЛ)
+                else if (answer.Contains("\"type\":\"delete_message\"") || answer.Contains("\"type\": \"delete_message\""))
+                {
+                    try
+                    {
+                        var delData = JsonConvert.DeserializeObject<dynamic>(answer);
+                        string uiMsgId = delData.ui_msg_id?.ToString();
+                        Application.Current.Dispatcher.Invoke(() => {
+                            var msg = _mainWindow?.ChatMessages.FirstOrDefault(m => m.Id == uiMsgId);
+                            if (msg != null) _mainWindow?.ChatMessages.Remove(msg);
+                        });
+                    }
+                    catch (Exception ex) { Console.WriteLine($"Ошибка удаления сообщения: {ex.Message}"); }
+                    return;
+                }
+                // 4. ЕДИНЫЙ ВХОД ДЛЯ ВСЕХ СООБЩЕНИЙ И КОМАНД БОТА
                 else if (answer.Contains("new_message"))
                 {
                     try
@@ -358,21 +367,13 @@ namespace Friday
 
                         if (cmdResp != null)
                         {
-                            // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: СРАЗУ СБРАСЫВАЕМ БЛОКИРОВКУ НА КЛИЕНТЕ!
-                            if (VoiceService != null)
-                            {
-                                VoiceService.ResetWaitingForServer();
-                            }
+                            if (VoiceService != null) VoiceService.ResetWaitingForServer();
 
                             Application.Current.Dispatcher.Invoke(() => {
-                                // Ищем последнее сообщение пользователя по его GUID
                                 var pendingMsg = _mainWindow?.ChatMessages.LastOrDefault(m => m.IsUser && m.Id == cmdResp.UiMsgId);
                                 if (pendingMsg != null)
                                 {
-                                    // Заменяем ID на нормальный серверный ID
                                     pendingMsg.Id = cmdResp.UserMsgId?.ToString() ?? Guid.NewGuid().ToString();
-
-                                    // Если это было аудио без текста, заменяем надпись "⏳ Обработка..." на заглушку
                                     if (pendingMsg.Text == "⏳ Распознавание...")
                                     {
                                         pendingMsg.Text = "🎤 [Голосовое сообщение]";
@@ -380,7 +381,6 @@ namespace Friday
                                     }
                                 }
 
-                                // ПЛАВНЫЙ СТРИМИНГ ТЕКСТА БОТА
                                 if (!string.IsNullOrEmpty(cmdResp.Text))
                                 {
                                     var existingMsg = _mainWindow?.ChatMessages.FirstOrDefault(m => !m.IsUser && m.Id == cmdResp.MessageId?.ToString());
@@ -396,13 +396,11 @@ namespace Friday
                                 }
                             });
 
-                            // Воспроизведение статического аудио (если это другое устройство)
                             if (!string.IsNullOrEmpty(cmdResp.AudioBase64))
                             {
                                 Task.Run(() => VoiceService?.PlayNativeAudio(cmdResp.AudioBase64));
                             }
 
-                            // ОБРАБОТКА ДЕЙСТВИЙ (остается без изменений)
                             if (cmdResp.Actions != null && VoiceService != null)
                             {
                                 bool needsDataResponse = false;
@@ -411,16 +409,14 @@ namespace Friday
 
                                 foreach (var action in cmdResp.Actions)
                                 {
-                                    if (action.ActionType?.ToLower() == "data_request")
+                                    if (action.ActionType?.ToLower() == "get_running_processes" || action.ActionType?.ToLower() == "get_installed_programs")
                                     {
                                         needsDataResponse = true;
-                                        string val = action.ActionValue?.ToLower() ?? "";
-                                        if (val.Contains("process") || val.Contains("процесс")) needProcesses = true;
-                                        if (val.Contains("program") || val.Contains("app") || val.Contains("прилож")) needPrograms = true;
+                                        if (action.ActionType?.ToLower() == "get_running_processes") needProcesses = true;
+                                        if (action.ActionType?.ToLower() == "get_installed_programs") needPrograms = true;
                                     }
                                     else
                                     {
-                                        string aType = action.ActionType?.Trim().ToLower() ?? "";
                                         var actionItem = new VoiceService.Actions
                                         {
                                             ActionType = action.ActionType?.Trim(),
@@ -431,11 +427,7 @@ namespace Friday
                                             IsLocal = false,
                                             AudioBase64 = cmdResp.AudioBase64
                                         };
-
-                                        if (VoiceService != null)
-                                        {
-                                            _ = VoiceService.ProcessAction(actionItem);
-                                        }
+                                        if (VoiceService != null) _ = VoiceService.ProcessAction(actionItem);
                                     }
                                 }
 
@@ -451,13 +443,15 @@ namespace Friday
                                         processOutput = string.Join(", ", userApps);
                                     }
 
+                                    // ТЕПЕРЬ ПЕРЕДАЕМ И voice_type ТУДА!
                                     var dataResponse = new
                                     {
                                         command_to_device = cmdResp.OriginalCommand,
                                         processes = processOutput,
                                         programs = InstalledApplications,
                                         source_name = cmdResp.SourceDevice,
-                                        user_msg_id = cmdResp.UserMsgId
+                                        user_msg_id = cmdResp.UserMsgId,
+                                        voice_type = SettingManager.Setting.VoiceType
                                     };
                                     SendWebSocketMessage(dataResponse);
                                 }

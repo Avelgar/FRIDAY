@@ -39,7 +39,7 @@ namespace Friday
         private bool _isAudioStreamPlaying = false;
         private readonly object _audioLock = new object();
 
-        // БУФЕР ДЛЯ ЗАПИСИ ГОЛОСА (Пишем локально на ПК)
+        // БУФЕР ДЛЯ ЗАПИСИ ГОЛОСА
         private MemoryStream _audioBuffer = new MemoryStream();
 
         public VoiceService(RenameService renameService, SettingManager settingManager, MainWindow mainWindow)
@@ -82,15 +82,12 @@ namespace Friday
                     return;
                 }
 
-                // 1. ИЩЕМ ПРАВИЛЬНЫЙ МИКРОФОН (А не просто 0)
                 int selectedDeviceIndex = 0;
                 Console.WriteLine("=== ДОСТУПНЫЕ МИКРОФОНЫ ===");
                 for (int i = 0; i < WaveIn.DeviceCount; i++)
                 {
                     var caps = WaveIn.GetCapabilities(i);
                     Console.WriteLine($"[{i}] {caps.ProductName}");
-                    // Если хочешь, можешь потом жестко вписать сюда нужный индекс,
-                    // но обычно 0 - это "Sound Mapper" (микрофон по умолчанию в Windows)
                 }
 
                 _waveIn = new WaveInEvent()
@@ -105,7 +102,6 @@ namespace Friday
                 {
                     try
                     {
-                        // 1. ОТЛАВЛИВАЕМ СТОП-СЛОВА (когда бот говорит)
                         if (_isSpeaking)
                         {
                             if (_recognizer.AcceptWaveform(e.Buffer, e.BytesRecorded))
@@ -123,25 +119,28 @@ namespace Friday
                             return;
                         }
 
-                        // Если ждем ответа от сервера — микрофон заблокирован
                         if (_isWaitingForServer) return;
 
-                        // Получаем промежуточный текст от Vosk, чтобы понять, начал ли человек говорить
                         var partialResponse = JsonConvert.DeserializeObject<RecognitionPartialResponse>(_recognizer.PartialResult());
                         string partialText = partialResponse?.Partial?.ToLower() ?? "";
 
-                        // КОПИМ УСИЛЕННЫЙ ЗВУК В ЛОКАЛЬНЫЙ БУФЕР
+                        // Пишем звук в наш буфер
                         _audioBuffer.Write(e.Buffer, 0, e.BytesRecorded);
 
-                        // === УМНОЕ ОБРЕЗАНИЕ НАЧАЛЬНОЙ ТИШИНЫ ===
-                        // Пока человек молчит (partialText пустой) и запись команды еще не началась,
-                        // мы держим в буфере не более 0.5 секунд звука (16000 байт), чтобы не срезать первый слог фразы,
-                        // но при этом постоянно сбрасываем накопленные секунды тишины!
+                        // === УМНОЕ ОБРЕЗАНИЕ ТИШИНЫ (СКОЛЬЗЯЩЕЕ ОКНО) ===
                         if (string.IsNullOrEmpty(partialText) && !_isRecordingCommand)
                         {
-                            if (_audioBuffer.Length > 16000)
+                            // 1 секунда аудио при 16000Hz 16-bit Mono весит ровно 32000 байт.
+                            // Мы всегда держим последнюю 1 секунду звука (пре-буфер).
+                            const int PreBufferSize = 32000;
+
+                            if (_audioBuffer.Length > PreBufferSize)
                             {
-                                _audioBuffer.SetLength(0); // Очищаем буфер от старой тишины
+                                byte[] allBytes = _audioBuffer.ToArray();
+                                _audioBuffer.SetLength(0); // Сбрасываем позицию записи
+
+                                // Возвращаем в буфер только последнюю секунду звука
+                                _audioBuffer.Write(allBytes, allBytes.Length - PreBufferSize, PreBufferSize);
                             }
                         }
                         else
@@ -149,7 +148,7 @@ namespace Friday
                             _isRecordingCommand = true; // Фиксируем старт реального говорения!
                         }
 
-                        // VOSK ОПРЕДЕЛИЛ КОНЕЦ ФРАЗЫ (ТИШИНА)
+                        // VOSK ОПРЕДЕЛИЛ КОНЕЦ ФРАЗЫ
                         if (_recognizer.AcceptWaveform(e.Buffer, e.BytesRecorded) && _isRecordingCommand)
                         {
                             _isRecordingCommand = false;
@@ -158,9 +157,9 @@ namespace Friday
                             var response = JsonConvert.DeserializeObject<RecognitionResponse>(result);
                             string recognizedText = response?.Alternatives.FirstOrDefault()?.Text?.ToLower() ?? "";
 
-                            // Забираем идеально чистый звук фразы (без тишины на старте)
+                            // Забираем чистый звук (вместе с бережно сохраненным первым словом!)
                             byte[] pcmData = _audioBuffer.ToArray();
-                            _audioBuffer.SetLength(0);
+                            _audioBuffer.SetLength(0); // Очищаем буфер перед следующей командой
 
                             if (string.IsNullOrEmpty(recognizedText)) return;
 
@@ -185,8 +184,6 @@ namespace Friday
                             {
                                 _isWaitingForServer = true;
                                 _currentCommandMsgId = Guid.NewGuid().ToString();
-
-                                // Отправляем готовый чистый PCM файл на сервер!
                                 _ = SendAudioCommand(pcmData);
                             }
                         }
@@ -217,7 +214,6 @@ namespace Friday
                 var attachedFile = _mainWindow.GetAttachedFile();
                 if (attachedFile != null) screenshotBase64 = Convert.ToBase64String(attachedFile.Data);
 
-                // ИСПРАВЛЕНИЕ: ОТПРАВЛЯЕМ ЧИСТЫЙ PCM (БЕЗ ЗАГОЛОВКОВ WAV)
                 string audioBase64 = Convert.ToBase64String(pcmData);
 
                 var message = new
@@ -275,7 +271,7 @@ namespace Friday
                                     _waveOut.Stop();
                                     _isAudioStreamPlaying = false;
                                     _isSpeaking = false;
-                                    _isWaitingForServer = false; // РАЗБЛОКИРУЕМ МИКРОФОН ПОСЛЕ ОТВЕТА БОТА
+                                    _isWaitingForServer = false;
 
                                     if (wasMusicPlaying) musicService.Resume();
                                     break;
@@ -324,7 +320,6 @@ namespace Friday
         public void StopListening() { try { if (_waveIn != null) { _waveIn.StopRecording(); _waveIn.Dispose(); _waveIn = null; } } catch { } }
         public void StopSpeaking() => _isSpeaking = false;
 
-        // НОВЫЙ МЕТОД: Принудительный разблокировщик микрофона
         public void ResetWaitingForServer()
         {
             _isWaitingForServer = false;
@@ -376,6 +371,7 @@ namespace Friday
             public string AudioBase64 { get; set; }
         }
     }
+
     public class RecognitionResponse { public Alternative[] Alternatives { get; set; } }
     public class RecognitionPartialResponse { public string Partial { get; set; } }
     public class Alternative { public string Text { get; set; } }

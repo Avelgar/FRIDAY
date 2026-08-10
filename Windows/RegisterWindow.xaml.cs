@@ -58,8 +58,7 @@ namespace Friday
                 {
                     email,
                     login,
-                    password = password1,
-                    mac = MainWindow.GetMacAddress()
+                    password = password1
                 };
 
                 using (var client = new HttpClient())

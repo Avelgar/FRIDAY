@@ -16,7 +16,8 @@ namespace Friday
     {
         public string _last_answer = "";
         private ClientWebSocket _webSocket;
-        private RegistrationWindow _registrationWindow;
+        private RegistrationWindow _registrationWindow; // Окно ЖЕЛЕЗА
+        private LoginWindow _loginWindow;             // Окно АККАУНТА
         private MainWindow _mainWindow;
         public VoiceService VoiceService { get; set; }
         private DeviceData _deviceData;
@@ -37,19 +38,25 @@ namespace Friday
         private static Mutex _mutex;
 
         private const string appName = "FridayAssistantApp";
+        private string _ignoredMessageId = null;
 
-        public bool IsWaitingForServerResponse { get; private set; } = false; // Этот флаг больше не нужен
-        private CancellationTokenSource _responseTimeoutCts; // И это тоже не нужно
+        private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
+
+        // ДАННЫЕ АККАУНТА
+        public class AccountData { public string Login { get; set; } public string Token { get; set; } }
+        private AccountData _accountData;
+        private bool _isMainWindowOpened = false;
 
         protected override void OnStartup(StartupEventArgs e)
         {
             SettingManager settingManager = new SettingManager();
             settingManager.LoadSettings();
             AppServices.Init();
+
+            Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
             bool createdNew;
-
             _mutex = new Mutex(true, appName, out createdNew);
-
             if (!createdNew)
             {
                 MessageBox.Show("Приложение уже запущено!", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -58,13 +65,20 @@ namespace Friday
             }
             base.OnStartup(e);
 
-            string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\devisedata.json"));
-
             _cancellationTokenSource = new CancellationTokenSource();
-
             InitializeWebSocket();
 
-            LoadDeviceData(filePath);
+            // 1. ЗАГРУЖАЕМ ЖЕЛЕЗО (Гостевой режим)
+            string deviceFilePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\devisedata.json"));
+            LoadDeviceData(deviceFilePath);
+
+            // 2. ПОДГРУЖАЕМ АККАУНТ (Но пока не синхронизируем, ждем ответа от сервера по железу)
+            string accountFilePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\account.json"));
+            if (File.Exists(accountFilePath))
+            {
+                try { _accountData = JsonConvert.DeserializeObject<AccountData>(File.ReadAllText(accountFilePath)); }
+                catch { }
+            }
 
             _keepAliveTimer = new System.Timers.Timer(15000);
             _keepAliveTimer.Elapsed += async (sender, ev) => await CheckConnectionAndSendPingAsync();
@@ -74,78 +88,123 @@ namespace Friday
             _openWindowsCount++;
         }
 
+        // --- МЕТОДЫ ЖЕЛЕЗА ---
+        private void LoadDeviceData(string filePath)
+        {
+            if (!File.Exists(filePath)) OpenRegistrationWindow();
+            else
+            {
+                try
+                {
+                    var fileContent = File.ReadAllText(filePath);
+                    _deviceData = JsonConvert.DeserializeObject<DeviceData>(fileContent);
+                    if (_deviceData == null || string.IsNullOrEmpty(_deviceData.DeviceName) || string.IsNullOrEmpty(_deviceData.Password))
+                        OpenRegistrationWindow();
+                    else
+                        SendWebSocketMessage(new { MAC = GetMacAddress(), DeviceName = _deviceData.DeviceName, Password = _deviceData.Password });
+                }
+                catch (JsonException) { OpenRegistrationWindow(); }
+            }
+        }
+
+        public void UpdateDeviceDataFile(string deviceName, string password)
+        {
+            string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\devisedata.json"));
+            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+            _deviceData = new DeviceData { DeviceName = deviceName, Password = password };
+            File.WriteAllText(filePath, JsonConvert.SerializeObject(_deviceData, Formatting.Indented), Encoding.UTF8);
+        }
+
+        private void OpenRegistrationWindow()
+        {
+            if (_registrationWindow == null || !_registrationWindow.IsVisible)
+            {
+                _registrationWindow = new RegistrationWindow();
+                _registrationWindow.Closed += (s, ev) => { _registrationWindow = null; };
+                _registrationWindow.Show();
+            }
+        }
+
+        // --- МЕТОДЫ АККАУНТА ---
+        public void UpdateAccountData(string login, string token)
+        {
+            string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\account.json"));
+            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+            _accountData = new AccountData { Login = login, Token = token };
+            File.WriteAllText(filePath, JsonConvert.SerializeObject(_accountData, Formatting.Indented), Encoding.UTF8);
+
+            CheckAccountSync();
+        }
+
+        public void CheckAccountSync()
+        {
+            if (_accountData != null && !string.IsNullOrEmpty(_accountData.Token))
+            {
+                var syncData = new
+                {
+                    type = "account_sync",
+                    token = _accountData.Token,
+                    mac = GetMacAddress()
+                };
+                SendWebSocketMessage(syncData);
+            }
+        }
+        public void ResetAccountData()
+        {
+            _accountData = null;
+        }
+
+        private void OpenMainWindow(dynamic responseData = null)
+        {
+            _mainWindow = new MainWindow(responseData);
+            _mainWindow.Show();
+        }
+
         private void ShowAppNotification(string message)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (_mainWindow != null && _mainWindow.IsVisible)
-                {
-                    _mainWindow.ShowSystemMessage(message);
-                }
-                else
-                {
-                    MessageBox.Show(message, "Системное уведомление", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
+                if (_mainWindow != null && _mainWindow.IsVisible) _mainWindow.ShowSystemMessage(message);
+                else MessageBox.Show(message, "Системное уведомление", MessageBoxButton.OK, MessageBoxImage.Information);
             });
         }
 
+        // --- WEBSOCKET ЛОГИКА ---
         public async void SendWebSocketMessage(object data)
         {
             if (_webSocket?.State == WebSocketState.Open)
             {
-                try
-                {
-                    await SendDataInternal(data);
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Ошибка отправки: {ex.Message}");
-                }
+                try { await SendDataInternal(data); return; }
+                catch (Exception ex) { Console.WriteLine($"Ошибка отправки: {ex.Message}"); }
             }
-
-            lock (_queueLock)
-            {
-                _commandQueue.Enqueue(data);
-            }
+            lock (_queueLock) { _commandQueue.Enqueue(data); }
         }
 
         private async Task SendDataInternal(object data)
         {
             if (_webSocket?.State != WebSocketState.Open) return;
 
+            string jsonData = JsonConvert.SerializeObject(data);
+            string encodedData = EncodeToBase64(jsonData);
+            byte[] buffer = Encoding.UTF8.GetBytes(encodedData);
+
+            await _sendLock.WaitAsync();
             try
             {
-                string jsonData = JsonConvert.SerializeObject(data);
-                string encodedData = EncodeToBase64(jsonData);
-                byte[] buffer = Encoding.UTF8.GetBytes(encodedData);
-                await _webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, _cancellationTokenSource.Token);
+                if (_webSocket?.State == WebSocketState.Open)
+                {
+                    await _webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, _cancellationTokenSource.Token);
+                }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка отправки: {ex.Message}");
-                throw;
-            }
+            catch (Exception ex) { Console.WriteLine($"Ошибка отправки: {ex.Message}"); throw; }
+            finally { _sendLock.Release(); }
         }
 
-        private string EncodeToBase64(string plainText)
-        {
-            var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
-            return Convert.ToBase64String(plainTextBytes);
-        }
-
+        private string EncodeToBase64(string plainText) => Convert.ToBase64String(Encoding.UTF8.GetBytes(plainText));
         private string DecodeFromBase64(string base64EncodedData)
         {
-            try
-            {
-                var base64EncodedBytes = Convert.FromBase64String(base64EncodedData);
-                return Encoding.UTF8.GetString(base64EncodedBytes);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Критическая ошибка декодирования Base64: {ex.Message}");
-                return string.Empty;
-            }
+            try { return Encoding.UTF8.GetString(Convert.FromBase64String(base64EncodedData)); }
+            catch (Exception ex) { Console.WriteLine($"Критическая ошибка декодирования: {ex.Message}"); return string.Empty; }
         }
 
         private async void InitializeWebSocket()
@@ -156,23 +215,12 @@ namespace Friday
                 await _webSocket.ConnectAsync(new Uri("wss://friday-assistant.ru/ws"), _cancellationTokenSource.Token);
                 _isConnectionActive = true;
 
-                if (_deviceData != null)
-                {
-                    var registrationData = new
-                    {
-                        MAC = GetMacAddress(),
-                        DeviceName = _deviceData.DeviceName,
-                        Password = _deviceData.Password
-                    };
-                    await SendDataInternal(registrationData);
-                }
+                // ФИКС ЗДЕСЬ: Выталкиваем из очереди сообщения, которые скопились, пока мы подключались!
+                await ProcessCommandQueue();
 
                 _ = Task.Run(async () => await ReceiveMessages(_cancellationTokenSource.Token));
             }
-            catch (Exception ex)
-            {
-                ShowAppNotification($"Ошибка подключения к серверу: {ex.Message}");
-            }
+            catch (Exception ex) { ShowAppNotification($"Ошибка подключения к серверу: {ex.Message}"); }
         }
 
         private async Task ReceiveMessages(CancellationToken cancellationToken)
@@ -188,18 +236,15 @@ namespace Friday
                         do
                         {
                             result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
-
                             if (result.MessageType == WebSocketMessageType.Close)
                             {
                                 await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", cancellationToken);
                                 _isConnectionActive = false;
-                                VoiceService.StopSpeaking(); // Останавливаем голос бота при дисконнекте
+                                VoiceService?.StopSpeaking();
                                 return;
                             }
-
                             ms.Write(buffer, 0, result.Count);
-                        }
-                        while (!result.EndOfMessage);
+                        } while (!result.EndOfMessage);
 
                         ms.Seek(0, SeekOrigin.Begin);
                         if (result.MessageType == WebSocketMessageType.Text)
@@ -207,59 +252,13 @@ namespace Friday
                             using (var reader = new StreamReader(ms, Encoding.UTF8))
                             {
                                 string message = await reader.ReadToEndAsync();
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    OnWebSocketMessage(message);
-                                });
+                                Application.Current.Dispatcher.Invoke(() => { OnWebSocketMessage(message); });
                             }
                         }
                     }
                 }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Ошибка получения сообщения: {ex.Message}");
-                    VoiceService.StopSpeaking(); // Останавливаем голос бота при ошибке
-                    break;
-                }
-            }
-        }
-
-        private void LoadDeviceData(string filePath)
-        {
-            if (!File.Exists(filePath))
-            {
-                OpenRegistrationWindow();
-            }
-            else
-            {
-                try
-                {
-                    var fileContent = File.ReadAllText(filePath);
-                    _deviceData = JsonConvert.DeserializeObject<DeviceData>(fileContent);
-
-                    if (_deviceData == null || string.IsNullOrEmpty(_deviceData.DeviceName) || string.IsNullOrEmpty(_deviceData.Password))
-                    {
-                        OpenRegistrationWindow();
-                    }
-                    else
-                    {
-                        var registrationData = new
-                        {
-                            MAC = GetMacAddress(),
-                            DeviceName = _deviceData.DeviceName,
-                            Password = _deviceData.Password
-                        };
-                        SendWebSocketMessage(registrationData);
-                    }
-                }
-                catch (JsonException)
-                {
-                    OpenRegistrationWindow();
-                }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex) { Console.WriteLine($"Ошибка получения сообщения: {ex.Message}"); VoiceService?.StopSpeaking(); break; }
             }
         }
 
@@ -273,65 +272,108 @@ namespace Friday
                 if (answer.Contains("connection_timeout"))
                 {
                     _isConnectionActive = false;
-                    ShowAppNotification("Превышено время ожидания соединения сервером.");
-                    VoiceService.StopSpeaking();
+                    Application.Current.Dispatcher.Invoke(() => { _mainWindow?.ShowSystemMessage("Превышено время ожидания сервером."); });
+                    VoiceService?.StopSpeaking();
                     return;
                 }
 
-                if (answer.Contains("Это имя устройства уже занято. Пожалуйста, выберите другое."))
+                if (answer.Contains("Недействительный токен"))
                 {
-                    ShowAppNotification("Это имя устройства уже занято. Пожалуйста, выберите другое.");
-                    if (_registrationWindow == null)
-                    {
-                        OpenRegistrationWindow();
-                    }
+                    Application.Current.Dispatcher.Invoke(() => { _mainWindow?.ShowSystemMessage("Токен устарел. Выполните вход в аккаунт заново."); });
+                    // Сбрасываем токен, но не закрываем программу, так как Гостевой режим работает!
+                    _accountData = null;
+                    string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\account.json"));
+                    if (File.Exists(filePath)) File.Delete(filePath);
+                    return;
                 }
-                else if (answer.Contains("Данные успешно обработаны!"))
-                {
-                    try
-                    {
-                        bool mainWindowExists = _mainWindow != null && _mainWindow.IsVisible;
-                        var response = JsonConvert.DeserializeObject<dynamic>(answer);
 
+                if (answer.Contains("Это имя устройства уже занято"))
+                {
+                    Application.Current.Dispatcher.Invoke(() => { _mainWindow?.ShowSystemMessage("Имя устройства занято."); });
+                    if (_registrationWindow == null) OpenRegistrationWindow();
+                    return;
+                }
+
+                // 1. УСПЕШНАЯ СИНХРОНИЗАЦИЯ АККАУНТА (Пришла глобальная история)
+                if (answer.Contains("\"type\":\"account_sync_success\"") || answer.Contains("\"type\": \"account_sync_success\""))
+                {
+                    var response = JsonConvert.DeserializeObject<dynamic>(answer);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (_mainWindow != null)
+                        {
+                            // ВЫЗЫВАЕМ НАШ НОВЫЙ МЕТОД: Обновляем интерфейс БЕЗ пересоздания окна!
+                            _mainWindow.SyncAccountData(response);
+                            _mainWindow.ShowSystemMessage("Аккаунт синхронизирован!");
+                        }
+                    });
+                    return;
+                }
+
+                // 2. УСПЕШНАЯ РЕГИСТРАЦИЯ ЖЕЛЕЗА (Пришла локальная история)
+                if (answer.Contains("Данные успешно обработаны!"))
+                {
+                    var response = JsonConvert.DeserializeObject<dynamic>(answer);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        // Если открыто окно регистрации железа - сохраняем данные и закрываем его
                         if (_registrationWindow != null && _registrationWindow.IsVisible)
                         {
-                            string deviceName = _registrationWindow.DeviceName;
-                            string password = _registrationWindow.Password;
-                            UpdateDeviceDataFile(deviceName, password);
-
-                            OpenMainWindow(response);
+                            UpdateDeviceDataFile(_registrationWindow.DeviceName, _registrationWindow.Password);
                             _registrationWindow.Close();
                             _registrationWindow = null;
                         }
-                        else if (!mainWindowExists)
+
+                        if (!_isMainWindowOpened)
                         {
                             OpenMainWindow(response);
+                            _isMainWindowOpened = true;
+                            // Как только железо зарегалось, проверяем, есть ли аккаунт
+                            CheckAccountSync();
                         }
                         else
                         {
                             _mainWindow.UpdateData(response);
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        ShowAppNotification($"Критическая ошибка при запуске интерфейса: {ex.Message}");
-                    }
+                    });
+                    return;
                 }
-                // 1. ПОТОКОВЫЙ ЗВУК ОТ БОТА
-                else if (answer.Contains("\"type\":\"audio_chunk\"") || answer.Contains("\"type\": \"audio_chunk\""))
+
+                if (answer.Contains("\"type\":\"msg_id_map\"") || answer.Contains("\"type\": \"msg_id_map\""))
+                {
+                    try
+                    {
+                        var mapData = JsonConvert.DeserializeObject<dynamic>(answer);
+                        string uiMsgId = mapData.ui_msg_id?.ToString();
+                        string realMsgId = mapData.user_msg_id?.ToString();
+                        if (!string.IsNullOrEmpty(uiMsgId) && !string.IsNullOrEmpty(realMsgId))
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                var msg = _mainWindow?.ChatMessages.LastOrDefault(m => m.UiMsgId == uiMsgId);
+                                if (msg != null) msg.Id = realMsgId;
+                            });
+                        }
+                    }
+                    catch (Exception ex) { Console.WriteLine($"Ошибка msg_id_map: {ex.Message}"); }
+                    return;
+                }
+
+                if (answer.Contains("\"type\":\"audio_chunk\"") || answer.Contains("\"type\": \"audio_chunk\""))
                 {
                     var chunk = JsonConvert.DeserializeObject<AudioChunkMessage>(answer);
                     if (VoiceService != null) VoiceService.AppendAudioChunk(chunk.AudioBase64);
                     return;
                 }
-                // 2. ПОЛУЧЕНА ТРАНСКРИПЦИЯ ГОЛОСА ПОЛЬЗОВАТЕЛЯ
-                else if (answer.Contains("\"type\":\"user_transcription\"") || answer.Contains("\"type\": \"user_transcription\""))
+
+                if (answer.Contains("\"type\":\"user_transcription\"") || answer.Contains("\"type\": \"user_transcription\""))
                 {
                     try
                     {
                         var trans = JsonConvert.DeserializeObject<UserTranscriptionMessage>(answer);
-                        Application.Current.Dispatcher.Invoke(() => {
-                            var msg = _mainWindow?.ChatMessages.LastOrDefault(m => m.IsUser && m.Id == trans.UiMsgId);
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            var msg = _mainWindow?.ChatMessages.LastOrDefault(m => m.IsUser && m.UiMsgId == trans.UiMsgId);
                             if (msg != null)
                             {
                                 msg.Text = trans.Text;
@@ -342,23 +384,24 @@ namespace Friday
                     catch (Exception ex) { Console.WriteLine($"Ошибка парсинга STT: {ex.Message}"); }
                     return;
                 }
-                // 3. УДАЛЕНИЕ СООБЩЕНИЯ (ЕСЛИ БОТ УПАЛ ИЛИ НЕ ОТВЕТИЛ)
-                else if (answer.Contains("\"type\":\"delete_message\"") || answer.Contains("\"type\": \"delete_message\""))
+
+                if (answer.Contains("\"type\":\"delete_message\"") || answer.Contains("\"type\": \"delete_message\""))
                 {
                     try
                     {
                         var delData = JsonConvert.DeserializeObject<dynamic>(answer);
                         string uiMsgId = delData.ui_msg_id?.ToString();
                         Application.Current.Dispatcher.Invoke(() => {
-                            var msg = _mainWindow?.ChatMessages.FirstOrDefault(m => m.Id == uiMsgId);
+                            var msg = _mainWindow?.ChatMessages.FirstOrDefault(m => m.UiMsgId == uiMsgId);
                             if (msg != null) _mainWindow?.ChatMessages.Remove(msg);
                         });
+                        VoiceService?.ServerFinishedResponse();
                     }
                     catch (Exception ex) { Console.WriteLine($"Ошибка удаления сообщения: {ex.Message}"); }
                     return;
                 }
-                // 4. ЕДИНЫЙ ВХОД ДЛЯ ВСЕХ СООБЩЕНИЙ И КОМАНД БОТА
-                else if (answer.Contains("new_message"))
+
+                if (answer.Contains("new_message"))
                 {
                     try
                     {
@@ -367,39 +410,13 @@ namespace Friday
 
                         if (cmdResp != null)
                         {
-                            if (VoiceService != null) VoiceService.ResetWaitingForServer();
-
-                            Application.Current.Dispatcher.Invoke(() => {
-                                var pendingMsg = _mainWindow?.ChatMessages.LastOrDefault(m => m.IsUser && m.Id == cmdResp.UiMsgId);
-                                if (pendingMsg != null)
-                                {
-                                    pendingMsg.Id = cmdResp.UserMsgId?.ToString() ?? Guid.NewGuid().ToString();
-                                    if (pendingMsg.Text == "⏳ Распознавание...")
-                                    {
-                                        pendingMsg.Text = "🎤 [Голосовое сообщение]";
-                                        pendingMsg.DisplayText = "🎤 [Голосовое сообщение]";
-                                    }
-                                }
-
-                                if (!string.IsNullOrEmpty(cmdResp.Text))
-                                {
-                                    var existingMsg = _mainWindow?.ChatMessages.FirstOrDefault(m => !m.IsUser && m.Id == cmdResp.MessageId?.ToString());
-                                    if (existingMsg != null)
-                                    {
-                                        existingMsg.Text += cmdResp.Text;
-                                        existingMsg.DisplayText = existingMsg.Text;
-                                    }
-                                    else
-                                    {
-                                        VoiceService?.ShowTextInChat(cmdResp.Sender ?? "Бот", cmdResp.Text, cmdResp.MessageId?.ToString());
-                                    }
-                                }
-                            });
-
-                            if (!string.IsNullOrEmpty(cmdResp.AudioBase64))
+                            bool isFinalMessage = string.IsNullOrEmpty(cmdResp.Text) && (cmdResp.Actions == null || cmdResp.Actions.Count == 0);
+                            if (isFinalMessage)
                             {
-                                Task.Run(() => VoiceService?.PlayNativeAudio(cmdResp.AudioBase64));
+                                VoiceService?.ServerFinishedResponse();
                             }
+
+                            string currentMsgId = cmdResp.MessageId?.ToString() ?? cmdResp.UiMsgId;
 
                             if (cmdResp.Actions != null && VoiceService != null)
                             {
@@ -409,6 +426,11 @@ namespace Friday
 
                                 foreach (var action in cmdResp.Actions)
                                 {
+                                    if (action.ActionType?.ToLower() == "очистка истории")
+                                    {
+                                        _ignoredMessageId = currentMsgId;
+                                    }
+
                                     if (action.ActionType?.ToLower() == "get_running_processes" || action.ActionType?.ToLower() == "get_installed_programs")
                                     {
                                         needsDataResponse = true;
@@ -443,7 +465,6 @@ namespace Friday
                                         processOutput = string.Join(", ", userApps);
                                     }
 
-                                    // ТЕПЕРЬ ПЕРЕДАЕМ И voice_type ТУДА!
                                     var dataResponse = new
                                     {
                                         command_to_device = cmdResp.OriginalCommand,
@@ -456,69 +477,50 @@ namespace Friday
                                     SendWebSocketMessage(dataResponse);
                                 }
                             }
+
+                            Application.Current.Dispatcher.Invoke(() => {
+                                var pendingMsg = _mainWindow?.ChatMessages.LastOrDefault(m => m.IsUser && m.UiMsgId == cmdResp.UiMsgId);
+                                if (pendingMsg != null)
+                                {
+                                    pendingMsg.Id = cmdResp.UserMsgId?.ToString() ?? pendingMsg.Id;
+                                    if (pendingMsg.Text == "⏳ Транскрибирую...")
+                                    {
+                                        pendingMsg.Text = "🎤 [Аудиосообщение]";
+                                        pendingMsg.DisplayText = "🎤 [Аудиосообщение]";
+                                    }
+                                }
+
+                                if (!string.IsNullOrEmpty(cmdResp.Text) && currentMsgId != _ignoredMessageId)
+                                {
+                                    var existingMsg = _mainWindow?.ChatMessages.FirstOrDefault(m => !m.IsUser && (m.Id == cmdResp.MessageId?.ToString() || (m.UiMsgId != null && m.UiMsgId == cmdResp.UiMsgId)));
+                                    if (existingMsg != null)
+                                    {
+                                        existingMsg.Text += cmdResp.Text;
+                                        existingMsg.DisplayText = existingMsg.Text;
+                                    }
+                                    else
+                                    {
+                                        VoiceService?.ShowTextInChat(cmdResp.Sender ?? "Бот", cmdResp.Text, cmdResp.MessageId?.ToString(), cmdResp.UiMsgId);
+                                    }
+                                }
+                            });
+
+                            if (!string.IsNullOrEmpty(cmdResp.AudioBase64))
+                            {
+                                Task.Run(() => VoiceService?.PlayNativeAudio(cmdResp.AudioBase64));
+                            }
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        ShowAppNotification($"Ошибка обработки сообщения: {ex.Message}");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"Неизвестный пакет: {answer}");
+                    catch (Exception ex) { ShowAppNotification($"Ошибка обработки сообщения: {ex.Message}"); }
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка обработки сообщения: {ex.Message}");
-            }
-        }
-
-        public void UpdateDeviceDataFile(string deviceName, string password)
-        {
-            string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\devisedata.json"));
-            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-
-            var deviceData = new DeviceData
-            {
-                DeviceName = deviceName,
-                Password = password
-            };
-
-            string jsonData = JsonConvert.SerializeObject(deviceData, Formatting.Indented);
-            File.WriteAllText(filePath, jsonData, Encoding.UTF8);
-        }
-
-        private void OpenRegistrationWindow()
-        {
-            if (_registrationWindow == null || !_registrationWindow.IsVisible)
-            {
-                _registrationWindow = new RegistrationWindow();
-                _registrationWindow.Closed += (s, ev) => { _registrationWindow = null; };
-                _registrationWindow.Show();
-            }
-        }
-
-        private void OpenMainWindow(dynamic responseData = null)
-        {
-            _mainWindow = new MainWindow(responseData);
-            _mainWindow.Show();
+            catch (Exception ex) { Console.WriteLine($"Ошибка обработки сообщения: {ex.Message}"); }
         }
 
         protected override async void OnExit(ExitEventArgs e)
         {
             _cancellationTokenSource.Cancel();
-
-            if (_webSocket != null)
-            {
-                try
-                {
-                    await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Application exit", CancellationToken.None);
-                }
-                catch { }
-                _webSocket.Dispose();
-            }
-
+            if (_webSocket != null) { try { await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Application exit", CancellationToken.None); } catch { } _webSocket.Dispose(); }
             base.OnExit(e);
         }
 
@@ -528,7 +530,6 @@ namespace Friday
             {
                 string registryPath = @"SOFTWARE\Microsoft\Cryptography";
                 string developerKey = "MachineGuid";
-
                 using (RegistryKey localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
                 {
                     using (RegistryKey rgbKey = localKey.OpenSubKey(registryPath))
@@ -539,7 +540,6 @@ namespace Friday
                             if (value != null)
                             {
                                 string machineGuid = value.ToString().Replace("-", "").ToUpper();
-
                                 using (MD5 md5 = MD5.Create())
                                 {
                                     byte[] hashBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(machineGuid));
@@ -556,11 +556,7 @@ namespace Friday
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка получения HWID: {ex.Message}");
-            }
-
+            catch (Exception ex) { Console.WriteLine($"Ошибка получения HWID: {ex.Message}"); }
             return "00-11-22-33-44-55";
         }
 
@@ -568,181 +564,53 @@ namespace Friday
         {
             try
             {
-                if (_webSocket?.State == WebSocketState.Open)
-                {
-                    var pingData = new { type = "ping" };
-                    await SendDataInternal(pingData);
-                    _isConnectionActive = true;
-                }
-                else
-                {
-                    _isConnectionActive = false;
-
-                    if (!_isReconnecting)
-                    {
-                        await ReconnectWebSocket();
-                    }
-                }
+                if (_webSocket?.State == WebSocketState.Open) { await SendDataInternal(new { type = "ping" }); _isConnectionActive = true; }
+                else { _isConnectionActive = false; if (!_isReconnecting) await ReconnectWebSocket(); }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка при проверке соединения: {ex.Message}");
-            }
+            catch (Exception ex) { Console.WriteLine($"Ошибка при проверке соединения: {ex.Message}"); }
         }
 
-        public void IncrementWindowCount()
-        {
-            _openWindowsCount++;
-        }
-
-        public void DecrementWindowCount()
-        {
-            _openWindowsCount--;
-            if (_openWindowsCount < 0) _openWindowsCount = 0;
-        }
+        public void IncrementWindowCount() => _openWindowsCount++;
+        public void DecrementWindowCount() { _openWindowsCount--; if (_openWindowsCount < 0) _openWindowsCount = 0; }
 
         public List<string> GetInstalledApplications()
         {
             var appList = new List<string>();
             var customApps = Friday.Managers.AppPathManager.LoadApps();
-
-            string tempDir = Path.Combine(Path.GetTempPath(), "FridayAppLaunchers");
-            if (!Directory.Exists(tempDir))
-            {
-                Directory.CreateDirectory(tempDir);
-            }
-
-            foreach (var app in customApps)
-            {
-                if (File.Exists(app.Path))
-                {
-                    string safeName = string.Join("_", app.Name.Split(Path.GetInvalidFileNameChars()));
-                    string vbsPath = Path.Combine(tempDir, $"{safeName}.vbs");
-                    string script = $"Set WshShell = CreateObject(\"WScript.Shell\")\r\nWshShell.Run Chr(34) & \"{app.Path}\" & Chr(34), 1, False";
-
-                    File.WriteAllText(vbsPath, script, Encoding.UTF8);
-                    appList.Add(vbsPath.Replace("\\", "\\\\"));
-                }
-            }
-
+            foreach (var app in customApps) { if (File.Exists(app.Path)) appList.Add(app.Path); }
             return appList;
         }
 
         private async Task ReconnectWebSocket()
         {
-            lock (_reconnectLock)
-            {
-                if (_webSocket?.State == WebSocketState.Open) return;
-                if (_isReconnecting) return;
-                _isReconnecting = true;
-            }
-
+            lock (_reconnectLock) { if (_webSocket?.State == WebSocketState.Open || _isReconnecting) return; _isReconnecting = true; }
             try
             {
                 await Task.Delay(5000);
-
-                if (_webSocket != null)
-                {
-                    try
-                    {
-                        await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Reconnecting", CancellationToken.None);
-                    }
-                    catch { }
-                }
-
+                if (_webSocket != null) { try { await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Reconnecting", CancellationToken.None); } catch { } }
                 _webSocket = new ClientWebSocket();
                 await _webSocket.ConnectAsync(new Uri("wss://friday-assistant.ru/ws"), _cancellationTokenSource.Token);
                 _isConnectionActive = true;
 
                 if (_deviceData != null)
-                {
-                    var registrationData = new
-                    {
-                        MAC = GetMacAddress(),
-                        DeviceName = _deviceData.DeviceName,
-                        Password = _deviceData.Password
-                    };
-                    await SendDataInternal(registrationData);
-                }
+                    await SendDataInternal(new { MAC = GetMacAddress(), DeviceName = _deviceData.DeviceName, Password = _deviceData.Password });
 
                 await ProcessCommandQueue();
                 _ = Task.Run(async () => await ReceiveMessages(_cancellationTokenSource.Token));
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка переподключения: {ex.Message}");
-            }
-            finally
-            {
-                lock (_reconnectLock)
-                {
-                    _isReconnecting = false;
-                }
-            }
+            catch (Exception ex) { Console.WriteLine($"Ошибка переподключения: {ex.Message}"); }
+            finally { lock (_reconnectLock) { _isReconnecting = false; } }
         }
 
         private async Task ProcessCommandQueue()
         {
             List<object> commandsToSend;
-
-            lock (_queueLock)
-            {
-                commandsToSend = new List<object>(_commandQueue);
-                _commandQueue.Clear();
-            }
-
+            lock (_queueLock) { commandsToSend = new List<object>(_commandQueue); _commandQueue.Clear(); }
             foreach (var command in commandsToSend)
             {
-                try
-                {
-                    await SendDataInternal(command);
-                }
-                catch
-                {
-                    lock (_queueLock)
-                    {
-                        _commandQueue.Enqueue(command);
-                    }
-                    break;
-                }
+                try { await SendDataInternal(command); }
+                catch { lock (_queueLock) { _commandQueue.Enqueue(command); } break; }
             }
-        }
-
-        // Этот флаг больше не нужен
-        // public bool IsWaitingForServerResponse { get; private set; } = false; 
-        // private CancellationTokenSource _responseTimeoutCts; 
-
-        public class DataRequest
-        {
-            [JsonProperty("type")]
-            public string Type { get; set; }
-
-            [JsonProperty("need_processes")]
-            public bool NeedProcesses { get; set; }
-
-            [JsonProperty("need_programs")]
-            public bool NeedPrograms { get; set; }
-
-            [JsonProperty("need_repeat")]
-            public bool NeedRepeat { get; set; }
-
-            [JsonProperty("original_command")]
-            public string OriginalCommand { get; set; }
-
-            [JsonProperty("source_device")]
-            public string SourceDevice { get; set; }
-
-            [JsonProperty("name")]
-            public string Name { get; set; }
-
-            [JsonProperty("timestamp")]
-            public string Timestamp { get; set; }
-
-            [JsonProperty("command_type")]
-            public string command_type { get; set; }
-
-            [JsonProperty("user_msg_id")]
-            public long? UserMsgId { get; set; }
         }
 
         public class CommandResponse
@@ -759,43 +627,17 @@ namespace Friday
             [JsonProperty("audio_base64")] public string AudioBase64 { get; set; }
         }
 
-        public class DeviceAction
-        {
-            [JsonProperty("action_type")]
-            public string ActionType { get; set; }
-
-            [JsonProperty("action_value")]
-            public string ActionValue { get; set; }
-        }
+        public class DeviceAction { [JsonProperty("action_type")] public string ActionType { get; set; } [JsonProperty("action_value")] public string ActionValue { get; set; } }
 
         public class UserTranscriptionMessage
         {
-            [JsonProperty("type")]
-            public string Type { get; set; }
-
-            [JsonProperty("user_msg_id")]
-            public long? UserMsgId { get; set; }
-
-            [JsonProperty("ui_msg_id")] // <--- ВОТ ЭТОГО НЕ ХВАТАЛО
-            public string UiMsgId { get; set; }
-
-            [JsonProperty("text")]
-            public string Text { get; set; }
+            [JsonProperty("type")] public string Type { get; set; }
+            [JsonProperty("user_msg_id")] public long? UserMsgId { get; set; }
+            [JsonProperty("ui_msg_id")] public string UiMsgId { get; set; }
+            [JsonProperty("text")] public string Text { get; set; }
         }
 
-        public class AudioChunkMessage
-        {
-            [JsonProperty("type")]
-            public string Type { get; set; }
-
-            [JsonProperty("audio_base64")]
-            public string AudioBase64 { get; set; }
-        }
-
-        public class DeviceData
-        {
-            public string DeviceName { get; set; }
-            public string Password { get; set; }
-        }
+        public class AudioChunkMessage { [JsonProperty("type")] public string Type { get; set; } [JsonProperty("audio_base64")] public string AudioBase64 { get; set; } }
+        public class DeviceData { public string DeviceName { get; set; } public string Password { get; set; } }
     }
 }

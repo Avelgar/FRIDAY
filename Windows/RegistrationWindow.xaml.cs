@@ -12,7 +12,6 @@ namespace Friday
         public string DeviceName => DeviceNameTextBox.Text;
         public string Password => PasswordTextBox.Password;
 
-
         private void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
             string deviceName = DeviceNameTextBox.Text;
@@ -34,11 +33,6 @@ namespace Friday
             return App.GetMacAddress();
         }
 
-        protected override void OnClosed(EventArgs e)
-        {
-            base.OnClosed(e);
-        }
-
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ChangedButton == MouseButton.Left)
@@ -47,7 +41,7 @@ namespace Friday
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Application.Current.Shutdown();
         }
     }
 }

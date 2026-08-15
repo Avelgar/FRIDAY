@@ -20,7 +20,7 @@ namespace Friday
     public class ChatMessage : INotifyPropertyChanged
     {
         public string Id { get; set; }
-        public string UiMsgId { get; set; } // Добавлен для отслеживания транскрибации
+        public string UiMsgId { get; set; }
         public string Sender { get; set; }
         public string Text { get; set; }
 
@@ -56,6 +56,19 @@ namespace Friday
             set { _actionTypes = value; OnPropertyChanged(nameof(ActionTypes)); }
         }
 
+        // --- НОВЫЙ МЕТОД ДЛЯ СБОРА ЛОКАЛЬНОЙ ИСТОРИИ ---
+        public List<object> GetGuestMessageHistory()
+        {
+            var history = new List<object>();
+            // Берем последние 10 сообщений (игнорируя технические заглушки)
+            var recentMessages = ChatMessages.Where(m => !m.Text.Contains("⏳") && !m.Text.Contains("🎤")).Reverse().Take(10).Reverse();
+            foreach (var msg in recentMessages)
+            {
+                history.Add(new { role = msg.IsUser ? "user" : "assistant", content = msg.Text });
+            }
+            return history;
+        }
+
         private async void SendMessageButton_Click(object sender, RoutedEventArgs e) => await SendCurrentMessageAsync();
 
         private void MessageTextBox_KeyDown(object sender, KeyEventArgs e)
@@ -80,6 +93,7 @@ namespace Friday
 
             if (_editingMessage != null)
             {
+                // Если парсится в long, значит сообщение из БД. Иначе - это локальное сообщение гостя
                 if (long.TryParse(_editingMessage.Id, out long serverMsgId))
                 {
                     try
@@ -113,7 +127,6 @@ namespace Friday
             }
 
             var app = (App)Application.Current;
-            // Использовали флаг из VoiceService для блокировки повторной отправки:
             if (app.VoiceService != null && (bool)app.VoiceService.GetType().GetField("_isWaitingForServer", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(app.VoiceService))
             {
                 ShowSystemMessage("Ожидаю ответа от сервера. Пожалуйста, подождите...");
@@ -125,6 +138,9 @@ namespace Friday
                 string screenshotBase64 = _attachedFile != null ? Convert.ToBase64String(_attachedFile.Data) : null;
                 string pendingId = Guid.NewGuid().ToString();
 
+                // Проверяем, гость мы или нет
+                bool isGuest = UserButton.Visibility != Visibility.Visible;
+
                 var message = new
                 {
                     type = "текстовое сообщение",
@@ -134,12 +150,11 @@ namespace Friday
                     name = SettingManager.Setting.AssistantName,
                     voice_type = SettingManager.Setting.VoiceType,
                     screenshot = screenshotBase64,
-                    ui_msg_id = pendingId
+                    ui_msg_id = pendingId,
+                    message_history = isGuest ? GetGuestMessageHistory() : null // Отправляем историю, если гость
                 };
 
-                // БЛОКИРУЕМ ЗАПИСЬ ГОЛОСА НА ВРЕМЯ ОБРАБОТКИ
                 ((App)Application.Current).VoiceService?.SetWaitingForServer();
-
                 ((App)Application.Current).SendWebSocketMessage(message);
 
                 ChatMessages.Add(new ChatMessage { Id = pendingId, UiMsgId = pendingId, Sender = "Вы", Text = messageText });
@@ -409,7 +424,7 @@ namespace Friday
         }
 
         public void ShowUserButton(string username) { UserButtonText.Text = username; UserButton.Visibility = Visibility.Visible; LoginButton.Visibility = Visibility.Collapsed; RegisterButton.Visibility = Visibility.Collapsed; }
-        private void ShowAuthButtons() { UserButton.Visibility = Visibility.Collapsed; LoginButton.Visibility = Visibility.Visible; RegisterButton.Visibility = Visibility.Visible; }
+        public void ShowAuthButtons() { UserButton.Visibility = Visibility.Collapsed; LoginButton.Visibility = Visibility.Visible; RegisterButton.Visibility = Visibility.Visible; }
 
         private void UserButton_Click(object sender, RoutedEventArgs e)
         {
@@ -433,18 +448,11 @@ namespace Friday
                     var response = await client.PostAsync("https://friday-assistant.ru/logout", content);
                     response.EnsureSuccessStatusCode();
 
-                    // --- ГЛАВНЫЙ ФИКС ЛОГАУТА ---
-                    // 1. Удаляем файл аккаунта, чтобы забыть JWT токен
                     string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\account.json"));
                     if (File.Exists(filePath)) File.Delete(filePath);
 
-                    // 2. Говорим App.xaml.cs забыть токен в памяти
                     ((App)Application.Current).ResetAccountData();
-
-                    // 3. Возвращаем кнопки "Вход" и "Регистрация"
                     ShowAuthButtons();
-
-                    // 4. Очищаем чат (возвращаемся в гостевой режим)
                     ChatMessages.Clear();
                     ShowSystemMessage("Вы вышли из аккаунта. Включен гостевой режим.");
                 }
@@ -452,13 +460,11 @@ namespace Friday
             catch (Exception ex) { ShowSystemMessage($"Произошла ошибка: {ex.Message}"); }
         }
 
-        // --- НОВЫЙ МЕТОД ДЛЯ МГНОВЕННОГО ОБНОВЛЕНИЯ ИНТЕРФЕЙСА ---
         public void SyncAccountData(dynamic responseData)
         {
             Dispatcher.Invoke(() =>
             {
-                ChatMessages.Clear(); // Очищаем историю гостевого режима
-
+                ChatMessages.Clear();
                 if (responseData != null && responseData.history != null)
                 {
                     ProcessHistoryMessages(responseData.history);
@@ -545,8 +551,12 @@ namespace Friday
 
         public async void ClearHistory()
         {
-            Dispatcher.Invoke(() => ChatMessages.Clear()); // Очистка через UI-поток
+            Dispatcher.Invoke(() => ChatMessages.Clear());
             ShowSystemMessage("История успешно очищена");
+
+            bool isGuest = UserButton.Visibility != Visibility.Visible;
+            if (isGuest) return; // Гостям не нужно дёргать базу данных сервера!
+
             try
             {
                 var message = new { mac = GetMacAddress() };
@@ -590,7 +600,7 @@ namespace Friday
                     }
                     catch (Exception ex) { ShowSystemMessage($"Ошибка сети при удалении: {ex.Message}"); }
                 }
-                else ChatMessages.Remove(msg);
+                else ChatMessages.Remove(msg); // Удаляем локально для гостей
             }
         }
 

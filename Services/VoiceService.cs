@@ -22,6 +22,7 @@ namespace Friday
 
         private DateTime _lastSpeechTime = DateTime.MinValue;
         private DateTime _ignoreCommandsUntil = DateTime.MinValue;
+        private DateTime _lastDebugNotificationTime = DateTime.MinValue;
 
         private string modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\model"));
 
@@ -121,12 +122,10 @@ namespace Friday
                             return;
                         }
 
-                        // Кормим Vosk аудиоданными
                         bool isPhraseComplete = _recognizer.AcceptWaveform(e.Buffer, e.BytesRecorded);
                         var partialResponse = JsonConvert.DeserializeObject<RecognitionPartialResponse>(_recognizer.PartialResult());
                         string partialText = partialResponse?.Partial?.ToLower() ?? "";
 
-                        // ДЕТЕКТОР ГРОМКОСТИ
                         float sum = 0;
                         int sampleCount = e.BytesRecorded / 2;
                         for (int i = 0; i < e.BytesRecorded; i += 2)
@@ -142,7 +141,6 @@ namespace Friday
                             _lastSpeechTime = DateTime.Now;
                         }
 
-                        // ОБНОВЛЯЕМ РЕЖИМ ТОЛЬКО В РЕЖИМЕ ОЖИДАНИЯ (чтобы не грузить UI-поток во время речи)
                         if (!_isRecordingCommand)
                         {
                             _mainWindow.Dispatcher.Invoke(() => {
@@ -150,7 +148,6 @@ namespace Friday
                             });
                         }
 
-                        // --- 1. РАЗГОВОРНЫЙ РЕЖИМ (СТРИМИНГ) ---
                         if (_currentInputMode == InputMode.Conversation)
                         {
                             if (_isRecordingCommand)
@@ -159,7 +156,6 @@ namespace Friday
                                 Array.Copy(e.Buffer, chunk, e.BytesRecorded);
                                 SendStreamChunk(_currentCommandMsgId, chunk);
 
-                                // Завершаем стрим после 1.5 сек тишины
                                 if ((DateTime.Now - _lastSpeechTime).TotalMilliseconds > 1500)
                                 {
                                     _isRecordingCommand = false;
@@ -167,7 +163,7 @@ namespace Friday
                                     SendStreamEnd(_currentCommandMsgId);
                                     _currentCommandMsgId = null;
 
-                                    if (!isPhraseComplete) _recognizer.Result(); // Очищаем Vosk
+                                    if (!isPhraseComplete) _recognizer.Result();
                                 }
                             }
                             else
@@ -200,12 +196,10 @@ namespace Friday
                                 }
                             }
                         }
-                        // --- 2. РЕЖИМ ИМЯ + КОМАНДА ---
                         else if (_currentInputMode == InputMode.NamePlusCommand)
                         {
                             _audioBuffer.Write(e.Buffer, 0, e.BytesRecorded);
 
-                            // Обработка пре-буфера (сохраняем последнюю 1 секунду)
                             if (string.IsNullOrEmpty(partialText) && !_isRecordingCommand)
                             {
                                 const int PreBufferSize = 32000;
@@ -216,7 +210,6 @@ namespace Friday
                                     _audioBuffer.Write(allBytes, allBytes.Length - PreBufferSize, PreBufferSize);
                                 }
                             }
-                            // Если речь началась — показываем пузырь "Слушаю"
                             else if (!string.IsNullOrEmpty(partialText) && !_isRecordingCommand)
                             {
                                 _isRecordingCommand = true;
@@ -227,12 +220,11 @@ namespace Friday
                                 });
                             }
 
-                            // Если фраза завершена (Vosk уловил паузу)
                             if (isPhraseComplete && _isRecordingCommand)
                             {
                                 _isRecordingCommand = false;
 
-                                var result = _recognizer.Result(); // Забираем результат и сбрасываем Vosk
+                                var result = _recognizer.Result();
                                 var response = JsonConvert.DeserializeObject<RecognitionResponse>(result);
                                 string recognizedText = response?.Alternatives.FirstOrDefault()?.Text?.ToLower() ?? "";
 
@@ -244,13 +236,11 @@ namespace Friday
                                 if (!string.IsNullOrEmpty(recognizedText) && recognizedText.Contains(botName))
                                 {
                                     _isWaitingForServer = true;
-                                    // SendAudioCommand автоматом поменяет текст пузыря на "⏳ Транскрибирую..."
                                     SendAudioCommand(pcmData, _currentCommandMsgId);
                                     _currentCommandMsgId = null;
                                 }
                                 else
                                 {
-                                    // УДАЛЯЕМ пузырь "Слушаю...", если не было имени
                                     _mainWindow.Dispatcher.Invoke(() => {
                                         var msg = _mainWindow.ChatMessages.FirstOrDefault(m => m.UiMsgId == _currentCommandMsgId);
                                         if (msg != null) _mainWindow.ChatMessages.Remove(msg);
@@ -278,6 +268,8 @@ namespace Friday
             var attachedFile = _mainWindow.GetAttachedFile();
             if (attachedFile != null) screenshotBase64 = Convert.ToBase64String(attachedFile.Data);
 
+            bool isGuest = _mainWindow.UserButton.Visibility != Visibility.Visible;
+
             var message = new
             {
                 type = "голосовое сообщение",
@@ -289,7 +281,8 @@ namespace Friday
                 name = _renameService.BotName,
                 voice_type = SettingManager.Setting.VoiceType,
                 screenshot = screenshotBase64,
-                ui_msg_id = uiMsgId
+                ui_msg_id = uiMsgId,
+                message_history = isGuest ? _mainWindow.GetGuestMessageHistory() : null
             };
             ((App)Application.Current).SendWebSocketMessage(message);
             System.Windows.Application.Current.Dispatcher.Invoke(() => _mainWindow.ClearAttachedFile());
@@ -349,6 +342,7 @@ namespace Friday
                 if (attachedFile != null) screenshotBase64 = Convert.ToBase64String(attachedFile.Data);
 
                 string audioBase64 = Convert.ToBase64String(pcmData);
+                bool isGuest = _mainWindow.UserButton.Visibility != Visibility.Visible;
 
                 var message = new
                 {
@@ -361,7 +355,8 @@ namespace Friday
                     name = _renameService.BotName,
                     voice_type = SettingManager.Setting.VoiceType,
                     screenshot = screenshotBase64,
-                    ui_msg_id = pendingMsgId
+                    ui_msg_id = pendingMsgId,
+                    message_history = isGuest ? _mainWindow.GetGuestMessageHistory() : null
                 };
 
                 ((App)Application.Current).SendWebSocketMessage(message);

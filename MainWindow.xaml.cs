@@ -46,6 +46,27 @@ namespace Friday
         public ObservableCollection<ChatMessage> ChatMessages { get; set; } = new ObservableCollection<ChatMessage>();
         private ChatMessage _editingMessage = null;
 
+        // ====================== ДИАЛОГИ (аккаунт) ======================
+        /// <summary>Список диалогов в левой панели. Аналог #dialogList из веба.</summary>
+        public ObservableCollection<DialogItem> Dialogs { get; set; } = new ObservableCollection<DialogItem>();
+
+        /// <summary>
+        /// Текущий диалог. null = "Новый чат": поле dialog_id уйдёт на сервер
+        /// со значением null, и сервер создаст новый диалог.
+        /// </summary>
+        public long? CurrentDialogId { get; private set; } = null;
+
+        /// <summary>Защита от рекурсии при программной смене SelectedItem в списке диалогов.</summary>
+        private bool _suppressDialogSelection = false;
+
+        /// <summary>Ширина панели диалогов в пикселях. Пользователь меняет её сплиттером.</summary>
+        private double _dialogsPanelWidth = 300;
+
+        /// <summary>Гость = нет JWT-токена аккаунта.</summary>
+        private bool IsGuest => !((App)Application.Current).IsLoggedIn;
+
+        private string AccountToken => ((App)Application.Current).AccountToken;
+
         public AttachedFile GetAttachedFile() => _attachedFile;
         private dynamic _userData;
 
@@ -61,7 +82,9 @@ namespace Friday
         {
             var history = new List<object>();
             // Берем последние 10 сообщений (игнорируя технические заглушки)
-            var recentMessages = ChatMessages.Where(m => !m.Text.Contains("⏳") && !m.Text.Contains("🎤")).Reverse().Take(10).Reverse();
+            var recentMessages = ChatMessages
+                .Where(m => !string.IsNullOrEmpty(m.Text) && !m.Text.Contains("⏳") && !m.Text.Contains("🎤"))
+                .Reverse().Take(10).Reverse();
             foreach (var msg in recentMessages)
             {
                 history.Add(new { role = msg.IsUser ? "user" : "assistant", content = msg.Text });
@@ -98,7 +121,10 @@ namespace Friday
                 {
                     try
                     {
-                        var requestData = new { msg_id = serverMsgId, new_text = messageText, mac = GetMacAddress() };
+                        // Авторизованный правит своё сообщение по токену, гость — по MAC устройства.
+                        object requestData = IsGuest
+                            ? (object)new { msg_id = serverMsgId, new_text = messageText, mac = GetMacAddress() }
+                            : (object)new { msg_id = serverMsgId, new_text = messageText, token = AccountToken };
                         using (var client = new HttpClient())
                         {
                             var json = JsonConvert.SerializeObject(requestData);
@@ -139,8 +165,11 @@ namespace Friday
                 string pendingId = Guid.NewGuid().ToString();
 
                 // Проверяем, гость мы или нет
-                bool isGuest = UserButton.Visibility != Visibility.Visible;
+                bool isGuest = IsGuest;
 
+                // ВАЖНО: поле dialog_id отправляется ВСЕГДА, даже когда оно null.
+                // Сервер различает "ключа нет" (взять последний диалог юзера)
+                // и "ключ есть, но null" (создать НОВЫЙ диалог) — см. handle_command.
                 var message = new
                 {
                     type = "текстовое сообщение",
@@ -151,6 +180,7 @@ namespace Friday
                     voice_type = SettingManager.Setting.VoiceType,
                     screenshot = screenshotBase64,
                     ui_msg_id = pendingId,
+                    dialog_id = isGuest ? (long?)null : CurrentDialogId,
                     message_history = isGuest ? GetGuestMessageHistory() : null // Отправляем историю, если гость
                 };
 
@@ -185,10 +215,16 @@ namespace Friday
             ((App)Application.Current).VoiceService = _voiceService;
             ((App)Application.Current).IncrementWindowCount();
             ChatListBox.ItemsSource = ChatMessages;
+            DialogListBox.ItemsSource = Dialogs;
             _voiceService.OnChatMessageReceived += OnChatMessageReceived;
             InputModeComboBox.SelectionChanged += InputModeComboBox_SelectionChanged;
 
             DataContext = this;
+
+            // Стартуем как гость; если аккаунт есть — придёт account_sync_success
+            // и SyncAccountData() переключит режим.
+            if (IsGuest) ApplyGuestMode();
+            else ApplyAccountMode();
         }
 
         public void UpdateData(dynamic responseData)
@@ -423,8 +459,64 @@ namespace Friday
             if (_userData != null && _userData.history != null) ProcessHistoryMessages(_userData.history);
         }
 
-        public void ShowUserButton(string username) { UserButtonText.Text = username; UserButton.Visibility = Visibility.Visible; LoginButton.Visibility = Visibility.Collapsed; RegisterButton.Visibility = Visibility.Collapsed; }
-        public void ShowAuthButtons() { UserButton.Visibility = Visibility.Collapsed; LoginButton.Visibility = Visibility.Visible; RegisterButton.Visibility = Visibility.Visible; }
+        public void ShowUserButton(string username)
+        {
+            UserButtonText.Text = username;
+            UserButton.Visibility = Visibility.Visible;
+            LoginButton.Visibility = Visibility.Collapsed;
+            RegisterButton.Visibility = Visibility.Collapsed;
+            ApplyAccountMode();
+        }
+
+        public void ShowAuthButtons()
+        {
+            UserButton.Visibility = Visibility.Collapsed;
+            LoginButton.Visibility = Visibility.Visible;
+            RegisterButton.Visibility = Visibility.Visible;
+            ApplyGuestMode();
+        }
+
+        // ====================== РЕЖИМЫ ИНТЕРФЕЙСА ======================
+
+        /// <summary>
+        /// Режим АККАУНТА: показываем панель диалогов и ПРЯЧЕМ кнопку "Очистить".
+        /// Точный аналог updateAuthUI() из script.js, где для залогиненного
+        /// clear-history получает display:none — история чистится удалением диалога.
+        /// </summary>
+        public void ApplyAccountMode()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                DialogsPanel.Visibility = Visibility.Visible;
+                DialogsSplitter.Visibility = Visibility.Visible;
+                // Ширину колонки задаём в пикселях — иначе GridSplitter не сможет её тянуть.
+                DialogsColumn.Width = new GridLength(_dialogsPanelWidth);
+                ClearHistoryButton.Visibility = Visibility.Collapsed;
+            });
+        }
+
+        /// <summary>
+        /// Режим ГОСТЯ: панели диалогов нет, кнопка "Очистить" доступна
+        /// (чистит только локальный список — базу гость не трогает).
+        /// </summary>
+        public void ApplyGuestMode()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                // Запоминаем ширину, которую пользователь выставил мышью,
+                // чтобы вернуть её при следующем входе в аккаунт.
+                if (DialogsPanel.Visibility == Visibility.Visible && DialogsColumn.ActualWidth > 1)
+                    _dialogsPanelWidth = DialogsColumn.ActualWidth;
+
+                DialogsPanel.Visibility = Visibility.Collapsed;
+                DialogsSplitter.Visibility = Visibility.Collapsed;
+                DialogsColumn.Width = new GridLength(0);   // колонка схлопывается -> чат на всю ширину
+                ClearHistoryButton.Visibility = Visibility.Visible;
+                Dialogs.Clear();
+                CurrentDialogId = null;
+                UpdateDialogsCount();
+            });
+        }
 
         private void UserButton_Click(object sender, RoutedEventArgs e)
         {
@@ -452,8 +544,10 @@ namespace Friday
                     if (File.Exists(filePath)) File.Delete(filePath);
 
                     ((App)Application.Current).ResetAccountData();
-                    ShowAuthButtons();
+                    ShowAuthButtons();          // вернёт кнопку "Очистить" и спрячет панель диалогов
                     ChatMessages.Clear();
+                    Dialogs.Clear();
+                    CurrentDialogId = null;
                     ShowSystemMessage("Вы вышли из аккаунта. Включен гостевой режим.");
                 }
             }
@@ -462,17 +556,181 @@ namespace Friday
 
         public void SyncAccountData(dynamic responseData)
         {
+            string login = null;
+            dynamic fallbackHistory = null;
+            try
+            {
+                if (responseData != null && responseData.user_login != null) login = responseData.user_login.ToString();
+                if (responseData != null && responseData.history != null) fallbackHistory = responseData.history;
+            }
+            catch { }
+
             Dispatcher.Invoke(() =>
             {
                 ChatMessages.Clear();
-                if (responseData != null && responseData.history != null)
+                if (!string.IsNullOrEmpty(login)) ShowUserButton(login); // включает ApplyAccountMode()
+            });
+
+            _ = SyncDialogsAfterLoginAsync(fallbackHistory);
+        }
+
+        /// <summary>
+        /// После входа в аккаунт: тянем список диалогов и открываем самый свежий.
+        /// Аналог связки loadDialogs() + selectDialog(dialogs[0].id) из script.js.
+        /// </summary>
+        private async Task SyncDialogsAfterLoginAsync(dynamic fallbackHistory)
+        {
+            try
+            {
+                await LoadDialogsAsync();
+
+                if (Dialogs.Count > 0)
                 {
-                    ProcessHistoryMessages(responseData.history);
+                    await SelectDialogAsync(Dialogs[0].Id);
                 }
-                if (responseData != null && responseData.user_login != null)
+                else if (fallbackHistory != null)
                 {
-                    ShowUserButton(responseData.user_login.ToString());
+                    // Диалогов ещё нет — показываем историю из account_sync_success.
+                    Dispatcher.Invoke(() => ProcessHistoryMessages(fallbackHistory));
                 }
+            }
+            catch (Exception ex) { Console.WriteLine($"[Dialogs] sync: {ex.Message}"); }
+        }
+
+        // ====================== РАБОТА СО СПИСКОМ ДИАЛОГОВ ======================
+
+        /// <summary>Обновляет счётчик рядом с заголовком «ДИАЛОГИ».</summary>
+        private void UpdateDialogsCount()
+        {
+            if (DialogsCountText != null)
+                DialogsCountText.Text = Dialogs.Count > 0 ? Dialogs.Count.ToString() : "";
+        }
+
+        /// <summary>Подтягивает список диалогов с сервера. Аналог loadDialogs().</summary>
+        public async Task LoadDialogsAsync()
+        {
+            if (IsGuest) { ApplyGuestMode(); return; }
+
+            var list = await DialogService.GetDialogsAsync(AccountToken);
+
+            Dispatcher.Invoke(() =>
+            {
+                _suppressDialogSelection = true;
+                Dialogs.Clear();
+                foreach (var d in list) Dialogs.Add(d);
+
+                // Восстанавливаем подсветку активного диалога
+                var active = Dialogs.FirstOrDefault(d => CurrentDialogId.HasValue && d.Id == CurrentDialogId.Value);
+                DialogListBox.SelectedItem = active;
+                _suppressDialogSelection = false;
+                UpdateDialogsCount();
+            });
+        }
+
+        /// <summary>Открывает диалог: чистит чат и грузит его историю. Аналог selectDialog().</summary>
+        public async Task SelectDialogAsync(long dialogId)
+        {
+            if (IsGuest) return;
+
+            CurrentDialogId = dialogId;
+
+            Dispatcher.Invoke(() =>
+            {
+                ChatMessages.Clear();
+                _suppressDialogSelection = true;
+                DialogListBox.SelectedItem = Dialogs.FirstOrDefault(d => d.Id == dialogId);
+                _suppressDialogSelection = false;
+            });
+
+            var history = await DialogService.GetHistoryAsync(AccountToken, dialogId);
+
+            Dispatcher.Invoke(() =>
+            {
+                foreach (var msg in history)
+                {
+                    if (string.IsNullOrEmpty(msg.Sender)) continue;
+
+                    string text = msg.Sender == "Вы"
+                        ? msg.Text
+                        : DialogService.CleanBotText(msg.Text);
+
+                    if (string.IsNullOrWhiteSpace(text)) continue;
+
+                    ChatMessages.Add(new ChatMessage
+                    {
+                        Id = msg.Id.ToString(),
+                        Sender = msg.Sender,
+                        Text = text
+                    });
+                }
+
+                if (ChatMessages.Count > 0)
+                {
+                    ChatListBox.UpdateLayout();
+                    ChatListBox.ScrollIntoView(ChatMessages.Last());
+                }
+            });
+        }
+
+        /// <summary>
+        /// Кнопка "Новый чат". Диалог НЕ создаётся здесь — сервер заведёт его сам,
+        /// когда получит первое сообщение с dialog_id = null, и пришлёт dialog_created.
+        /// </summary>
+        private void NewChatButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsGuest) { new LoginWindow().ShowDialog(); return; }
+
+            CurrentDialogId = null;
+            ChatMessages.Clear();
+            _suppressDialogSelection = true;
+            DialogListBox.SelectedItem = null;
+            _suppressDialogSelection = false;
+            ShowSystemMessage("Новый чат. Напишите сообщение, чтобы начать.");
+        }
+
+        private async void DialogListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_suppressDialogSelection) return;
+            if (DialogListBox.SelectedItem is DialogItem d && d.Id != CurrentDialogId)
+                await SelectDialogAsync(d.Id);
+        }
+
+        /// <summary>Крестик на элементе списка — удаление диалога вместе с историей.</summary>
+        private async void DeleteDialogButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!((sender as Button)?.DataContext is DialogItem dlg)) return;
+
+            var confirm = MessageBox.Show($"Удалить диалог «{dlg.Name}»?", "Подтверждение",
+                                          MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (confirm != MessageBoxResult.Yes) return;
+
+            bool ok = await DialogService.DeleteDialogAsync(AccountToken, dlg.Id);
+            if (!ok) { ShowSystemMessage("Не удалось удалить диалог."); return; }
+
+            if (CurrentDialogId == dlg.Id)
+            {
+                CurrentDialogId = null;
+                Dispatcher.Invoke(() => ChatMessages.Clear());
+            }
+
+            await LoadDialogsAsync();
+            ShowSystemMessage("Диалог удалён.");
+        }
+
+        /// <summary>Сервер создал диалог автоматически (пришёл кадр dialog_created).</summary>
+        public async void OnDialogCreated(long dialogId, string name)
+        {
+            CurrentDialogId = dialogId;
+            await LoadDialogsAsync();
+        }
+
+        /// <summary>ИИ дал диалогу осмысленное имя (кадр dialog_renamed) — правим на лету.</summary>
+        public void OnDialogRenamed(long dialogId, string name)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                var d = Dialogs.FirstOrDefault(x => x.Id == dialogId);
+                if (d != null) d.Name = name;   // INotifyPropertyChanged обновит UI
             });
         }
 
@@ -481,7 +739,7 @@ namespace Friday
 
         public void UpdateAfterRegistration(string username)
         {
-            Dispatcher.Invoke(() => { UserButtonText.Text = username; UserButton.Visibility = Visibility.Visible; LoginButton.Visibility = Visibility.Collapsed; RegisterButton.Visibility = Visibility.Collapsed; ShowSystemMessage($"Добро пожаловать, {username}!"); });
+            Dispatcher.Invoke(() => { ShowUserButton(username); ShowSystemMessage($"Добро пожаловать, {username}!"); });
         }
 
         private void OnMessageReceived(string message) { Dispatcher.Invoke(() => { ChatListBox.Items.Add(message + Environment.NewLine); ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]); }); }
@@ -547,30 +805,27 @@ namespace Friday
             MessageBox.Show("Настройки успешно обновлены!", "Успех!", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        public async void ClearHistoryButton_Click(object sender, RoutedEventArgs e) => ClearHistory();
+        public void ClearHistoryButton_Click(object sender, RoutedEventArgs e) => ClearHistory();
 
-        public async void ClearHistory()
+        /// <summary>
+        /// Очистка истории — ТОЛЬКО для гостевого режима (чистит локальный список).
+        ///
+        /// У авторизованного история живёт в диалоге на сервере и чистится
+        /// удалением диалога через крестик в левой панели. Кнопка "Очистить"
+        /// для него скрыта (ApplyAccountMode), а серверный action "очистка истории"
+        /// вырезается из списка возможностей ИИ при наличии dialog_id.
+        /// Обращаться к /clear_history нельзя — такого эндпоинта на сервере НЕТ.
+        /// </summary>
+        public void ClearHistory()
         {
+            if (!IsGuest)
+            {
+                ShowSystemMessage("Чтобы очистить историю, удалите диалог в списке слева.");
+                return;
+            }
+
             Dispatcher.Invoke(() => ChatMessages.Clear());
             ShowSystemMessage("История успешно очищена");
-
-            bool isGuest = UserButton.Visibility != Visibility.Visible;
-            if (isGuest) return; // Гостям не нужно дёргать базу данных сервера!
-
-            try
-            {
-                var message = new { mac = GetMacAddress() };
-                using (var client = new HttpClient())
-                {
-                    var json = JsonConvert.SerializeObject(message);
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    var response = await client.PostAsync("https://friday-assistant.ru/clear_history", content);
-                    response.EnsureSuccessStatusCode();
-                    var responseObject = JsonConvert.DeserializeObject<dynamic>(await response.Content.ReadAsStringAsync());
-                    if (responseObject.status != "success") ShowSystemMessage($"Ошибка: {responseObject.message}");
-                }
-            }
-            catch (Exception ex) { ShowSystemMessage($"Произошла ошибка: {ex.Message}"); }
         }
 
         public void ManageAppsButton_Click(object sender, RoutedEventArgs e) => new Friday.Windows.AppPathsWindow().ShowDialog();
@@ -588,7 +843,11 @@ namespace Friday
                 {
                     try
                     {
-                        var requestData = new { msg_id = serverMsgId, mac = GetMacAddress() };
+                        // Авторизованный удаляет по токену (проверка владельца диалога),
+                        // гость — по MAC своего устройства.
+                        object requestData = IsGuest
+                            ? (object)new { msg_id = serverMsgId, mac = GetMacAddress() }
+                            : (object)new { msg_id = serverMsgId, token = AccountToken };
                         using (var client = new HttpClient())
                         {
                             var json = JsonConvert.SerializeObject(requestData);

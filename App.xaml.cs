@@ -47,6 +47,19 @@ namespace Friday
         private AccountData _accountData;
         private bool _isMainWindowOpened = false;
 
+        /// <summary>
+        /// JWT-токен текущего аккаунта или null в гостевом режиме.
+        /// Нужен для REST-эндпоинтов диалогов (/api/get_dialogs и др.),
+        /// которые авторизуются по токену, а НЕ по MAC.
+        /// </summary>
+        public string AccountToken => _accountData?.Token;
+
+        /// <summary>Логин текущего аккаунта или null в гостевом режиме.</summary>
+        public string AccountLogin => _accountData?.Login;
+
+        /// <summary>true, если пользователь авторизован (не гость).</summary>
+        public bool IsLoggedIn => !string.IsNullOrEmpty(_accountData?.Token);
+
         protected override void OnStartup(StartupEventArgs e)
         {
             SettingManager settingManager = new SettingManager();
@@ -284,6 +297,9 @@ namespace Friday
                     _accountData = null;
                     string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\account.json"));
                     if (File.Exists(filePath)) File.Delete(filePath);
+                    // Токен протух -> уходим в гостевой режим: прячем панель диалогов,
+                    // возвращаем кнопку "Очистить".
+                    Application.Current.Dispatcher.Invoke(() => _mainWindow?.ApplyGuestMode());
                     return;
                 }
 
@@ -336,6 +352,34 @@ namespace Friday
                             _mainWindow.UpdateData(response);
                         }
                     });
+                    return;
+                }
+
+                // === СОЗДАН НОВЫЙ ДИАЛОГ (сервер сам завёл его при dialog_id: null) ===
+                if (answer.Contains("\"type\":\"dialog_created\"") || answer.Contains("\"type\": \"dialog_created\""))
+                {
+                    try
+                    {
+                        var d = JsonConvert.DeserializeObject<dynamic>(answer);
+                        long newId = (long)d.dialog_id;
+                        string newName = d.name?.ToString() ?? "Новый диалог";
+                        Application.Current.Dispatcher.Invoke(() => _mainWindow?.OnDialogCreated(newId, newName));
+                    }
+                    catch (Exception ex) { Console.WriteLine($"Ошибка dialog_created: {ex.Message}"); }
+                    return;
+                }
+
+                // === ИИ ПРИДУМАЛ ИМЯ ДИАЛОГУ (action "название диалога" отработал на сервере) ===
+                if (answer.Contains("\"type\":\"dialog_renamed\"") || answer.Contains("\"type\": \"dialog_renamed\""))
+                {
+                    try
+                    {
+                        var d = JsonConvert.DeserializeObject<dynamic>(answer);
+                        long renId = (long)d.dialog_id;
+                        string renName = d.name?.ToString() ?? "";
+                        Application.Current.Dispatcher.Invoke(() => _mainWindow?.OnDialogRenamed(renId, renName));
+                    }
+                    catch (Exception ex) { Console.WriteLine($"Ошибка dialog_renamed: {ex.Message}"); }
                     return;
                 }
 

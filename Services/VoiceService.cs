@@ -268,8 +268,9 @@ namespace Friday
             var attachedFile = _mainWindow.GetAttachedFile();
             if (attachedFile != null) screenshotBase64 = Convert.ToBase64String(attachedFile.Data);
 
-            bool isGuest = _mainWindow.UserButton.Visibility != Visibility.Visible;
+            bool isGuest = !((App)Application.Current).IsLoggedIn;
 
+            // dialog_id передаём всегда (даже null) — см. комментарий в MainWindow.SendCurrentMessageAsync
             var message = new
             {
                 type = "голосовое сообщение",
@@ -282,6 +283,7 @@ namespace Friday
                 voice_type = SettingManager.Setting.VoiceType,
                 screenshot = screenshotBase64,
                 ui_msg_id = uiMsgId,
+                dialog_id = isGuest ? (long?)null : _mainWindow.CurrentDialogId,
                 message_history = isGuest ? _mainWindow.GetGuestMessageHistory() : null
             };
             ((App)Application.Current).SendWebSocketMessage(message);
@@ -342,7 +344,7 @@ namespace Friday
                 if (attachedFile != null) screenshotBase64 = Convert.ToBase64String(attachedFile.Data);
 
                 string audioBase64 = Convert.ToBase64String(pcmData);
-                bool isGuest = _mainWindow.UserButton.Visibility != Visibility.Visible;
+                bool isGuest = !((App)Application.Current).IsLoggedIn;
 
                 var message = new
                 {
@@ -356,6 +358,7 @@ namespace Friday
                     voice_type = SettingManager.Setting.VoiceType,
                     screenshot = screenshotBase64,
                     ui_msg_id = pendingMsgId,
+                    dialog_id = isGuest ? (long?)null : _mainWindow.CurrentDialogId,
                     message_history = isGuest ? _mainWindow.GetGuestMessageHistory() : null
                 };
 
@@ -530,7 +533,14 @@ namespace Friday
             switch (action.ActionType.ToLower())
             {
                 case "очистка истории":
-                    Application.Current.Dispatcher.Invoke(() => _mainWindow.ClearHistory());
+                    // Сервер вырезает этот action, когда работа идёт в диалоге аккаунта
+                    // (dialog_id != null), так что сюда он долетает только у гостя.
+                    // Дублируем проверку на случай рассинхрона версий клиента и сервера.
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (((App)Application.Current).IsLoggedIn) return;
+                        _mainWindow.ClearHistory();
+                    });
                     break;
                 case "открытие файла": new AppProcessService().OpenFile(safeActionText); break;
                 case "завершение процесса": new AppProcessService().KillProcess(safeActionText); break;

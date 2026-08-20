@@ -17,13 +17,10 @@ namespace Friday
         public string _last_answer = "";
         private ClientWebSocket _webSocket;
         private RegistrationWindow _registrationWindow; // Окно ЖЕЛЕЗА
-        private LoginWindow _loginWindow;             // Окно АККАУНТА
         private MainWindow _mainWindow;
         public VoiceService VoiceService { get; set; }
         private DeviceData _deviceData;
         private System.Timers.Timer _keepAliveTimer;
-
-        public event Action<string> OnMessageReceived;
 
         private int _openWindowsCount = 0;
         private bool _isConnectionActive = false;

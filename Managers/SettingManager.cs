@@ -3,6 +3,7 @@ using Friday.Services;
 using Newtonsoft.Json;
 using System.IO;
 using System.Collections.Generic;
+using System;
 
 namespace Friday
 {
@@ -31,11 +32,7 @@ namespace Friday
             {
                 Setting = new Setting
                 {
-                    AssistantName = "Пятница",
-                    Password = "",
                     VoiceType = "Aoede",
-                    Volume = 5,
-                    InputMode = "Разговорный режим",
                     MusicFolderPath = _defaultMusicFolderPath
                 };
                 SaveSettings();
@@ -48,11 +45,7 @@ namespace Friday
             {
                 Setting = new Setting
                 {
-                    AssistantName = "Пятница",
-                    Password = "",
                     VoiceType = "Aoede",
-                    Volume = 5,
-                    InputMode = "Разговорный режим",
                     MusicFolderPath = _defaultMusicFolderPath
                 };
                 SaveSettings();
@@ -61,29 +54,10 @@ namespace Friday
 
             bool changed = false;
 
-            if (string.IsNullOrWhiteSpace(Setting.AssistantName))
-            {
-                Setting.AssistantName = "Пятница";
-                changed = true;
-            }
-
-            if (Setting.Password == null)
-            {
-                Setting.Password = string.Empty;
-                changed = true;
-            }
-
-            // === АВТО-ИСПРАВЛЕНИЕ СТАРЫХ ГОЛОСОВ (Дмитрий, Aleksandr и т.д.) ===
             var validVoices = new List<string> { "Aoede", "Puck", "Kore", "Charon" };
             if (string.IsNullOrWhiteSpace(Setting.VoiceType) || !validVoices.Contains(Setting.VoiceType))
             {
                 Setting.VoiceType = "Aoede";
-                changed = true;
-            }
-
-            if (string.IsNullOrWhiteSpace(Setting.InputMode))
-            {
-                Setting.InputMode = "Разговорный режим";
                 changed = true;
             }
 
@@ -105,19 +79,15 @@ namespace Friday
             File.WriteAllText(_filePath, json);
         }
 
-        public void UpdateSettings(string assistantName, string password, string voiceType, int volume, string inputMode, string musicFolderPath)
+        // Убрали string password из аргументов
+        public void UpdateSettings(string voiceType, string musicFolderPath)
         {
-            Setting.AssistantName = assistantName;
-            Setting.Password = password;
             Setting.VoiceType = voiceType;
-            Setting.Volume = volume;
-            Setting.InputMode = inputMode;
             Setting.MusicFolderPath = musicFolderPath;
             SaveSettings();
 
             OnSettingsChanged(new SettingChangedEventArgs
             {
-                AssistantName = assistantName,
                 VoiceType = voiceType
             });
 
@@ -132,7 +102,6 @@ namespace Friday
 
     public class SettingChangedEventArgs : EventArgs
     {
-        public string AssistantName { get; set; }
         public string VoiceType { get; set; }
     }
 }

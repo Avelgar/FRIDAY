@@ -1,37 +1,40 @@
 using Friday.Services;
 using NAudio.Wave;
-using Newtonsoft.Json;
 using System.IO;
 using System.Text;
 using System.Windows;
-using System.Windows.Media.Imaging;
-using Vosk;
+using System.Speech.Recognition;
+using System.Linq;
+using Newtonsoft.Json;
+using System;
+using System.Threading.Tasks;
+using System.Threading;
+using System.Collections.Generic;
 
 namespace Friday
 {
     public class VoiceService
     {
-        private readonly List<string> _stopWords = new List<string> { "стоп", "хватит", "довольно", "заткнись", "закрой рот" };
+        private readonly List<string> _stopWords = new List<string> { "стоп", "хватит", "довольно", "заткнись", "закрой рот", "отмена" };
 
         private bool _isSpeaking = false;
         private bool _isWaitingForServer = false;
         private bool _isRecordingCommand = false;
         private bool _isMutedByStopWord = false;
         private string _currentCommandMsgId = null;
-        private InputMode _currentInputMode = InputMode.NamePlusCommand;
 
         private DateTime _lastSpeechTime = DateTime.MinValue;
         private DateTime _ignoreCommandsUntil = DateTime.MinValue;
-        private DateTime _lastDebugNotificationTime = DateTime.MinValue;
 
-        private string modelPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\model"));
+        private const float VAD_THRESHOLD = 0.015f;
 
         private WaveOutEvent _waveOut;
-        private readonly VoskRecognizer _recognizer;
-        private readonly RenameService _renameService;
+        private WaveInEvent _waveIn;
+
+        private SpeechRecognitionEngine _sapiRecognizer;
+
         private SettingManager _settingManager;
         private readonly ChangeVoiceService _changeVoiceService;
-        private WaveInEvent _waveIn;
         public static MusicService musicService;
         public ListeningState ListeningState { get; private set; }
 
@@ -47,22 +50,27 @@ namespace Friday
 
         private MemoryStream _audioBuffer = new MemoryStream();
 
-        public VoiceService(RenameService renameService, SettingManager settingManager, MainWindow mainWindow)
+        public VoiceService(SettingManager settingManager, MainWindow mainWindow)
         {
-            _renameService = renameService;
             _settingManager = settingManager;
             _changeVoiceService = new ChangeVoiceService(settingManager);
             _mainWindow = mainWindow;
 
-            Vosk.Vosk.SetLogLevel(-1);
-            Model model = new Model(modelPath);
-            _recognizer = new VoskRecognizer(model, 16000.0f);
-            _recognizer.SetMaxAlternatives(1);
-            _recognizer.SetWords(true);
-
             ListeningState = new ListeningState();
             musicService = new MusicService();
             musicService.Init();
+        }
+
+        private void Sapi_SpeechRecognized(object sender, SpeechRecognizedEventArgs e)
+        {
+            if (e.Result == null || string.IsNullOrEmpty(e.Result.Text)) return;
+            string text = e.Result.Text.ToLower();
+
+            // Детекция стоп-слов (чтобы перебить бота)
+            if (_isSpeaking && _stopWords.Any(w => text.Contains(w)))
+            {
+                StopSpeaking();
+            }
         }
 
         private void InitAudioStream()
@@ -87,6 +95,11 @@ namespace Friday
                     return;
                 }
 
+                if (_sapiRecognizer != null)
+                {
+                    try { _sapiRecognizer.RecognizeAsync(RecognizeMode.Multiple); } catch { }
+                }
+
                 _waveIn = new WaveInEvent()
                 {
                     WaveFormat = new WaveFormat(16000, 1),
@@ -97,34 +110,8 @@ namespace Friday
                 {
                     try
                     {
-                        if (_isSpeaking)
-                        {
-                            if (_recognizer.AcceptWaveform(e.Buffer, e.BytesRecorded))
-                            {
-                                var res = JsonConvert.DeserializeObject<RecognitionResponse>(_recognizer.Result());
-                                if (res?.Alternatives.FirstOrDefault()?.Text is string text && _stopWords.Any(w => text.ToLower().Contains(w)))
-                                    StopSpeaking();
-                            }
-                            else
-                            {
-                                var partialRes = JsonConvert.DeserializeObject<RecognitionPartialResponse>(_recognizer.PartialResult());
-                                if (partialRes?.Partial is string text && _stopWords.Any(w => text.ToLower().Contains(w)))
-                                    StopSpeaking();
-                            }
-                            return;
-                        }
-
-                        if (_isWaitingForServer) return;
-
-                        if (DateTime.Now < _ignoreCommandsUntil)
-                        {
-                            if (_recognizer.AcceptWaveform(e.Buffer, e.BytesRecorded)) _recognizer.Result();
-                            return;
-                        }
-
-                        bool isPhraseComplete = _recognizer.AcceptWaveform(e.Buffer, e.BytesRecorded);
-                        var partialResponse = JsonConvert.DeserializeObject<RecognitionPartialResponse>(_recognizer.PartialResult());
-                        string partialText = partialResponse?.Partial?.ToLower() ?? "";
+                        if (_isSpeaking || _isWaitingForServer) return;
+                        if (DateTime.Now < _ignoreCommandsUntil) return;
 
                         float sum = 0;
                         int sampleCount = e.BytesRecorded / 2;
@@ -136,71 +123,32 @@ namespace Friday
                         }
                         float volume = sampleCount > 0 ? sum / sampleCount : 0;
 
-                        if (volume > 0.005f)
+                        if (volume > VAD_THRESHOLD)
                         {
                             _lastSpeechTime = DateTime.Now;
                         }
 
-                        if (!_isRecordingCommand)
+                        bool isSilence = (DateTime.Now - _lastSpeechTime).TotalMilliseconds > 1500;
+
+                        if (_isRecordingCommand)
                         {
-                            _mainWindow.Dispatcher.Invoke(() => {
-                                _currentInputMode = (InputMode)_mainWindow.InputModeComboBox.SelectedIndex;
-                            });
-                        }
+                            byte[] chunk = new byte[e.BytesRecorded];
+                            Array.Copy(e.Buffer, chunk, e.BytesRecorded);
+                            SendStreamChunk(_currentCommandMsgId, chunk);
 
-                        if (_currentInputMode == InputMode.Conversation)
-                        {
-                            if (_isRecordingCommand)
+                            if (isSilence)
                             {
-                                byte[] chunk = new byte[e.BytesRecorded];
-                                Array.Copy(e.Buffer, chunk, e.BytesRecorded);
-                                SendStreamChunk(_currentCommandMsgId, chunk);
-
-                                if ((DateTime.Now - _lastSpeechTime).TotalMilliseconds > 1500)
-                                {
-                                    _isRecordingCommand = false;
-                                    _isWaitingForServer = true;
-                                    SendStreamEnd(_currentCommandMsgId);
-                                    _currentCommandMsgId = null;
-
-                                    if (!isPhraseComplete) _recognizer.Result();
-                                }
-                            }
-                            else
-                            {
-                                _audioBuffer.Write(e.Buffer, 0, e.BytesRecorded);
-
-                                if (string.IsNullOrEmpty(partialText))
-                                {
-                                    const int PreBufferSize = 32000;
-                                    if (_audioBuffer.Length > PreBufferSize)
-                                    {
-                                        byte[] allBytes = _audioBuffer.ToArray();
-                                        _audioBuffer.SetLength(0);
-                                        _audioBuffer.Write(allBytes, allBytes.Length - PreBufferSize, PreBufferSize);
-                                    }
-                                }
-                                else
-                                {
-                                    _isRecordingCommand = true;
-                                    _lastSpeechTime = DateTime.Now;
-                                    _currentCommandMsgId = Guid.NewGuid().ToString();
-
-                                    _mainWindow.Dispatcher.Invoke(() => {
-                                        OnChatMessageReceived?.Invoke(new ChatMessage { Id = _currentCommandMsgId, UiMsgId = _currentCommandMsgId, Sender = "Вы", Text = "🎤 [Слушаю...]" });
-                                    });
-
-                                    byte[] pcmData = _audioBuffer.ToArray();
-                                    _audioBuffer.SetLength(0);
-                                    SendStreamStart(_currentCommandMsgId, pcmData);
-                                }
+                                _isRecordingCommand = false;
+                                _isWaitingForServer = true;
+                                SendStreamEnd(_currentCommandMsgId);
+                                _currentCommandMsgId = null;
                             }
                         }
-                        else if (_currentInputMode == InputMode.NamePlusCommand)
+                        else
                         {
                             _audioBuffer.Write(e.Buffer, 0, e.BytesRecorded);
 
-                            if (string.IsNullOrEmpty(partialText) && !_isRecordingCommand)
+                            if (volume <= VAD_THRESHOLD)
                             {
                                 const int PreBufferSize = 32000;
                                 if (_audioBuffer.Length > PreBufferSize)
@@ -210,43 +158,19 @@ namespace Friday
                                     _audioBuffer.Write(allBytes, allBytes.Length - PreBufferSize, PreBufferSize);
                                 }
                             }
-                            else if (!string.IsNullOrEmpty(partialText) && !_isRecordingCommand)
+                            else
                             {
                                 _isRecordingCommand = true;
+                                _lastSpeechTime = DateTime.Now;
                                 _currentCommandMsgId = Guid.NewGuid().ToString();
 
                                 _mainWindow.Dispatcher.Invoke(() => {
                                     OnChatMessageReceived?.Invoke(new ChatMessage { Id = _currentCommandMsgId, UiMsgId = _currentCommandMsgId, Sender = "Вы", Text = "🎤 [Слушаю...]" });
                                 });
-                            }
-
-                            if (isPhraseComplete && _isRecordingCommand)
-                            {
-                                _isRecordingCommand = false;
-
-                                var result = _recognizer.Result();
-                                var response = JsonConvert.DeserializeObject<RecognitionResponse>(result);
-                                string recognizedText = response?.Alternatives.FirstOrDefault()?.Text?.ToLower() ?? "";
 
                                 byte[] pcmData = _audioBuffer.ToArray();
                                 _audioBuffer.SetLength(0);
-
-                                string botName = _renameService.BotName.ToLower();
-
-                                if (!string.IsNullOrEmpty(recognizedText) && recognizedText.Contains(botName))
-                                {
-                                    _isWaitingForServer = true;
-                                    SendAudioCommand(pcmData, _currentCommandMsgId);
-                                    _currentCommandMsgId = null;
-                                }
-                                else
-                                {
-                                    _mainWindow.Dispatcher.Invoke(() => {
-                                        var msg = _mainWindow.ChatMessages.FirstOrDefault(m => m.UiMsgId == _currentCommandMsgId);
-                                        if (msg != null) _mainWindow.ChatMessages.Remove(msg);
-                                    });
-                                    _currentCommandMsgId = null;
-                                }
+                                SendStreamStart(_currentCommandMsgId, pcmData);
                             }
                         }
                     }
@@ -270,7 +194,6 @@ namespace Friday
 
             bool isGuest = !((App)Application.Current).IsLoggedIn;
 
-            // dialog_id передаём всегда (даже null) — см. комментарий в MainWindow.SendCurrentMessageAsync
             var message = new
             {
                 type = "голосовое сообщение",
@@ -279,7 +202,6 @@ namespace Friday
                 audio_base64 = Convert.ToBase64String(initialAudio),
                 mac = App.GetMacAddress(),
                 timestamp = DateTime.Now,
-                name = _renameService.BotName,
                 voice_type = SettingManager.Setting.VoiceType,
                 screenshot = screenshotBase64,
                 ui_msg_id = uiMsgId,
@@ -292,12 +214,7 @@ namespace Friday
 
         public void SendStreamChunk(string uiMsgId, byte[] pcmData)
         {
-            var message = new
-            {
-                type = "audio_stream_chunk",
-                ui_msg_id = uiMsgId,
-                audio_base64 = Convert.ToBase64String(pcmData)
-            };
+            var message = new { type = "audio_stream_chunk", ui_msg_id = uiMsgId, audio_base64 = Convert.ToBase64String(pcmData) };
             ((App)Application.Current).SendWebSocketMessage(message);
         }
 
@@ -305,71 +222,11 @@ namespace Friday
         {
             _mainWindow.Dispatcher.Invoke(() => {
                 var msg = _mainWindow.ChatMessages.FirstOrDefault(m => m.UiMsgId == uiMsgId);
-                if (msg != null && msg.Text == "🎤 [Слушаю...]")
-                {
-                    msg.Text = "⏳ Транскрибирую...";
-                    msg.DisplayText = "⏳ Транскрибирую...";
-                }
+                if (msg != null && msg.Text == "🎤 [Слушаю...]") { msg.Text = "⏳ Транскрибирую..."; msg.DisplayText = "⏳ Транскрибирую..."; }
             });
 
-            var message = new
-            {
-                type = "audio_stream_end",
-                ui_msg_id = uiMsgId
-            };
+            var message = new { type = "audio_stream_end", ui_msg_id = uiMsgId };
             ((App)Application.Current).SendWebSocketMessage(message);
-        }
-
-        public void SendAudioCommand(byte[] pcmData, string providedUiMsgId = null)
-        {
-            string pendingMsgId = providedUiMsgId ?? Guid.NewGuid().ToString();
-
-            _mainWindow.Dispatcher.Invoke(() => {
-                var msg = _mainWindow.ChatMessages.FirstOrDefault(m => m.UiMsgId == pendingMsgId);
-                if (msg != null)
-                {
-                    msg.Text = "⏳ Транскрибирую...";
-                    msg.DisplayText = "⏳ Транскрибирую...";
-                }
-                else
-                {
-                    OnChatMessageReceived?.Invoke(new ChatMessage { Id = pendingMsgId, UiMsgId = pendingMsgId, Sender = "Вы", Text = "⏳ Транскрибирую..." });
-                }
-            });
-
-            try
-            {
-                string screenshotBase64 = null;
-                var attachedFile = _mainWindow.GetAttachedFile();
-                if (attachedFile != null) screenshotBase64 = Convert.ToBase64String(attachedFile.Data);
-
-                string audioBase64 = Convert.ToBase64String(pcmData);
-                bool isGuest = !((App)Application.Current).IsLoggedIn;
-
-                var message = new
-                {
-                    type = "голосовое сообщение",
-                    command = "",
-                    audio_base64 = audioBase64,
-                    stream_audio = false,
-                    mac = App.GetMacAddress(),
-                    timestamp = DateTime.Now,
-                    name = _renameService.BotName,
-                    voice_type = SettingManager.Setting.VoiceType,
-                    screenshot = screenshotBase64,
-                    ui_msg_id = pendingMsgId,
-                    dialog_id = isGuest ? (long?)null : _mainWindow.CurrentDialogId,
-                    message_history = isGuest ? _mainWindow.GetGuestMessageHistory() : null
-                };
-
-                ((App)Application.Current).SendWebSocketMessage(message);
-                System.Windows.Application.Current.Dispatcher.Invoke(() => _mainWindow.ClearAttachedFile());
-            }
-            catch (Exception ex)
-            {
-                _mainWindow.ShowSystemMessage($"Ошибка аудио: {ex.Message}");
-                lock (_audioLock) { _isWaitingForServer = false; }
-            }
         }
 
         public void AppendAudioChunk(string base64Audio)
@@ -472,6 +329,8 @@ namespace Friday
         {
             try
             {
+                if (_sapiRecognizer != null) { try { _sapiRecognizer.RecognizeAsyncCancel(); } catch { } }
+
                 if (_waveIn != null) { _waveIn.StopRecording(); _waveIn.Dispose(); _waveIn = null; }
                 if (_isRecordingCommand)
                 {
@@ -533,9 +392,6 @@ namespace Friday
             switch (action.ActionType.ToLower())
             {
                 case "очистка истории":
-                    // Сервер вырезает этот action, когда работа идёт в диалоге аккаунта
-                    // (dialog_id != null), так что сюда он долетает только у гостя.
-                    // Дублируем проверку на случай рассинхрона версий клиента и сервера.
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (((App)Application.Current).IsLoggedIn) return;
@@ -551,11 +407,6 @@ namespace Friday
                 case "уведомление": new NotificationService().SendNotification(safeActionText); break;
                 case "нажать кнопку мыши": new MouseService().PressMouseButton(safeActionText); break;
                 case "переместить мышь": new MouseService().MoveMouse(safeActionText); break;
-                case "смена имени":
-                    _renameService.BotName = safeActionText;
-                    SettingManager.Setting.AssistantName = safeActionText;
-                    _settingManager.SaveSettings();
-                    break;
                 case "смена голоса": _changeVoiceService.ChangeVoice(safeActionText); break;
                 case "музыка":
                     try
@@ -581,8 +432,4 @@ namespace Friday
             public string AudioBase64 { get; set; }
         }
     }
-
-    public class RecognitionResponse { public Alternative[] Alternatives { get; set; } }
-    public class RecognitionPartialResponse { public string Partial { get; set; } }
-    public class Alternative { public string Text { get; set; } }
 }

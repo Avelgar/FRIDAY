@@ -68,8 +68,8 @@ public class MusicService : Service
         _wavePlayer = new WaveOutEvent();
         _audioFileReader = new AudioFileReader(filePath);
 
-        // Устанавливаем громкость из настроек (от 0.0 до 1.0)
-        _audioFileReader.Volume = SettingManager.Setting.Volume / 10f;
+        // Устанавливаем громкость музыки по умолчанию (0.5f = 50%, 1.0f = 100%)
+        _audioFileReader.Volume = 1.0f;
 
         _wavePlayer.Init(_audioFileReader);
         _wavePlayer.PlaybackStopped += OnPlaybackStopped;

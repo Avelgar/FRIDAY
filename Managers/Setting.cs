@@ -2,11 +2,7 @@
 {
     public class Setting
     {
-        public required string AssistantName { get; set; }
-        public required string Password { get; set; }
         public required string VoiceType { get; set; }
-        public required int Volume { get; set; }
-        public required string InputMode { get; set; }
         public required string MusicFolderPath { get; set; }
     }
 }

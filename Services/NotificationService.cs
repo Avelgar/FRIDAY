@@ -13,12 +13,8 @@ namespace Friday
             System.Windows.Application.Current.Dispatcher.Invoke(async () =>
             {
                 NotifyIcon notifyIcon = new NotifyIcon();
-                notifyIcon.Icon = SystemIcons.Information;
-                notifyIcon.Visible = true;
 
-                notifyIcon.Text = SettingManager.Setting.AssistantName;
-
-                notifyIcon.ShowBalloonTip(3000, SettingManager.Setting.AssistantName, text, ToolTipIcon.Info);
+                notifyIcon.ShowBalloonTip(3000, "Friday", text, ToolTipIcon.Info);
 
                 await Task.Delay(4000);
 

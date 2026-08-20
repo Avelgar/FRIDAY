@@ -968,17 +968,13 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal"
-                                            VerticalAlignment="Center" Margin="24,0,0,0">
-                                    <ComboBox x:Name="InputModeComboBox" Width="180" SelectedIndex="0" Margin="0,0,8,0">
-                                        <ComboBoxItem Content="Имя + команда"/>
-                                        <ComboBoxItem Content="Разговорный режим"/>
-                                    </ComboBox>
-                                    <ToggleButton x:Name="VideoButton" Content="Видео"
-                                                  Style="{StaticResource ToggleOutline}"
-                                                   Width="110" Margin="0,0,8,0"/>
-                                    <Button x:Name="ClearHistoryButton" Content="Очистить"
-                                            Style="{StaticResource DarkButtonStyle}"
-                                            Click="ClearHistoryButton_Click" Width="100"/>
+                                    VerticalAlignment="Center" Margin="24,0,0,0">
+                                                            <ToggleButton x:Name="VideoButton" Content="Видео"
+                                            Style="{StaticResource ToggleOutline}"
+                                            Width="110" Margin="0,0,8,0"/>
+                                                            <Button x:Name="ClearHistoryButton" Content="Очистить"
+                                    Style="{StaticResource DarkButtonStyle}"
+                                    Click="ClearHistoryButton_Click" Width="100"/>
                                 </StackPanel>
                             </Grid>
 
@@ -1254,23 +1250,17 @@
                                            FontSize="24" Foreground="{StaticResource TextHigh}" Margin="0,0,0,20"/>
 
                             <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}"
-                                        BorderThickness="1" Padding="20" Margin="0,0,0,10">
-                                <StackPanel>
-                                    <Border Background="{StaticResource Accent}" Height="2" Margin="0,0,0,16"/>
-                                    <TextBlock Text="Имя помощника" FontFamily="{StaticResource UI}" FontSize="11"
-                                                   FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
-                                    <TextBox x:Name="FridayNameTextBox" Margin="0,0,0,14"/>
-                                    <TextBlock Text="Голос" FontFamily="{StaticResource UI}" FontSize="11"
-                                                   FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
+                            BorderThickness="1" Padding="20" Margin="0,0,0,10">
+                                                <StackPanel>
+                                                    <Border Background="{StaticResource Accent}" Height="2" Margin="0,0,0,16"/>
+                                                    <TextBlock Text="Голос" FontFamily="{StaticResource UI}" FontSize="11"
+                                       FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
                                     <ComboBox x:Name="VoiceTypeComboBox" Margin="0,0,0,14">
                                         <ComboBoxItem Content="Aoede"/>
                                         <ComboBoxItem Content="Puck"/>
                                         <ComboBoxItem Content="Kore"/>
                                         <ComboBoxItem Content="Charon"/>
                                     </ComboBox>
-                                    <TextBlock Text="Громкость" FontFamily="{StaticResource UI}" FontSize="11"
-                                                   FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
-                                    <Slider x:Name="VolumeSlider" Minimum="0" Maximum="10" SmallChange="1"/>
                                 </StackPanel>
                             </Border>
 

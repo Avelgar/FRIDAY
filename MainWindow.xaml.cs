@@ -46,25 +46,12 @@ namespace Friday
         public ObservableCollection<ChatMessage> ChatMessages { get; set; } = new ObservableCollection<ChatMessage>();
         private ChatMessage _editingMessage = null;
 
-        // ====================== ДИАЛОГИ (аккаунт) ======================
-        /// <summary>Список диалогов в левой панели. Аналог #dialogList из веба.</summary>
         public ObservableCollection<DialogItem> Dialogs { get; set; } = new ObservableCollection<DialogItem>();
-
-        /// <summary>
-        /// Текущий диалог. null = "Новый чат": поле dialog_id уйдёт на сервер
-        /// со значением null, и сервер создаст новый диалог.
-        /// </summary>
         public long? CurrentDialogId { get; private set; } = null;
-
-        /// <summary>Защита от рекурсии при программной смене SelectedItem в списке диалогов.</summary>
         private bool _suppressDialogSelection = false;
-
-        /// <summary>Ширина панели диалогов в пикселях. Пользователь меняет её сплиттером.</summary>
         private double _dialogsPanelWidth = 300;
 
-        /// <summary>Гость = нет JWT-токена аккаунта.</summary>
         private bool IsGuest => !((App)Application.Current).IsLoggedIn;
-
         private string AccountToken => ((App)Application.Current).AccountToken;
 
         public AttachedFile GetAttachedFile() => _attachedFile;
@@ -77,11 +64,9 @@ namespace Friday
             set { _actionTypes = value; OnPropertyChanged(nameof(ActionTypes)); }
         }
 
-        // --- НОВЫЙ МЕТОД ДЛЯ СБОРА ЛОКАЛЬНОЙ ИСТОРИИ ---
         public List<object> GetGuestMessageHistory()
         {
             var history = new List<object>();
-            // Берем последние 10 сообщений (игнорируя технические заглушки)
             var recentMessages = ChatMessages
                 .Where(m => !string.IsNullOrEmpty(m.Text) && !m.Text.Contains("⏳") && !m.Text.Contains("🎤"))
                 .Reverse().Take(10).Reverse();
@@ -116,12 +101,10 @@ namespace Friday
 
             if (_editingMessage != null)
             {
-                // Если парсится в long, значит сообщение из БД. Иначе - это локальное сообщение гостя
                 if (long.TryParse(_editingMessage.Id, out long serverMsgId))
                 {
                     try
                     {
-                        // Авторизованный правит своё сообщение по токену, гость — по MAC устройства.
                         object requestData = IsGuest
                             ? (object)new { msg_id = serverMsgId, new_text = messageText, mac = GetMacAddress() }
                             : (object)new { msg_id = serverMsgId, new_text = messageText, token = AccountToken };
@@ -163,25 +146,19 @@ namespace Friday
             {
                 string screenshotBase64 = _attachedFile != null ? Convert.ToBase64String(_attachedFile.Data) : null;
                 string pendingId = Guid.NewGuid().ToString();
-
-                // Проверяем, гость мы или нет
                 bool isGuest = IsGuest;
 
-                // ВАЖНО: поле dialog_id отправляется ВСЕГДА, даже когда оно null.
-                // Сервер различает "ключа нет" (взять последний диалог юзера)
-                // и "ключ есть, но null" (создать НОВЫЙ диалог) — см. handle_command.
                 var message = new
                 {
                     type = "текстовое сообщение",
                     command = messageText,
                     mac = GetMacAddress(),
                     timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                    name = SettingManager.Setting.AssistantName,
                     voice_type = SettingManager.Setting.VoiceType,
                     screenshot = screenshotBase64,
                     ui_msg_id = pendingId,
                     dialog_id = isGuest ? (long?)null : CurrentDialogId,
-                    message_history = isGuest ? GetGuestMessageHistory() : null // Отправляем историю, если гость
+                    message_history = isGuest ? GetGuestMessageHistory() : null
                 };
 
                 ((App)Application.Current).VoiceService?.SetWaitingForServer();
@@ -208,8 +185,8 @@ namespace Friday
             LoadSettings();
             UpdateMicrophoneIcon(false);
 
-            RenameService renameService = new RenameService(SettingManager.Setting.AssistantName, _settingManager);
-            _voiceService = new VoiceService(renameService, _settingManager, this);
+            // Инициализируем VoiceService, убрав из его параметров RenameService
+            _voiceService = new VoiceService(_settingManager, this);
             _settingManager.SettingsChanged += SettingManager_SettingsChanged;
 
             ((App)Application.Current).VoiceService = _voiceService;
@@ -217,12 +194,9 @@ namespace Friday
             ChatListBox.ItemsSource = ChatMessages;
             DialogListBox.ItemsSource = Dialogs;
             _voiceService.OnChatMessageReceived += OnChatMessageReceived;
-            InputModeComboBox.SelectionChanged += InputModeComboBox_SelectionChanged;
 
             DataContext = this;
 
-            // Стартуем как гость; если аккаунт есть — придёт account_sync_success
-            // и SyncAccountData() переключит режим.
             if (IsGuest) ApplyGuestMode();
             else ApplyAccountMode();
         }
@@ -232,20 +206,10 @@ namespace Friday
             if (responseData != null) ShowSystemMessage("Соединение восстановлено");
         }
 
-        private void InputModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (InputModeComboBox.SelectedItem is ComboBoxItem selectedItem)
-            {
-                SettingManager.Setting.InputMode = selectedItem.Content.ToString();
-                _settingManager.SaveSettings();
-            }
-        }
-
         private void SettingManager_SettingsChanged(object sender, SettingChangedEventArgs e)
         {
             Dispatcher.Invoke(() =>
             {
-                if (!string.IsNullOrEmpty(e.AssistantName)) FridayNameTextBox.Text = e.AssistantName;
                 if (!string.IsNullOrEmpty(e.VoiceType))
                 {
                     foreach (ComboBoxItem item in VoiceTypeComboBox.Items)
@@ -476,41 +440,27 @@ namespace Friday
             ApplyGuestMode();
         }
 
-        // ====================== РЕЖИМЫ ИНТЕРФЕЙСА ======================
-
-        /// <summary>
-        /// Режим АККАУНТА: показываем панель диалогов и ПРЯЧЕМ кнопку "Очистить".
-        /// Точный аналог updateAuthUI() из script.js, где для залогиненного
-        /// clear-history получает display:none — история чистится удалением диалога.
-        /// </summary>
         public void ApplyAccountMode()
         {
             Dispatcher.Invoke(() =>
             {
                 DialogsPanel.Visibility = Visibility.Visible;
                 DialogsSplitter.Visibility = Visibility.Visible;
-                // Ширину колонки задаём в пикселях — иначе GridSplitter не сможет её тянуть.
                 DialogsColumn.Width = new GridLength(_dialogsPanelWidth);
                 ClearHistoryButton.Visibility = Visibility.Collapsed;
             });
         }
 
-        /// <summary>
-        /// Режим ГОСТЯ: панели диалогов нет, кнопка "Очистить" доступна
-        /// (чистит только локальный список — базу гость не трогает).
-        /// </summary>
         public void ApplyGuestMode()
         {
             Dispatcher.Invoke(() =>
             {
-                // Запоминаем ширину, которую пользователь выставил мышью,
-                // чтобы вернуть её при следующем входе в аккаунт.
                 if (DialogsPanel.Visibility == Visibility.Visible && DialogsColumn.ActualWidth > 1)
                     _dialogsPanelWidth = DialogsColumn.ActualWidth;
 
                 DialogsPanel.Visibility = Visibility.Collapsed;
                 DialogsSplitter.Visibility = Visibility.Collapsed;
-                DialogsColumn.Width = new GridLength(0);   // колонка схлопывается -> чат на всю ширину
+                DialogsColumn.Width = new GridLength(0);
                 ClearHistoryButton.Visibility = Visibility.Visible;
                 Dialogs.Clear();
                 CurrentDialogId = null;
@@ -544,7 +494,7 @@ namespace Friday
                     if (File.Exists(filePath)) File.Delete(filePath);
 
                     ((App)Application.Current).ResetAccountData();
-                    ShowAuthButtons();          // вернёт кнопку "Очистить" и спрячет панель диалогов
+                    ShowAuthButtons();
                     ChatMessages.Clear();
                     Dialogs.Clear();
                     CurrentDialogId = null;
@@ -568,16 +518,12 @@ namespace Friday
             Dispatcher.Invoke(() =>
             {
                 ChatMessages.Clear();
-                if (!string.IsNullOrEmpty(login)) ShowUserButton(login); // включает ApplyAccountMode()
+                if (!string.IsNullOrEmpty(login)) ShowUserButton(login);
             });
 
             _ = SyncDialogsAfterLoginAsync(fallbackHistory);
         }
 
-        /// <summary>
-        /// После входа в аккаунт: тянем список диалогов и открываем самый свежий.
-        /// Аналог связки loadDialogs() + selectDialog(dialogs[0].id) из script.js.
-        /// </summary>
         private async Task SyncDialogsAfterLoginAsync(dynamic fallbackHistory)
         {
             try
@@ -590,23 +536,18 @@ namespace Friday
                 }
                 else if (fallbackHistory != null)
                 {
-                    // Диалогов ещё нет — показываем историю из account_sync_success.
                     Dispatcher.Invoke(() => ProcessHistoryMessages(fallbackHistory));
                 }
             }
             catch (Exception ex) { Console.WriteLine($"[Dialogs] sync: {ex.Message}"); }
         }
 
-        // ====================== РАБОТА СО СПИСКОМ ДИАЛОГОВ ======================
-
-        /// <summary>Обновляет счётчик рядом с заголовком «ДИАЛОГИ».</summary>
         private void UpdateDialogsCount()
         {
             if (DialogsCountText != null)
                 DialogsCountText.Text = Dialogs.Count > 0 ? Dialogs.Count.ToString() : "";
         }
 
-        /// <summary>Подтягивает список диалогов с сервера. Аналог loadDialogs().</summary>
         public async Task LoadDialogsAsync()
         {
             if (IsGuest) { ApplyGuestMode(); return; }
@@ -618,8 +559,6 @@ namespace Friday
                 _suppressDialogSelection = true;
                 Dialogs.Clear();
                 foreach (var d in list) Dialogs.Add(d);
-
-                // Восстанавливаем подсветку активного диалога
                 var active = Dialogs.FirstOrDefault(d => CurrentDialogId.HasValue && d.Id == CurrentDialogId.Value);
                 DialogListBox.SelectedItem = active;
                 _suppressDialogSelection = false;
@@ -627,7 +566,6 @@ namespace Friday
             });
         }
 
-        /// <summary>Открывает диалог: чистит чат и грузит его историю. Аналог selectDialog().</summary>
         public async Task SelectDialogAsync(long dialogId)
         {
             if (IsGuest) return;
@@ -672,10 +610,6 @@ namespace Friday
             });
         }
 
-        /// <summary>
-        /// Кнопка "Новый чат". Диалог НЕ создаётся здесь — сервер заведёт его сам,
-        /// когда получит первое сообщение с dialog_id = null, и пришлёт dialog_created.
-        /// </summary>
         private void NewChatButton_Click(object sender, RoutedEventArgs e)
         {
             if (IsGuest) { new LoginWindow().ShowDialog(); return; }
@@ -695,7 +629,6 @@ namespace Friday
                 await SelectDialogAsync(d.Id);
         }
 
-        /// <summary>Крестик на элементе списка — удаление диалога вместе с историей.</summary>
         private async void DeleteDialogButton_Click(object sender, RoutedEventArgs e)
         {
             if (!((sender as Button)?.DataContext is DialogItem dlg)) return;
@@ -717,20 +650,18 @@ namespace Friday
             ShowSystemMessage("Диалог удалён.");
         }
 
-        /// <summary>Сервер создал диалог автоматически (пришёл кадр dialog_created).</summary>
         public async void OnDialogCreated(long dialogId, string name)
         {
             CurrentDialogId = dialogId;
             await LoadDialogsAsync();
         }
 
-        /// <summary>ИИ дал диалогу осмысленное имя (кадр dialog_renamed) — правим на лету.</summary>
         public void OnDialogRenamed(long dialogId, string name)
         {
             Dispatcher.Invoke(() =>
             {
                 var d = Dialogs.FirstOrDefault(x => x.Id == dialogId);
-                if (d != null) d.Name = name;   // INotifyPropertyChanged обновит UI
+                if (d != null) d.Name = name;
             });
         }
 
@@ -779,10 +710,14 @@ namespace Friday
 
         private void LoadSettings()
         {
-            FridayNameTextBox.Text = SettingManager.Setting.AssistantName;
-            foreach (ComboBoxItem item in VoiceTypeComboBox.Items) { if (item.Content.ToString() == SettingManager.Setting.VoiceType) { VoiceTypeComboBox.SelectedItem = item; break; } }
-            VolumeSlider.Value = SettingManager.Setting.Volume;
-            foreach (ComboBoxItem item in InputModeComboBox.Items) { if (item.Content.ToString() == SettingManager.Setting.InputMode) { InputModeComboBox.SelectedItem = item; break; } }
+            foreach (ComboBoxItem item in VoiceTypeComboBox.Items)
+            {
+                if (item.Content.ToString() == SettingManager.Setting.VoiceType)
+                {
+                    VoiceTypeComboBox.SelectedItem = item;
+                    break;
+                }
+            }
             MusicFolderPathTextBox.Text = SettingManager.Setting.MusicFolderPath;
         }
 
@@ -794,28 +729,22 @@ namespace Friday
 
         public void Save_Button_Click(object sender, RoutedEventArgs e)
         {
-            string assistantName = FridayNameTextBox.Text;
             string voiceType = (VoiceTypeComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
-            int volume = Convert.ToInt32(VolumeSlider.Value);
-            string inputMode = (InputModeComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
             string musicFolder = MusicFolderPathTextBox.Text;
 
-            if (string.IsNullOrEmpty(assistantName) || string.IsNullOrEmpty(voiceType) || string.IsNullOrEmpty(inputMode)) { MessageBox.Show("Поля не могут быть пустыми", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-            _settingManager.UpdateSettings(assistantName, SettingManager.Setting.Password, voiceType, volume, inputMode, musicFolder);
+            if (string.IsNullOrEmpty(voiceType))
+            {
+                MessageBox.Show("Поля не могут быть пустыми", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Теперь передаем только голос и папку музыки
+            _settingManager.UpdateSettings(voiceType, musicFolder);
             MessageBox.Show("Настройки успешно обновлены!", "Успех!", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         public void ClearHistoryButton_Click(object sender, RoutedEventArgs e) => ClearHistory();
 
-        /// <summary>
-        /// Очистка истории — ТОЛЬКО для гостевого режима (чистит локальный список).
-        ///
-        /// У авторизованного история живёт в диалоге на сервере и чистится
-        /// удалением диалога через крестик в левой панели. Кнопка "Очистить"
-        /// для него скрыта (ApplyAccountMode), а серверный action "очистка истории"
-        /// вырезается из списка возможностей ИИ при наличии dialog_id.
-        /// Обращаться к /clear_history нельзя — такого эндпоинта на сервере НЕТ.
-        /// </summary>
         public void ClearHistory()
         {
             if (!IsGuest)
@@ -843,8 +772,6 @@ namespace Friday
                 {
                     try
                     {
-                        // Авторизованный удаляет по токену (проверка владельца диалога),
-                        // гость — по MAC своего устройства.
                         object requestData = IsGuest
                             ? (object)new { msg_id = serverMsgId, mac = GetMacAddress() }
                             : (object)new { msg_id = serverMsgId, token = AccountToken };
@@ -859,7 +786,7 @@ namespace Friday
                     }
                     catch (Exception ex) { ShowSystemMessage($"Ошибка сети при удалении: {ex.Message}"); }
                 }
-                else ChatMessages.Remove(msg); // Удаляем локально для гостей
+                else ChatMessages.Remove(msg);
             }
         }
 
@@ -897,8 +824,6 @@ namespace Friday
             catch (Exception ex) { ShowSystemMessage($"Не удалось отобразить скриншот: {ex.Message}"); }
         }
     }
-
-    public enum InputMode { NamePlusCommand, Conversation }
 
     public class MessageAlignmentConverter : IValueConverter
     {

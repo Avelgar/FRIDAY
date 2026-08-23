@@ -23,6 +23,9 @@ namespace Friday
         private bool _isMutedByStopWord = false;
         private string _currentCommandMsgId = null;
 
+        public bool IsRecordingCommand => _isRecordingCommand;
+        public string CurrentCommandMsgId => _currentCommandMsgId;
+
         private DateTime _lastSpeechTime = DateTime.MinValue;
         private DateTime _ignoreCommandsUntil = DateTime.MinValue;
 
@@ -49,6 +52,8 @@ namespace Friday
         private readonly object _audioLock = new object();
 
         private MemoryStream _audioBuffer = new MemoryStream();
+
+        private CancellationTokenSource _waitingTimeoutCts;
 
         public VoiceService(SettingManager settingManager, MainWindow mainWindow)
         {
@@ -372,6 +377,22 @@ namespace Friday
             {
                 _isWaitingForServer = true;
                 _audioBuffer.SetLength(0);
+
+                // СТРАХОВКА: Если ответа со звуком нет более 8 секунд — принудительно разблокируем микрофон
+                _waitingTimeoutCts?.Cancel();
+                _waitingTimeoutCts = new CancellationTokenSource();
+                var token = _waitingTimeoutCts.Token;
+
+                Task.Delay(8000, token).ContinueWith(t =>
+                {
+                    if (!t.IsCanceled)
+                    {
+                        lock (_audioLock)
+                        {
+                            _isWaitingForServer = false;
+                        }
+                    }
+                });
             }
         }
 
@@ -379,6 +400,7 @@ namespace Friday
         {
             lock (_audioLock)
             {
+                _waitingTimeoutCts?.Cancel();
                 _isMutedByStopWord = false;
                 _isWaitingForServer = false;
                 _audioBuffer.SetLength(0);

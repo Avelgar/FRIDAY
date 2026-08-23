@@ -1,46 +1,119 @@
-﻿using System.Runtime.InteropServices;
-using System.Windows.Forms;
+﻿using System;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace Friday
 {
     public class KeyboardService
     {
-
-        [DllImport("user32.dll")]
-        internal static extern uint SendInput(uint nInputs, Input[] pInputs, int cbSize);
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern uint SendInput(uint nInputs, Input[] pInputs, int cbSize);
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct Input { public uint type; public InputUnion u; }
+        private struct Input
+        {
+            public uint type;
+            public InputUnion u;
+        }
 
         [StructLayout(LayoutKind.Explicit)]
-        internal struct InputUnion { [FieldOffset(0)] public KeyboardInput ki; }
+        private struct InputUnion
+        {
+            [FieldOffset(0)]
+            public KeyboardInput ki;
+        }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct KeyboardInput { public ushort wVk; public ushort wScan; public uint dwFlags; public uint time; public IntPtr dwExtraInfo; }
-
-        const uint INPUT_KEYBOARD = 1;
-        const uint KEYEVENTF_KEYUP = 0x0002;
-        const uint KEYEVENTF_UNICODE = 0x0004;
-
-        public void TypeTextDirectly(string text)
+        private struct KeyboardInput
         {
-            foreach (char c in text)
+            public ushort wVk;
+            public ushort wScan;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        private const uint INPUT_KEYBOARD = 1;
+        private const uint KEYEVENTF_KEYUP = 0x0002;
+        private const uint KEYEVENTF_UNICODE = 0x0004;
+
+        public async void TypeText(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+
+            try
             {
-                SendUnicodeChar(c);
+                // Очищаем от артефактов форматирования нейросети
+                text = text.Replace("\\n", Environment.NewLine)
+                           .Replace("```csharp", "")
+                           .Replace("```", "")
+                           .Trim();
+
+                // Убираем обрамляющие кавычки, если ИИ их добавил
+                if (text.Length >= 2 && text.StartsWith("\"") && text.EndsWith("\""))
+                {
+                    text = text.Substring(1, text.Length - 2);
+                }
+
+                // Небольшая пауза, чтобы целевое окно успело принять фокус
+                await Task.Delay(150);
+
+                // Печатаем посимвольно напрямую через Юникод
+                foreach (char c in text)
+                {
+                    if (c == '\r') continue;
+                    if (c == '\n')
+                    {
+                        SimulateKeyPress(0x0D); // Нажатие Enter
+                    }
+                    else
+                    {
+                        SendUnicodeChar(c);
+                    }
+                    await Task.Delay(5);
+                }
             }
-            SimulateKeyPress(0x0D);
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при печати текста: {ex.Message}");
+            }
         }
 
         private void SendUnicodeChar(char c)
         {
             Input[] inputs = new Input[2];
-            inputs[0].type = INPUT_KEYBOARD;
-            inputs[0].u.ki.wScan = c;
-            inputs[0].u.ki.dwFlags = KEYEVENTF_UNICODE;
 
-            inputs[1].type = INPUT_KEYBOARD;
-            inputs[1].u.ki.wScan = c;
-            inputs[1].u.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+            inputs[0] = new Input
+            {
+                type = INPUT_KEYBOARD,
+                u = new InputUnion
+                {
+                    ki = new KeyboardInput
+                    {
+                        wVk = 0,
+                        wScan = c,
+                        dwFlags = KEYEVENTF_UNICODE,
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
+
+            inputs[1] = new Input
+            {
+                type = INPUT_KEYBOARD,
+                u = new InputUnion
+                {
+                    ki = new KeyboardInput
+                    {
+                        wVk = 0,
+                        wScan = c,
+                        dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
 
             SendInput(2, inputs, Marshal.SizeOf(typeof(Input)));
         }
@@ -48,56 +121,40 @@ namespace Friday
         public void SimulateKeyPress(ushort vkCode)
         {
             Input[] inputs = new Input[2];
-            inputs[0].type = INPUT_KEYBOARD;
-            inputs[0].u.ki.wVk = vkCode;
-            inputs[1].type = INPUT_KEYBOARD;
-            inputs[1].u.ki.wVk = vkCode;
-            inputs[1].u.ki.dwFlags = KEYEVENTF_KEYUP;
+
+            inputs[0] = new Input
+            {
+                type = INPUT_KEYBOARD,
+                u = new InputUnion
+                {
+                    ki = new KeyboardInput
+                    {
+                        wVk = vkCode,
+                        wScan = 0,
+                        dwFlags = 0,
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
+
+            inputs[1] = new Input
+            {
+                type = INPUT_KEYBOARD,
+                u = new InputUnion
+                {
+                    ki = new KeyboardInput
+                    {
+                        wVk = vkCode,
+                        wScan = 0,
+                        dwFlags = KEYEVENTF_KEYUP,
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
+
             SendInput(2, inputs, Marshal.SizeOf(typeof(Input)));
-        }
-
-        public async void TypeText(string text)
-        {
-            try
-            {
-                text = text.Replace("\\n", Environment.NewLine)
-                           .Replace("```csharp", "")
-                           .Replace("```", "")
-                           .Trim();
-
-                string originalClipboard = string.Empty;
-
-                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    originalClipboard = System.Windows.Clipboard.ContainsText()
-                        ? System.Windows.Clipboard.GetText()
-                        : string.Empty;
-
-                    System.Windows.Clipboard.SetText(text);
-                });
-
-                await Task.Delay(200);
-
-                SendKeys.SendWait("^v");
-
-                await Task.Delay(100);
-
-                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    if (!string.IsNullOrEmpty(originalClipboard))
-                    {
-                        System.Windows.Clipboard.SetText(originalClipboard);
-                    }
-                    else
-                    {
-                        System.Windows.Clipboard.Clear();
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"Ошибка при печати текста: {ex.Message}");
-            }
         }
     }
 }

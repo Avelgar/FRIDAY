@@ -14,6 +14,13 @@ using System.Windows.Media.Imaging;
 using System.Windows.Data;
 using System.Globalization;
 using System.Security.Cryptography;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Windows.Threading;
+
+// ПОДКЛЮЧАЕМ AFORGE ДЛЯ КАМЕРЫ
+using AForge.Video;
+using AForge.Video.DirectShow;
 
 namespace Friday
 {
@@ -57,11 +64,84 @@ namespace Friday
         public AttachedFile GetAttachedFile() => _attachedFile;
         private dynamic _userData;
 
-        private List<string> _actionTypes;
-        public List<string> ActionTypes
+        // ПУТЬ ДЛЯ ИСТОРИИ ГОСТЯ
+        private readonly string _guestHistoryPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\guest_history.json"));
+
+        // ПЕРЕМЕННЫЕ ДЛЯ ВИДЕОСТРИМА
+        private VideoCaptureDevice _videoSource;
+        private Bitmap _currentVideoFrame;
+        private readonly object _videoLock = new object();
+        private DispatcherTimer _videoStreamTimer;
+        private DispatcherTimer _screenCaptureTimer;
+
+        public MainWindow(dynamic responseData = null)
         {
-            get { return _actionTypes; }
-            set { _actionTypes = value; OnPropertyChanged(nameof(ActionTypes)); }
+            InitializeComponent();
+            _userData = responseData;
+
+            // Инициализация таймера отправки кадров на сервер (1 раз в секунду)
+            _videoStreamTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _videoStreamTimer.Tick += VideoStreamTimer_Tick;
+
+            InitializeUserInterface();
+            LoadSettings();
+            UpdateMicrophoneIcon(false);
+
+            _voiceService = new VoiceService(_settingManager, this);
+            _settingManager.SettingsChanged += SettingManager_SettingsChanged;
+
+            ((App)Application.Current).VoiceService = _voiceService;
+            ((App)Application.Current).IncrementWindowCount();
+            ChatListBox.ItemsSource = ChatMessages;
+            DialogListBox.ItemsSource = Dialogs;
+            _voiceService.OnChatMessageReceived += OnChatMessageReceived;
+
+            DataContext = this;
+
+            if (IsGuest)
+            {
+                ApplyGuestMode();
+                LoadGuestHistory(); // Загружаем историю из файла для гостя
+            }
+            else ApplyAccountMode();
+        }
+
+        // ================= ЛОГИКА ИСТОРИИ ГОСТЯ =================
+        private void SaveGuestHistory()
+        {
+            if (!IsGuest) return;
+            try
+            {
+                string dir = Path.GetDirectoryName(_guestHistoryPath);
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                var json = JsonConvert.SerializeObject(ChatMessages);
+                File.WriteAllText(_guestHistoryPath, json);
+            }
+            catch (Exception ex) { Console.WriteLine("Ошибка сохранения истории: " + ex.Message); }
+        }
+
+        private void LoadGuestHistory()
+        {
+            if (!IsGuest) return;
+            try
+            {
+                if (File.Exists(_guestHistoryPath))
+                {
+                    var json = File.ReadAllText(_guestHistoryPath);
+                    var msgs = JsonConvert.DeserializeObject<ObservableCollection<ChatMessage>>(json);
+                    if (msgs != null)
+                    {
+                        ChatMessages.Clear();
+                        foreach (var m in msgs) ChatMessages.Add(m);
+                        if (ChatMessages.Count > 0)
+                        {
+                            ChatListBox.UpdateLayout();
+                            ChatListBox.ScrollIntoView(ChatMessages.Last());
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) { Console.WriteLine("Ошибка загрузки истории: " + ex.Message); }
         }
 
         public List<object> GetGuestMessageHistory()
@@ -77,6 +157,199 @@ namespace Friday
             return history;
         }
 
+        // ================= ЛОГИКА КАМЕРЫ И ЭКРАНА =================
+        private void CameraBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (CameraBtn.IsChecked == true)
+            {
+                ScreenBtn.IsChecked = false;
+                StopVideo();
+                StartCamera();
+            }
+            else StopVideo();
+        }
+
+        private void ScreenBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (ScreenBtn.IsChecked == true)
+            {
+                CameraBtn.IsChecked = false;
+                StopVideo();
+                StartScreenCapture();
+            }
+            else StopVideo();
+        }
+
+        private void StartCamera()
+        {
+            var videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
+            if (videoDevices.Count == 0)
+            {
+                ShowSystemMessage("Камера не найдена.");
+                CameraBtn.IsChecked = false;
+                return;
+            }
+
+            _videoSource = new VideoCaptureDevice(videoDevices[0].MonikerString);
+            _videoSource.NewFrame += (s, ev) =>
+            {
+                lock (_videoLock)
+                {
+                    _currentVideoFrame?.Dispose();
+                    _currentVideoFrame = (Bitmap)ev.Frame.Clone();
+                    _currentVideoFrame.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                }
+
+                // Рендерим картинку в UI ТОЛЬКО если превью открыто
+                if (VideoPreviewContainer.Visibility == Visibility.Visible)
+                {
+                    Dispatcher.Invoke(() => {
+                        VideoPreviewImage.Source = BitmapToImageSource(_currentVideoFrame);
+                    });
+                }
+            };
+
+            _videoSource.Start();
+            VideoPreviewContainer.Visibility = Visibility.Visible;
+            _videoStreamTimer.Start();
+        }
+
+        private void StartScreenCapture()
+        {
+            // Таймер превью для экрана (10 FPS)
+            _screenCaptureTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+            _screenCaptureTimer.Tick += (s, e) =>
+            {
+                if (VideoPreviewContainer.Visibility == Visibility.Visible)
+                {
+                    try
+                    {
+                        var bounds = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
+                        var bmp = new Bitmap(bounds.Width, bounds.Height);
+                        using (var g = Graphics.FromImage(bmp))
+                        {
+                            g.CopyFromScreen(0, 0, 0, 0, bmp.Size);
+                        }
+                        VideoPreviewImage.Source = BitmapToImageSource(bmp);
+                        bmp.Dispose();
+                    }
+                    catch { }
+                }
+            };
+
+            _screenCaptureTimer.Start();
+            VideoPreviewContainer.Visibility = Visibility.Visible;
+            _videoStreamTimer.Start();
+        }
+
+        // КРЕСТИК: Выключает ТОЛЬКО локальное превью и глушит таймер перерисовки
+        private void CloseVideoPreview_Click(object sender, RoutedEventArgs e)
+        {
+            VideoPreviewContainer.Visibility = Visibility.Collapsed;
+            _screenCaptureTimer?.Stop(); // Полностью снимаем нагрузку на процессор при стриминге экрана
+        }
+
+        // ПОЛНАЯ ОСТАНОВКА (только если отжали саму кнопку "Экран" или "Камера")
+        private void StopVideo()
+        {
+            _videoStreamTimer?.Stop();
+            _screenCaptureTimer?.Stop();
+
+            if (_videoSource != null && _videoSource.IsRunning)
+            {
+                _videoSource.SignalToStop();
+                _videoSource.WaitForStop();
+                _videoSource = null;
+            }
+
+            VideoPreviewContainer.Visibility = Visibility.Collapsed;
+
+            lock (_videoLock)
+            {
+                _currentVideoFrame?.Dispose();
+                _currentVideoFrame = null;
+            }
+        }
+
+        // Получение кадра для ИИ: если экран активен, фоткаем его ровно в момент запроса
+        private string GetCurrentVideoFrameBase64()
+        {
+            // 1. Если включен захват ЭКРАНА: делаем скриншот на лету без предварительного рендера
+            if (ScreenBtn.IsChecked == true)
+            {
+                try
+                {
+                    var bounds = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
+                    using (var bmp = new Bitmap(bounds.Width, bounds.Height))
+                    {
+                        using (var g = Graphics.FromImage(bmp))
+                        {
+                            g.CopyFromScreen(0, 0, 0, 0, bmp.Size);
+                        }
+                        using (var ms = new MemoryStream())
+                        {
+                            bmp.Save(ms, ImageFormat.Jpeg);
+                            return Convert.ToBase64String(ms.ToArray());
+                        }
+                    }
+                }
+                catch { return null; }
+            }
+
+            // 2. Если включена КАМЕРА: берем последний кадр из памяти
+            if (CameraBtn.IsChecked == true)
+            {
+                lock (_videoLock)
+                {
+                    if (_currentVideoFrame != null)
+                    {
+                        using (var ms = new MemoryStream())
+                        {
+                            _currentVideoFrame.Save(ms, ImageFormat.Jpeg);
+                            return Convert.ToBase64String(ms.ToArray());
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        // Таймер отправки кадров во время голоса (1 раз в секунду)
+        private void VideoStreamTimer_Tick(object sender, EventArgs e)
+        {
+            var vs = ((App)Application.Current).VoiceService;
+            if (vs != null && vs.IsRecordingCommand && !string.IsNullOrEmpty(vs.CurrentCommandMsgId))
+            {
+                string base64 = GetCurrentVideoFrameBase64();
+                if (base64 != null)
+                {
+                    ((App)Application.Current).SendWebSocketMessage(new
+                    {
+                        type = "video_stream_chunk",
+                        ui_msg_id = vs.CurrentCommandMsgId,
+                        video_base64 = base64
+                    });
+                }
+            }
+        }
+        private BitmapImage BitmapToImageSource(Bitmap bitmap)
+        {
+            using (MemoryStream memory = new MemoryStream())
+            {
+                bitmap.Save(memory, ImageFormat.Jpeg);
+                memory.Position = 0;
+                BitmapImage bitmapimage = new BitmapImage();
+                bitmapimage.BeginInit();
+                bitmapimage.StreamSource = memory;
+                bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapimage.EndInit();
+                bitmapimage.Freeze(); // Необходимо для передачи между потоками
+                return bitmapimage;
+            }
+        }
+
+        // ================= ОТПРАВКА СООБЩЕНИЙ =================
         private async void SendMessageButton_Click(object sender, RoutedEventArgs e) => await SendCurrentMessageAsync();
 
         private void MessageTextBox_KeyDown(object sender, KeyEventArgs e)
@@ -117,6 +390,7 @@ namespace Friday
                             {
                                 _editingMessage.Text = messageText;
                                 _editingMessage.DisplayText = messageText;
+                                SaveGuestHistory();
                             }
                             else { ShowSystemMessage("Ошибка при сохранении сообщения на сервере."); return; }
                         }
@@ -127,6 +401,7 @@ namespace Friday
                 {
                     _editingMessage.Text = messageText;
                     _editingMessage.DisplayText = messageText;
+                    SaveGuestHistory();
                 }
 
                 _editingMessage = null;
@@ -144,7 +419,8 @@ namespace Friday
 
             try
             {
-                string screenshotBase64 = _attachedFile != null ? Convert.ToBase64String(_attachedFile.Data) : null;
+                // Если прикреплен файл - берем его. Если нет, но включена камера/экран - берем скриншот
+                string screenshotBase64 = _attachedFile != null ? Convert.ToBase64String(_attachedFile.Data) : GetCurrentVideoFrameBase64();
                 string pendingId = Guid.NewGuid().ToString();
                 bool isGuest = IsGuest;
 
@@ -168,6 +444,8 @@ namespace Friday
                 ChatListBox.UpdateLayout();
                 ChatListBox.ScrollIntoView(ChatMessages.Last());
 
+                SaveGuestHistory(); // Сохраняем сообщение гостя
+
                 MessageTextBox.Text = "";
                 ClearAttachedFile();
             }
@@ -177,30 +455,7 @@ namespace Friday
             }
         }
 
-        public MainWindow(dynamic responseData = null)
-        {
-            InitializeComponent();
-            _userData = responseData;
-            InitializeUserInterface();
-            LoadSettings();
-            UpdateMicrophoneIcon(false);
-
-            // Инициализируем VoiceService, убрав из его параметров RenameService
-            _voiceService = new VoiceService(_settingManager, this);
-            _settingManager.SettingsChanged += SettingManager_SettingsChanged;
-
-            ((App)Application.Current).VoiceService = _voiceService;
-            ((App)Application.Current).IncrementWindowCount();
-            ChatListBox.ItemsSource = ChatMessages;
-            DialogListBox.ItemsSource = Dialogs;
-            _voiceService.OnChatMessageReceived += OnChatMessageReceived;
-
-            DataContext = this;
-
-            if (IsGuest) ApplyGuestMode();
-            else ApplyAccountMode();
-        }
-
+        // ================= ОСТАЛЬНОЙ КОД БЕЗ ИЗМЕНЕНИЙ =================
         public void UpdateData(dynamic responseData)
         {
             if (responseData != null) ShowSystemMessage("Соединение восстановлено");
@@ -283,6 +538,7 @@ namespace Friday
                     }
                     ChatMessages.Add(new ChatMessage { Id = id, Sender = sender, Text = cleanText });
                 }
+                SaveGuestHistory();
             }
             catch (Exception ex) { ShowSystemMessage($"Ошибка истории: {ex.Message}"); }
         }
@@ -395,10 +651,15 @@ namespace Friday
             {
                 BitmapImage bitmap = new BitmapImage();
                 bitmap.BeginInit(); bitmap.UriSource = new Uri(imagePath); bitmap.DecodePixelWidth = 150; bitmap.CacheOption = BitmapCacheOption.OnLoad; bitmap.EndInit(); bitmap.Freeze();
-                Border thumbnailContainer = new Border { Background = Brushes.Transparent, BorderBrush = Brushes.LightGray, BorderThickness = new Thickness(1), Margin = new Thickness(5), CornerRadius = new CornerRadius(5), Width = 160, Height = 160 };
+
+                // ИСПРАВЛЕНО: Явное указание System.Windows.Media.Brushes
+                Border thumbnailContainer = new Border { Background = System.Windows.Media.Brushes.Transparent, BorderBrush = System.Windows.Media.Brushes.LightGray, BorderThickness = new Thickness(1), Margin = new Thickness(5), CornerRadius = new CornerRadius(5), Width = 160, Height = 160 };
                 Grid grid = new Grid();
-                Image thumbnail = new Image { Source = bitmap, Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 150, MaxHeight = 150 };
-                Button closeButton = new Button { Content = "×", Width = 20, Height = 20, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 2, 2, 0), Padding = new Thickness(0), FontWeight = FontWeights.Bold, Background = Brushes.White, Foreground = Brushes.Black, BorderThickness = new Thickness(0) };
+                System.Windows.Controls.Image thumbnail = new System.Windows.Controls.Image { Source = bitmap, Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 150, MaxHeight = 150 };
+
+                // ИСПРАВЛЕНО: Явное указание System.Windows.Media.Brushes
+                Button closeButton = new Button { Content = "×", Width = 20, Height = 20, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 2, 2, 0), Padding = new Thickness(0), FontWeight = FontWeights.Bold, Background = System.Windows.Media.Brushes.White, Foreground = System.Windows.Media.Brushes.Black, BorderThickness = new Thickness(0) };
+
                 closeButton.Click += (s, e) => ClearAttachedFile();
                 grid.Children.Add(thumbnail); grid.Children.Add(closeButton); thumbnailContainer.Child = grid;
                 ThumbnailContainer.Items.Add(thumbnailContainer);
@@ -496,6 +757,7 @@ namespace Friday
                     ((App)Application.Current).ResetAccountData();
                     ShowAuthButtons();
                     ChatMessages.Clear();
+                    SaveGuestHistory();
                     Dialogs.Clear();
                     CurrentDialogId = null;
                     ShowSystemMessage("Вы вышли из аккаунта. Включен гостевой режим.");
@@ -674,7 +936,15 @@ namespace Friday
         }
 
         private void OnMessageReceived(string message) { Dispatcher.Invoke(() => { ChatListBox.Items.Add(message + Environment.NewLine); ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]); }); }
-        private void OnChatMessageReceived(ChatMessage msg) { Dispatcher.Invoke(() => { ChatMessages.Add(msg); ChatListBox.UpdateLayout(); ChatListBox.ScrollIntoView(msg); }); }
+        private void OnChatMessageReceived(ChatMessage msg)
+        {
+            Dispatcher.Invoke(() => {
+                ChatMessages.Add(msg);
+                ChatListBox.UpdateLayout();
+                ChatListBox.ScrollIntoView(msg);
+                SaveGuestHistory();
+            });
+        }
         public void ShowSystemMessage(string message) { Dispatcher.Invoke(() => { try { new NotificationService().SendNotification(message); } catch { } }); }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -738,7 +1008,6 @@ namespace Friday
                 return;
             }
 
-            // Теперь передаем только голос и папку музыки
             _settingManager.UpdateSettings(voiceType, musicFolder);
             MessageBox.Show("Настройки успешно обновлены!", "Успех!", MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -753,14 +1022,25 @@ namespace Friday
                 return;
             }
 
-            Dispatcher.Invoke(() => ChatMessages.Clear());
+            Dispatcher.Invoke(() => {
+                ChatMessages.Clear();
+                SaveGuestHistory();
+            });
             ShowSystemMessage("История успешно очищена");
         }
 
         public void ManageAppsButton_Click(object sender, RoutedEventArgs e) => new Friday.Windows.AppPathsWindow().ShowDialog();
         public void ClearAttachedFile() { _attachedFile = null; ThumbnailContainer.Items.Clear(); }
         public void ChangedataButton_Click(object sender, RoutedEventArgs e) => new ChangeDataWindow().Show();
-        protected override void OnClosed(EventArgs e) { _settingManager.SettingsChanged -= SettingManager_SettingsChanged; ((App)Application.Current).DecrementWindowCount(); base.OnClosed(e); }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _settingManager.SettingsChanged -= SettingManager_SettingsChanged;
+            StopVideo(); // Выключаем камеру при закрытии
+            ((App)Application.Current).DecrementWindowCount();
+            base.OnClosed(e);
+        }
+
         private void ChatListBox_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
         public void fillMessageTextBox(string selectedText) { if (!string.IsNullOrWhiteSpace(selectedText)) MessageTextBox.Text = new string(selectedText.Where(c => !char.IsControl(c)).ToArray()).Replace("Вы:", "").Replace("Бот:", ""); }
 
@@ -780,13 +1060,21 @@ namespace Friday
                             var json = JsonConvert.SerializeObject(requestData);
                             var content = new StringContent(json, Encoding.UTF8, "application/json");
                             var response = await client.PostAsync("https://friday-assistant.ru/delete_message", content);
-                            if (response.IsSuccessStatusCode) ChatMessages.Remove(msg);
+                            if (response.IsSuccessStatusCode)
+                            {
+                                ChatMessages.Remove(msg);
+                                SaveGuestHistory();
+                            }
                             else ShowSystemMessage("Ошибка при удалении сообщения с сервера.");
                         }
                     }
                     catch (Exception ex) { ShowSystemMessage($"Ошибка сети при удалении: {ex.Message}"); }
                 }
-                else ChatMessages.Remove(msg);
+                else
+                {
+                    ChatMessages.Remove(msg);
+                    SaveGuestHistory();
+                }
             }
         }
 
@@ -814,7 +1102,7 @@ namespace Friday
                     bitmap.BeginInit(); bitmap.CacheOption = BitmapCacheOption.OnLoad; bitmap.StreamSource = ms; bitmap.EndInit(); bitmap.Freeze();
                     Border thumbnailContainer = new Border { Width = 160, Height = 160, Margin = new Thickness(5), CornerRadius = new CornerRadius(5) };
                     Grid grid = new Grid();
-                    Image thumbnail = new Image { Source = bitmap, Stretch = Stretch.Uniform, MaxWidth = 150, MaxHeight = 150 };
+                    System.Windows.Controls.Image thumbnail = new System.Windows.Controls.Image { Source = bitmap, Stretch = Stretch.Uniform, MaxWidth = 150, MaxHeight = 150 };
                     Button closeButton = new Button { Content = "×", Width = 20, Height = 20, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top };
                     closeButton.Click += (s, ev) => ClearAttachedFile();
                     grid.Children.Add(thumbnail); grid.Children.Add(closeButton); thumbnailContainer.Child = grid;
@@ -833,7 +1121,13 @@ namespace Friday
 
     public class MessageBackgroundConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) { return value is string text && text.StartsWith("Вы:", StringComparison.OrdinalIgnoreCase) ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#6A3D8B")) : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#625B71")); }
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            // ИСПРАВЛЕНО: Явное указание System.Windows.Media.Color и ColorConverter
+            return value is string text && text.StartsWith("Вы:", StringComparison.OrdinalIgnoreCase)
+                ? new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#6A3D8B"))
+                : new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#625B71"));
+        }
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
     }
 

@@ -870,17 +870,18 @@
             <TabControl x:Name="MainTabControl" SelectionChanged="TabControl_SelectionChanged">
 
                 <!-- HOME -->
+                <!-- HOME -->
                 <TabItem Header="Home">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <!-- 0: чат  |  1: разделитель  |  2: диалоги (справа) -->
-                            <ColumnDefinition Width="*" MinWidth="520"/>
+                            <!-- 0: Чат (растягивается) | 1: Сплиттер | 2: Панель диалогов (зафиксирована справа) -->
+                            <ColumnDefinition Width="*" MinWidth="500"/>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition x:Name="DialogsColumn" Width="0"
-                                              MinWidth="0" MaxWidth="560"/>
+                            <ColumnDefinition x:Name="DialogsColumn" Width="0" MinWidth="0" MaxWidth="500"/>
                         </Grid.ColumnDefinitions>
 
-                        <Grid Grid.Column="0">
+                        <!-- ОБЛАСТЬ ЧАТА -->
+                        <Grid Grid.Column="0" Margin="0,0,10,0">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
@@ -888,6 +889,7 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
+                            <!-- Шапка чата с кнопками -->
                             <Grid Grid.Row="0" Margin="0,0,0,16">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -897,32 +899,23 @@
 
                                 <!-- Orb -->
                                 <Grid Grid.Column="0" Width="72" Height="72" Margin="0,0,20,0">
-                                    <Ellipse x:Name="OrbRing1" Width="72" Height="72"
-                                             Stroke="{StaticResource AccentBright}" StrokeThickness="1"
-                                             Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse x:Name="OrbRing1" Width="72" Height="72" Stroke="{StaticResource AccentBright}" StrokeThickness="1" Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
                                         <Ellipse.RenderTransform>
                                             <ScaleTransform/>
                                         </Ellipse.RenderTransform>
                                     </Ellipse>
-                                    <Ellipse x:Name="OrbRing2" Width="72" Height="72"
-                                             Stroke="{StaticResource AccentBright}" StrokeThickness="1"
-                                             Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse x:Name="OrbRing2" Width="72" Height="72" Stroke="{StaticResource AccentBright}" StrokeThickness="1" Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
                                         <Ellipse.RenderTransform>
                                             <ScaleTransform/>
                                         </Ellipse.RenderTransform>
                                     </Ellipse>
-                                    <Ellipse x:Name="OrbRing3" Width="72" Height="72"
-                                             Stroke="{StaticResource AccentBright}" StrokeThickness="1"
-                                             Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse x:Name="OrbRing3" Width="72" Height="72" Stroke="{StaticResource AccentBright}" StrokeThickness="1" Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
                                         <Ellipse.RenderTransform>
                                             <ScaleTransform/>
                                         </Ellipse.RenderTransform>
                                     </Ellipse>
                                     <Ellipse Width="56" Height="56" Stroke="#1E4A32" StrokeThickness="1" Fill="Transparent"/>
-                                    <Button x:Name="ListenButton" Width="44" Height="44"
-                                            Click="ListenButton_Click" ToolTip="Голосовой ввод"
-                                            Background="Transparent" BorderBrush="{x:Null}"
-                                            FocusVisualStyle="{x:Null}" Cursor="Hand">
+                                    <Button x:Name="ListenButton" Width="44" Height="44" Click="ListenButton_Click" ToolTip="Голосовой ввод" Background="Transparent" BorderBrush="{x:Null}" FocusVisualStyle="{x:Null}" Cursor="Hand">
                                         <Button.Template>
                                             <ControlTemplate TargetType="Button">
                                                 <Grid>
@@ -930,166 +923,113 @@
                                                         <Ellipse.Effect>
                                                             <DropShadowEffect Color="#22C55E" BlurRadius="22" ShadowDepth="0" Opacity="0.9"/>
                                                         </Ellipse.Effect>
-                                                        <Ellipse.Triggers>
-                                                            <EventTrigger RoutedEvent="Ellipse.Loaded">
-                                                                <BeginStoryboard>
-                                                                    <Storyboard RepeatBehavior="Forever">
-                                                                        <DoubleAnimation Storyboard.TargetName="OrbCore"
-                                                                                         Storyboard.TargetProperty="Opacity"
-                                                                                         From="0.82" To="1.0" Duration="0:0:1.3"
-                                                                                         AutoReverse="True"/>
-                                                                    </Storyboard>
-                                                                </BeginStoryboard>
-                                                            </EventTrigger>
-                                                        </Ellipse.Triggers>
                                                     </Ellipse>
-                                                    <TextBlock Text="🎤" FontFamily="Segoe UI Emoji" FontSize="16"
-                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="🎤" FontFamily="Segoe UI Emoji" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 </Grid>
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="OrbCore" Property="Opacity" Value="0.85"/>
-                                                    </Trigger>
-                                                    <Trigger Property="IsPressed" Value="True">
-                                                        <Setter TargetName="OrbCore" Property="Opacity" Value="0.6"/>
-                                                    </Trigger>
-                                                </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </Button.Template>
                                     </Button>
                                 </Grid>
 
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="Голосовой ассистент" FontFamily="{StaticResource BrandFont}"
-                                               FontSize="24" Foreground="{StaticResource TextHigh}"/>
-                                    <TextBlock Text="Нажми на орб или напечатай сообщение"
-                                               FontFamily="{StaticResource UI}" FontSize="12"
-                                               Foreground="{StaticResource TextLow}" Margin="1,4,0,0"/>
+                                    <TextBlock Text="Голосовой ассистент" FontFamily="{StaticResource BrandFont}" FontSize="24" Foreground="{StaticResource TextHigh}"/>
+                                    <TextBlock Text="Нажми на орб или напечатай сообщение" FontFamily="{StaticResource UI}" FontSize="12" Foreground="{StaticResource TextLow}" Margin="1,4,0,0"/>
                                 </StackPanel>
 
-                                <StackPanel Grid.Column="2" Orientation="Horizontal"
-                                    VerticalAlignment="Center" Margin="24,0,0,0">
-                                                            <ToggleButton x:Name="VideoButton" Content="Видео"
-                                            Style="{StaticResource ToggleOutline}"
-                                            Width="110" Margin="0,0,8,0"/>
-                                                            <Button x:Name="ClearHistoryButton" Content="Очистить"
-                                    Style="{StaticResource DarkButtonStyle}"
-                                    Click="ClearHistoryButton_Click" Width="100"/>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ToggleButton x:Name="CameraBtn" Content="📷 Камера" Style="{StaticResource ToggleOutline}" Width="100" Margin="0,0,8,0" Click="CameraBtn_Click"/>
+                                    <ToggleButton x:Name="ScreenBtn" Content="🖥 Экран" Style="{StaticResource ToggleOutline}" Width="100" Margin="0,0,8,0" Click="ScreenBtn_Click"/>
+                                    <Button x:Name="ClearHistoryButton" Content="Очистить" Style="{StaticResource DarkButtonStyle}" Click="ClearHistoryButton_Click" Width="100"/>
                                 </StackPanel>
                             </Grid>
 
-                            <!-- Chat -->
-                            <Border Grid.Row="1" Background="{StaticResource BgPanel}"
-                                    BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
-                                    CornerRadius="4,4,0,0">
-                                <ListBox x:Name="ChatListBox" Background="Transparent" BorderThickness="0"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                     VirtualizingPanel.ScrollUnit="Pixel" 
-                                     SelectionChanged="ChatListBox_SelectionChanged">
-                                    <ListBox.ItemContainerStyle>
-                                        <Style TargetType="ListBoxItem">
-                                            <Setter Property="Padding"                    Value="0"/>
-                                            <Setter Property="Margin"                     Value="0"/>
-                                            <Setter Property="BorderThickness"            Value="0"/>
-                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                            <Setter Property="Background"                 Value="Transparent"/>
-                                            <Setter Property="FocusVisualStyle"           Value="{x:Null}"/>
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="ListBoxItem">
-                                                        <Border Background="Transparent">
-                                                            <ContentPresenter/>
-                                                        </Border>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </ListBox.ItemContainerStyle>
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="16,4,16,4">
-                                                <Border x:Name="MessageBorder" Padding="15,11" MaxWidth="1000"
-                                                        HorizontalAlignment="Left" CornerRadius="18,18,18,4"
-                                                        Background="{StaticResource BgInput}">
-                                                    <StackPanel>
-                                                        <TextBlock x:Name="SenderLabel" Text="{Binding Sender}"
-                                                                   FontFamily="{StaticResource UI}" FontSize="10"
-                                                                   FontWeight="Bold" Foreground="{StaticResource TextMid}"
-                                                                   Margin="0,0,0,5"/>
-                                                        <TextBlock Text="{Binding DisplayText}"
-                                                                   FontFamily="{StaticResource UI}" FontSize="14"
-                                                                   Foreground="{StaticResource TextHigh}"
-                                                                   TextWrapping="Wrap" LineHeight="22"/>
-                                                        <StackPanel x:Name="ActionButtons" Orientation="Horizontal"
-                                                                    HorizontalAlignment="Right" Margin="0,8,0,0"
-                                                                    Visibility="Collapsed">
-                                                            <Button Content="Удалить"    Style="{StaticResource BubbleActionBtn}" Click="DeleteChatMessage_Click"/>
-                                                            <Button Content="Правка"     Style="{StaticResource BubbleActionBtn}" Click="EditChatMessage_Click"/>
-                                                            <Button Content="Копировать" Style="{StaticResource BubbleActionBtn}" Click="CopyChatMessage_Click"/>
-                                                            <Button x:Name="RegenerateButton" Content="↺"
-                                                                    Style="{StaticResource BubbleActionBtn}"
-                                                                    Click="RegenerateChatMessage_Click"/>
+                            <!-- Список сообщений чата (Зафиксирован, не прыгает по ширине) -->
+                            <Border Grid.Row="1" Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}" BorderThickness="1" CornerRadius="4,4,0,0">
+                                <Grid>
+                                    <ListBox x:Name="ChatListBox" Background="Transparent" BorderThickness="0"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                             HorizontalContentAlignment="Stretch"
+                                             VirtualizingPanel.ScrollUnit="Pixel" 
+                                             SelectionChanged="ChatListBox_SelectionChanged">
+                                        <ListBox.ItemContainerStyle>
+                                            <Style TargetType="ListBoxItem">
+                                                <Setter Property="Padding" Value="0"/>
+                                                <Setter Property="Margin" Value="0"/>
+                                                <Setter Property="BorderThickness" Value="0"/>
+                                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="ListBoxItem">
+                                                            <Border Background="Transparent">
+                                                                <ContentPresenter/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </ListBox.ItemContainerStyle>
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="16,6,16,6">
+                                                    <Border x:Name="MessageBorder" Padding="15,11" MaxWidth="850"
+                                                            HorizontalAlignment="Left" CornerRadius="18,18,18,4"
+                                                            Background="{StaticResource BgInput}">
+                                                        <StackPanel>
+                                                            <TextBlock x:Name="SenderLabel" Text="{Binding Sender}" FontFamily="{StaticResource UI}" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,5"/>
+                                                            <TextBlock Text="{Binding DisplayText}" FontFamily="{StaticResource UI}" FontSize="14" Foreground="{StaticResource TextHigh}" TextWrapping="Wrap" LineHeight="22"/>
+                                                            <StackPanel x:Name="ActionButtons" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0" Visibility="Collapsed">
+                                                                <Button Content="Удалить" Style="{StaticResource BubbleActionBtn}" Click="DeleteChatMessage_Click"/>
+                                                                <Button Content="Правка" Style="{StaticResource BubbleActionBtn}" Click="EditChatMessage_Click"/>
+                                                                <Button Content="Копировать" Style="{StaticResource BubbleActionBtn}" Click="CopyChatMessage_Click"/>
+                                                            </StackPanel>
                                                         </StackPanel>
-                                                    </StackPanel>
-                                                </Border>
-                                            </Grid>
-                                            <DataTemplate.Triggers>
-                                                <DataTrigger Binding="{Binding IsUser}" Value="True">
-                                                    <Setter TargetName="MessageBorder" Property="HorizontalAlignment" Value="Right"/>
-                                                    <Setter TargetName="MessageBorder" Property="Background"    Value="{StaticResource BgUserBubble}"/>
-                                                    <Setter TargetName="MessageBorder" Property="CornerRadius" Value="18,18,4,18"/>
-                                                    <Setter TargetName="SenderLabel"   Property="Foreground"   Value="{StaticResource AccentBright}"/>
-                                                    <Setter TargetName="RegenerateButton" Property="Visibility" Value="Collapsed"/>
-                                                </DataTrigger>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="ActionButtons" Property="Visibility" Value="Visible"/>
-                                                </Trigger>
-                                            </DataTemplate.Triggers>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
+                                                    </Border>
+                                                </Grid>
+                                                <DataTemplate.Triggers>
+                                                    <DataTrigger Binding="{Binding IsUser}" Value="True">
+                                                        <Setter TargetName="MessageBorder" Property="HorizontalAlignment" Value="Right"/>
+                                                        <Setter TargetName="MessageBorder" Property="Background" Value="{StaticResource BgUserBubble}"/>
+                                                        <Setter TargetName="MessageBorder" Property="CornerRadius" Value="18,18,4,18"/>
+                                                        <Setter TargetName="SenderLabel" Property="Foreground" Value="{StaticResource AccentBright}"/>
+                                                    </DataTrigger>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ActionButtons" Property="Visibility" Value="Visible"/>
+                                                    </Trigger>
+                                                </DataTemplate.Triggers>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+
+                                    <!-- Превью камеры/экрана над чатом -->
+                                    <Border x:Name="VideoPreviewContainer" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,10" Background="#1a1a1a" CornerRadius="8" Padding="5" Visibility="Collapsed">
+                                        <Grid>
+                                            <Image x:Name="VideoPreviewImage" Height="150" Stretch="Uniform" RenderTransformOrigin="0.5,0.5"/>
+                                            <Button Content="✕" Width="24" Height="24" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,5,0" Background="#99000000" Foreground="White" BorderThickness="0" Cursor="Hand" FontWeight="Bold" Click="CloseVideoPreview_Click" ToolTip="Скрыть превью">
+                                                <Button.Resources>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="CornerRadius" Value="12"/>
+                                                    </Style>
+                                                </Button.Resources>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
                             </Border>
 
-                            <!-- Input bar -->
-                            <Border Grid.Row="2" Background="{StaticResource BgPanel}"
-                                    BorderBrush="{StaticResource BorderDim}" BorderThickness="1,0,1,1"
-                                    CornerRadius="0,0,4,4">
+                            <!-- Поле ввода (зафиксировано внизу, растягивается по ширине окна) -->
+                            <Border Grid.Row="2" Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}" BorderThickness="1,0,1,1" CornerRadius="0,0,4,4">
                                 <Grid Height="52">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="52"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="120"/>
                                     </Grid.ColumnDefinitions>
-                                    <Button x:Name="AttachFileButton" Grid.Column="0"
-                                            Content="📎" FontFamily="Segoe UI Emoji" FontSize="16"
-                                            Height="52" Width="52" Click="AttachFileButton_Click"
-                                            ToolTip="Прикрепить файл" Background="Transparent"
-                                            BorderBrush="{StaticResource BorderDim}" BorderThickness="0,0,1,0"
-                                            FocusVisualStyle="{x:Null}" Cursor="Hand">
-                                        <Button.Template>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border x:Name="b" Background="{TemplateBinding Background}"
-                                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                                        BorderThickness="{TemplateBinding BorderThickness}">
-                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="b" Property="Background" Value="#0E2018"/>
-                                                    </Trigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </Button.Template>
-                                    </Button>
-                                    <TextBox x:Name="MessageTextBox" Grid.Column="1"
-                                             Height="52" FontSize="14" Padding="16,0"
-                                             BorderThickness="0" Background="Transparent"
-                                             VerticalContentAlignment="Center"
-                                             KeyDown="MessageTextBox_KeyDown"/>
-                                    <Button x:Name="SendMessageButton" Grid.Column="2"
-                                            Content="ОТПРАВИТЬ" Height="52" FontSize="12" FontWeight="Bold"
-                                            Click="SendMessageButton_Click"/>
+                                    <Button x:Name="AttachFileButton" Grid.Column="0" Content="📎" FontFamily="Segoe UI Emoji" FontSize="16" Height="52" Width="52" Click="AttachFileButton_Click" ToolTip="Прикрепить файл" Background="Transparent" BorderBrush="{StaticResource BorderDim}" BorderThickness="0,0,1,0" FocusVisualStyle="{x:Null}" Cursor="Hand"/>
+                                    <TextBox x:Name="MessageTextBox" Grid.Column="1" Height="52" FontSize="14" Padding="16,0" BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center" KeyDown="MessageTextBox_KeyDown"/>
+                                    <Button x:Name="SendMessageButton" Grid.Column="2" Content="ОТПРАВИТЬ" Height="52" FontSize="12" FontWeight="Bold" Click="SendMessageButton_Click"/>
                                 </Grid>
                             </Border>
 
@@ -1101,50 +1041,14 @@
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
                                 </ItemsControl>
-                                <TextBlock x:Name="AttachedFileInfoTextBlock" FontFamily="{StaticResource UI}"
-                                           FontSize="11" Foreground="{StaticResource TextLow}" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Grid>
 
-                        <!-- Разделитель: тянем ширину панели диалогов мышью -->
-                        <GridSplitter x:Name="DialogsSplitter" Grid.Column="1"
-                                      Width="10" HorizontalAlignment="Stretch"
-                                      VerticalAlignment="Stretch"
-                                      ShowsPreview="True"
-                                      ResizeBehavior="PreviousAndNext"
-                                      ResizeDirection="Columns"
-                                      Visibility="Collapsed" Cursor="SizeWE"
-                                      Background="Transparent" BorderThickness="0"
-                                      Focusable="False">
-                            <GridSplitter.Template>
-                                <ControlTemplate TargetType="GridSplitter">
-                                    <Border Background="Transparent">
-                                        <Rectangle x:Name="Grip" Width="2" Height="46"
-                                                   RadiusX="1" RadiusY="1"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"
-                                                   Fill="{StaticResource BorderDim}"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Grip" Property="Fill" Value="{StaticResource AccentBright}"/>
-                                            <Setter TargetName="Grip" Property="Height" Value="80"/>
-                                        </Trigger>
-                                        <Trigger Property="IsDragging" Value="True">
-                                            <Setter TargetName="Grip" Property="Fill" Value="{StaticResource AccentGlow}"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </GridSplitter.Template>
-                        </GridSplitter>
+                        <!-- Разделитель колонок -->
+                        <GridSplitter x:Name="DialogsSplitter" Grid.Column="1" Width="8" HorizontalAlignment="Center" VerticalAlignment="Stretch" ShowsPreview="True" ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Visibility="Collapsed" Cursor="SizeWE" Background="Transparent"/>
 
-                        <!-- ===== ПАНЕЛЬ ДИАЛОГОВ (только для авторизованных) ===== -->
-                        <Border x:Name="DialogsPanel" Grid.Column="2"
-                                Margin="0" MinWidth="200"
-                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                Background="{StaticResource BgPanel}"
-                                BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
-                                CornerRadius="4" Visibility="Collapsed">
+                        <!-- ПАНЕЛЬ ДИАЛОГОВ (СПРАВА) -->
+                        <Border x:Name="DialogsPanel" Grid.Column="2" MinWidth="220" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}" BorderThickness="1" CornerRadius="4" Visibility="Collapsed">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -1154,51 +1058,27 @@
                                 </Grid.RowDefinitions>
 
                                 <Grid Grid.Row="0" Margin="14,12,14,0">
-                                    <TextBlock Text="ДИАЛОГИ"
-                                               FontFamily="{StaticResource UI}" FontSize="10"
-                                               FontWeight="Bold" Foreground="{StaticResource TextMid}"/>
-                                    <TextBlock x:Name="DialogsCountText"
-                                               HorizontalAlignment="Right"
-                                               FontFamily="{StaticResource UI}" FontSize="10"
-                                               Foreground="{StaticResource TextLow}"/>
+                                    <TextBlock Text="ДИАЛОГИ" FontFamily="{StaticResource UI}" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMid}"/>
+                                    <TextBlock x:Name="DialogsCountText" HorizontalAlignment="Right" FontFamily="{StaticResource UI}" FontSize="10" Foreground="{StaticResource TextLow}"/>
                                 </Grid>
 
-                                <Button x:Name="NewChatButton" Grid.Row="1"
-                                        Content="+  НОВЫЙ ЧАТ" Height="34"
-                                        Style="{StaticResource DarkButtonStyle}"
-                                        Margin="10,10,10,10" FontSize="11" FontWeight="Bold"
-                                        Click="NewChatButton_Click"/>
-
+                                <Button x:Name="NewChatButton" Grid.Row="1" Content="+  НОВЫЙ ЧАТ" Height="34" Style="{StaticResource DarkButtonStyle}" Margin="10,10,10,10" FontSize="11" FontWeight="Bold" Click="NewChatButton_Click"/>
                                 <Rectangle Grid.Row="2" Fill="{StaticResource BorderDim}"/>
 
-                                <!-- Row="3" = "*": список занимает остаток высоты панели
-                                     и скроллится ВНУТРИ себя. Рост числа чатов и рост
-                                     переписки в чате больше не влияют друг на друга. -->
-                                <ListBox x:Name="DialogListBox" Grid.Row="3"
-                                         Background="Transparent" BorderThickness="0"
-                                         Margin="6,6,6,8"
-                                         VerticalAlignment="Stretch"
-                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                         ScrollViewer.CanContentScroll="False"
-                                         VirtualizingPanel.ScrollUnit="Pixel"
-                                         SelectionChanged="DialogListBox_SelectionChanged">
+                                <ListBox x:Name="DialogListBox" Grid.Row="3" Background="Transparent" BorderThickness="0" Margin="6,6,6,8" VerticalAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="False" VirtualizingPanel.ScrollUnit="Pixel" SelectionChanged="DialogListBox_SelectionChanged">
                                     <ListBox.ItemContainerStyle>
                                         <Style TargetType="ListBoxItem">
-                                            <Setter Property="Padding"                    Value="0"/>
-                                            <Setter Property="Margin"                     Value="0,2,0,2"/>
-                                            <Setter Property="BorderThickness"            Value="0"/>
+                                            <Setter Property="Padding" Value="0"/>
+                                            <Setter Property="Margin" Value="0,2,0,2"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
                                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                            <Setter Property="Background"                 Value="Transparent"/>
-                                            <Setter Property="FocusVisualStyle"           Value="{x:Null}"/>
-                                            <Setter Property="Cursor"                     Value="Hand"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                            <Setter Property="Cursor" Value="Hand"/>
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate TargetType="ListBoxItem">
-                                                        <Border x:Name="DlgBorder" CornerRadius="4"
-                                                                Background="Transparent"
-                                                                BorderBrush="Transparent" BorderThickness="1"
-                                                                Padding="8,7">
+                                                        <Border x:Name="DlgBorder" CornerRadius="4" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" Padding="8,7">
                                                             <ContentPresenter/>
                                                         </Border>
                                                         <ControlTemplate.Triggers>
@@ -1206,7 +1086,7 @@
                                                                 <Setter TargetName="DlgBorder" Property="Background" Value="{StaticResource BgInput}"/>
                                                             </Trigger>
                                                             <Trigger Property="IsSelected" Value="True">
-                                                                <Setter TargetName="DlgBorder" Property="Background"  Value="{StaticResource BgUserBubble}"/>
+                                                                <Setter TargetName="DlgBorder" Property="Background" Value="{StaticResource BgUserBubble}"/>
                                                                 <Setter TargetName="DlgBorder" Property="BorderBrush" Value="{StaticResource Accent}"/>
                                                             </Trigger>
                                                         </ControlTemplate.Triggers>
@@ -1222,17 +1102,8 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" Text="{Binding Name}"
-                                                           ToolTip="{Binding Name}"
-                                                           FontFamily="{StaticResource UI}" FontSize="12"
-                                                           Foreground="{StaticResource TextHigh}"
-                                                           TextTrimming="CharacterEllipsis"
-                                                           VerticalAlignment="Center"/>
-                                                <Button Grid.Column="1" Content="✕"
-                                                        Style="{StaticResource BubbleActionBtn}"
-                                                        ToolTip="Удалить диалог"
-                                                        Margin="6,0,0,0"
-                                                        Click="DeleteDialogButton_Click"/>
+                                                <TextBlock Grid.Column="0" Text="{Binding Name}" ToolTip="{Binding Name}" FontFamily="{StaticResource UI}" FontSize="12" Foreground="{StaticResource TextHigh}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                <Button Grid.Column="1" Content="✕" Style="{StaticResource BubbleActionBtn}" ToolTip="Удалить диалог" Margin="6,0,0,0" Click="DeleteDialogButton_Click"/>
                                             </Grid>
                                         </DataTemplate>
                                     </ListBox.ItemTemplate>

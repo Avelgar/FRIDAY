@@ -144,7 +144,12 @@ namespace Friday
                             if (isSilence)
                             {
                                 _isRecordingCommand = false;
+
+                                // === ДОБАВЛЕНО/ИЗМЕНЕНО: Жесткая немедленная блокировка ===
                                 _isWaitingForServer = true;
+                                _isSpeaking = true; // Притворяемся, что бот говорит, чтобы микрофон вообще не реагировал
+                                // ==========================================================
+
                                 SendStreamEnd(_currentCommandMsgId);
                                 _currentCommandMsgId = null;
                             }
@@ -403,6 +408,7 @@ namespace Friday
                 _waitingTimeoutCts?.Cancel();
                 _isMutedByStopWord = false;
                 _isWaitingForServer = false;
+                _isSpeaking = false; // <--- Снимаем жесткую блокировку
                 _audioBuffer.SetLength(0);
             }
         }

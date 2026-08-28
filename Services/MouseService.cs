@@ -30,7 +30,8 @@ namespace Friday
                     return;
                 }
 
-                if (int.TryParse(parts[0], out int x) && int.TryParse(parts[1], out int y))
+                // ДОБАВЛЕНО .Trim() для защиты от пробелов
+                if (int.TryParse(parts[0].Trim(), out int x) && int.TryParse(parts[1].Trim(), out int y))
                 {
                     if (!SetCursorPos(x, y))
                     {
@@ -47,7 +48,6 @@ namespace Friday
                 ShowError($"Критическая ошибка: {ex.Message}");
             }
         }
-
         public void PressMouseButton(string button)
         {
             switch (button)

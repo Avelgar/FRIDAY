@@ -1111,6 +1111,42 @@ namespace Friday
             }
             catch (Exception ex) { ShowSystemMessage($"Не удалось отобразить скриншот: {ex.Message}"); }
         }
+        // ================= ДЛЯ ТЯЖЕЛОГО МОЗГА =================
+        public (string Base64, int Width, int Height) CaptureScreenForAI()
+        {
+            try
+            {
+                var bounds = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
+                using (var bmp = new Bitmap(bounds.Width, bounds.Height))
+                {
+                    using (var g = Graphics.FromImage(bmp))
+                    {
+                        g.CopyFromScreen(0, 0, 0, 0, bmp.Size);
+                    }
+
+                    // Сжимаем скриншот, чтобы не жрать лимиты ИИ и вебсокета
+                    int targetWidth = bounds.Width;
+                    int targetHeight = bounds.Height;
+                    if (targetWidth > 1920)
+                    {
+                        targetHeight = (int)(targetHeight * (1920.0 / targetWidth));
+                        targetWidth = 1920;
+                    }
+
+                    using (var resizedBmp = new Bitmap(bmp, targetWidth, targetHeight))
+                    using (var ms = new MemoryStream())
+                    {
+                        var encoderParams = new EncoderParameters(1);
+                        encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 50L);
+                        var jpegCodec = ImageCodecInfo.GetImageDecoders().FirstOrDefault(codec => codec.FormatID == ImageFormat.Jpeg.Guid);
+
+                        resizedBmp.Save(ms, jpegCodec, encoderParams);
+                        return (Convert.ToBase64String(ms.ToArray()), bounds.Width, bounds.Height);
+                    }
+                }
+            }
+            catch { return (null, 0, 0); }
+        }
     }
 
     public class MessageAlignmentConverter : IValueConverter
@@ -1145,4 +1181,6 @@ namespace Friday
         }
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
     }
+
+
 }

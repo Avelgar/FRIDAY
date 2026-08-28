@@ -464,6 +464,7 @@ namespace Friday
                                 bool needsDataResponse = false;
                                 bool needProcesses = false;
                                 bool needPrograms = false;
+                                bool needScreenshot = false; // <--- ДОБАВИЛИ
 
                                 foreach (var action in cmdResp.Actions)
                                 {
@@ -472,11 +473,15 @@ namespace Friday
                                         _ignoredMessageId = currentMsgId;
                                     }
 
-                                    if (action.ActionType?.ToLower() == "get_running_processes" || action.ActionType?.ToLower() == "get_installed_programs")
+                                    // ДОБАВИЛИ request_screenshot В ПРОВЕРКУ
+                                    if (action.ActionType?.ToLower() == "get_running_processes" ||
+                                        action.ActionType?.ToLower() == "get_installed_programs" ||
+                                        action.ActionType?.ToLower() == "request_screenshot")
                                     {
                                         needsDataResponse = true;
                                         if (action.ActionType?.ToLower() == "get_running_processes") needProcesses = true;
                                         if (action.ActionType?.ToLower() == "get_installed_programs") needPrograms = true;
+                                        if (action.ActionType?.ToLower() == "request_screenshot") needScreenshot = true;
                                     }
                                     else
                                     {
@@ -497,6 +502,9 @@ namespace Friday
                                 if (needsDataResponse)
                                 {
                                     string processOutput = "";
+                                    string screenshotB64 = null; // <--- ДОБАВИЛИ
+                                    string screenRes = "";       // <--- ДОБАВИЛИ
+
                                     if (needPrograms) InstalledApplications = GetInstalledApplications();
                                     if (needProcesses)
                                     {
@@ -506,11 +514,21 @@ namespace Friday
                                         processOutput = string.Join(", ", userApps);
                                     }
 
+                                    // === ЗАПРАШИВАЕМ ТИХИЙ СКРИНШОТ ===
+                                    if (needScreenshot)
+                                    {
+                                        var screenData = _mainWindow?.CaptureScreenForAI() ?? (null, 0, 0);
+                                        screenshotB64 = screenData.Base64;
+                                        screenRes = $"{screenData.Width}x{screenData.Height}";
+                                    }
+
                                     var dataResponse = new
                                     {
                                         command_to_device = cmdResp.OriginalCommand,
                                         processes = processOutput,
                                         programs = InstalledApplications,
+                                        screenshot_base64_received = screenshotB64, // <--- ОТПРАВЛЯЕМ ФОТКУ
+                                        screen_resolution = screenRes,              // <--- ОТПРАВЛЯЕМ РАЗМЕР ЭКРАНА
                                         source_name = cmdResp.SourceDevice,
                                         user_msg_id = cmdResp.UserMsgId,
                                         voice_type = SettingManager.Setting.VoiceType
@@ -518,7 +536,6 @@ namespace Friday
                                     SendWebSocketMessage(dataResponse);
                                 }
                             }
-
                             Application.Current.Dispatcher.Invoke(() => {
                                 var pendingMsg = _mainWindow?.ChatMessages.LastOrDefault(m => m.IsUser && m.UiMsgId == cmdResp.UiMsgId);
                                 if (pendingMsg != null)

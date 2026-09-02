@@ -502,8 +502,8 @@ namespace Friday
                                 if (needsDataResponse)
                                 {
                                     string processOutput = "";
-                                    string screenshotB64 = null; // <--- ДОБАВИЛИ
-                                    string screenRes = "";       // <--- ДОБАВИЛИ
+                                    string screenshotB64 = null;
+                                    string screenRes = "";
 
                                     if (needPrograms) InstalledApplications = GetInstalledApplications();
                                     if (needProcesses)
@@ -514,25 +514,29 @@ namespace Friday
                                         processOutput = string.Join(", ", userApps);
                                     }
 
-                                    // === ЗАПРАШИВАЕМ ТИХИЙ СКРИНШОТ ===
-                                    if (needScreenshot)
+                                    // === БЕЗОПАСНЫЙ ЗАХВАТ ЭКРАНА В UI-ПОТОКЕ ===
+                                    if (needScreenshot && _mainWindow != null)
                                     {
-                                        var screenData = _mainWindow?.CaptureScreenForAI() ?? (null, 0, 0);
+                                        var screenData = Application.Current.Dispatcher.Invoke(() => _mainWindow.CaptureScreenForAI());
                                         screenshotB64 = screenData.Base64;
                                         screenRes = $"{screenData.Width}x{screenData.Height}";
                                     }
 
+                                    // === ИСПРАВЛЕННЫЙ JSON ДЛЯ СЕРВЕРА ===
                                     var dataResponse = new
                                     {
+                                        type = "web_command", // <--- ОБЯЗАТЕЛЬНОЕ ПОЛЕ ДЛЯ СЕРВЕРА
+                                        command = "",         // <--- ОБЯЗАТЕЛЬНОЕ ПОЛЕ ДЛЯ СЕРВЕРА
                                         command_to_device = cmdResp.OriginalCommand,
                                         processes = processOutput,
                                         programs = InstalledApplications,
-                                        screenshot_base64_received = screenshotB64, // <--- ОТПРАВЛЯЕМ ФОТКУ
-                                        screen_resolution = screenRes,              // <--- ОТПРАВЛЯЕМ РАЗМЕР ЭКРАНА
+                                        screenshot_base64_received = screenshotB64,
+                                        screen_resolution = screenRes,
                                         source_name = cmdResp.SourceDevice,
                                         user_msg_id = cmdResp.UserMsgId,
                                         voice_type = SettingManager.Setting.VoiceType
                                     };
+
                                     SendWebSocketMessage(dataResponse);
                                 }
                             }

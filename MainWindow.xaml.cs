@@ -103,7 +103,13 @@ namespace Friday
                 ApplyGuestMode();
                 LoadGuestHistory(); // Загружаем историю из файла для гостя
             }
-            else ApplyAccountMode();
+            else
+            {
+                ApplyAccountMode();
+                if (!string.IsNullOrEmpty(((App)Application.Current).AccountLogin))
+                    ShowUserButton(((App)Application.Current).AccountLogin);
+                _ = SyncDialogsAfterLoginAsync(_userData?.history);
+            }
         }
 
         // ================= ЛОГИКА ИСТОРИИ ГОСТЯ =================
@@ -554,67 +560,13 @@ namespace Friday
             }
         }
 
-        private async void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (e.AddedItems.Count == 0) return;
             if (e.AddedItems[0] is TabItem) AnimateTabContent();
-            if (e.AddedItems[0] is TabItem selectedTab && selectedTab.Header.ToString() == "Устройства")
-            {
-                try
-                {
-                    var message = new { mac = GetMacAddress() };
-                    using (var client = new HttpClient())
-                    {
-                        var json = JsonConvert.SerializeObject(message);
-                        var content = new StringContent(json, Encoding.UTF8, "application/json");
-                        var response = await client.PostAsync("https://friday-assistant.ru/get_devices", content);
-                        response.EnsureSuccessStatusCode();
-                        var responseJson = await response.Content.ReadAsStringAsync();
-                        var responseObject = JsonConvert.DeserializeObject<DeviceResponse>(responseJson);
-
-                        Dispatcher.Invoke(() =>
-                        {
-                            if (responseObject.account_devices != null && responseObject.account_devices.Count > 0)
-                            {
-                                AccountDevicesList.ItemsSource = responseObject.account_devices;
-                                NoAccountDevicesText.Visibility = Visibility.Collapsed;
-                            }
-                            else { AccountDevicesList.ItemsSource = null; NoAccountDevicesText.Visibility = Visibility.Visible; }
-
-                            if (responseObject.my_devices != null && responseObject.my_devices.Count > 0)
-                            {
-                                ConnectedDevicesList.ItemsSource = responseObject.my_devices;
-                                NoConnectedDevicesText.Visibility = Visibility.Collapsed;
-                            }
-                            else { ConnectedDevicesList.ItemsSource = null; NoConnectedDevicesText.Visibility = Visibility.Visible; }
-                        });
-                    }
-                }
-                catch (Exception ex) { ShowSystemMessage($"Произошла ошибка: {ex.Message}"); }
-            }
         }
 
-        private async void DisconnectDeviceButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!(sender is Button button)) return;
-            string targetMacAddress = button.Tag as string;
-            if (string.IsNullOrEmpty(targetMacAddress)) return;
 
-            try
-            {
-                var message = new { requester_mac = GetMacAddress(), target_mac = targetMacAddress };
-                using (var client = new HttpClient())
-                {
-                    var json = JsonConvert.SerializeObject(message);
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    var response = await client.PostAsync("https://friday-assistant.ru/disconnect_device", content);
-                    response.EnsureSuccessStatusCode();
-                    var devicesTab = (TabItem)this.FindName("DevicesTab");
-                    TabControl_SelectionChanged(null, new SelectionChangedEventArgs(TabControl.SelectionChangedEvent, new List<object>(), new List<object> { devicesTab }));
-                }
-            }
-            catch (Exception ex) { ShowSystemMessage($"Ошибка при отключении устройства: {ex.Message}"); }
-        }
 
         private void AttachFileButton_Click(object sender, RoutedEventArgs e)
         {
@@ -668,14 +620,7 @@ namespace Friday
         }
 
         public class AttachedFile { public string Name { get; set; } public byte[] Data { get; set; } public long Size { get; set; } }
-        public class DeviceResponse { public List<DeviceInfo> account_devices { get; set; } public List<DeviceInfo> my_devices { get; set; } public string status { get; set; } }
-        public class DeviceInfo { public string DeviceName { get; set; } public string MacAddress { get; set; } public bool IsOnline { get; set; } public bool IsAccountDevice { get; set; } }
 
-        private void ConnectDeviceButton_Click(object sender, RoutedEventArgs e)
-        {
-            var connectDeviceWindow = new ConnectDeviceWindow();
-            if (connectDeviceWindow.ShowDialog() == true) TabControl_SelectionChanged(null, new SelectionChangedEventArgs(TabControl.SelectionChangedEvent, new List<object>(), new List<object> { DevicesTab }));
-        }
 
         private void InitializeUserInterface()
         {
@@ -1039,6 +984,7 @@ namespace Friday
             StopVideo(); // Выключаем камеру при закрытии
             ((App)Application.Current).DecrementWindowCount();
             base.OnClosed(e);
+            Application.Current.Shutdown();
         }
 
         private void ChatListBox_SelectionChanged(object sender, SelectionChangedEventArgs e) { }

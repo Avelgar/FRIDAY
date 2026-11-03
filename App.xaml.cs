@@ -16,7 +16,6 @@ namespace Friday
     {
         public string _last_answer = "";
         private ClientWebSocket _webSocket;
-        private RegistrationWindow _registrationWindow; // Окно ЖЕЛЕЗА
         private MainWindow _mainWindow;
         public VoiceService VoiceService { get; set; }
         private DeviceData _deviceData;
@@ -63,7 +62,7 @@ namespace Friday
             settingManager.LoadSettings();
             AppServices.Init();
 
-            Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            Application.Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
 
             bool createdNew;
             _mutex = new Mutex(true, appName, out createdNew);
@@ -76,18 +75,21 @@ namespace Friday
             base.OnStartup(e);
 
             _cancellationTokenSource = new CancellationTokenSource();
-            InitializeWebSocket();
-
-            // 1. ЗАГРУЖАЕМ ЖЕЛЕЗО (Гостевой режим)
-            string deviceFilePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\devisedata.json"));
-            LoadDeviceData(deviceFilePath);
-
-            // 2. ПОДГРУЖАЕМ АККАУНТ (Но пока не синхронизируем, ждем ответа от сервера по железу)
+            // 1. ПОДГРУЖАЕМ АККАУНТ
             string accountFilePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\account.json"));
             if (File.Exists(accountFilePath))
             {
                 try { _accountData = JsonConvert.DeserializeObject<AccountData>(File.ReadAllText(accountFilePath)); }
                 catch { }
+            }
+
+            // 2. ИНИЦИАЛИЗИРУЕМ СОКЕТ
+            InitializeWebSocket();
+
+            // 3. ЕСЛИ ТОКЕНА НЕТ - ОТКРЫВАЕМ ОКНО ВХОДА В АККАУНТ
+            if (!IsLoggedIn)
+            {
+                OpenLoginWindow();
             }
 
             _keepAliveTimer = new System.Timers.Timer(15000);
@@ -98,44 +100,35 @@ namespace Friday
             _openWindowsCount++;
         }
 
-        // --- МЕТОДЫ ЖЕЛЕЗА ---
-        private void LoadDeviceData(string filePath)
-        {
-            if (!File.Exists(filePath)) OpenRegistrationWindow();
-            else
-            {
-                try
-                {
-                    var fileContent = File.ReadAllText(filePath);
-                    _deviceData = JsonConvert.DeserializeObject<DeviceData>(fileContent);
-                    if (_deviceData == null || string.IsNullOrEmpty(_deviceData.DeviceName) || string.IsNullOrEmpty(_deviceData.Password))
-                        OpenRegistrationWindow();
-                    else
-                        SendWebSocketMessage(new { MAC = GetMacAddress(), DeviceName = _deviceData.DeviceName, Password = _deviceData.Password });
-                }
-                catch (JsonException) { OpenRegistrationWindow(); }
-            }
-        }
-
-        public void UpdateDeviceDataFile(string deviceName, string password)
-        {
-            string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\devisedata.json"));
-            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-            _deviceData = new DeviceData { DeviceName = deviceName, Password = password };
-            File.WriteAllText(filePath, JsonConvert.SerializeObject(_deviceData, Formatting.Indented), Encoding.UTF8);
-        }
-
-        private void OpenRegistrationWindow()
-        {
-            if (_registrationWindow == null || !_registrationWindow.IsVisible)
-            {
-                _registrationWindow = new RegistrationWindow();
-                _registrationWindow.Closed += (s, ev) => { _registrationWindow = null; };
-                _registrationWindow.Show();
-            }
-        }
-
         // --- МЕТОДЫ АККАУНТА ---
+        private LoginWindow _loginWindow;
+        public void OpenLoginWindow()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (_loginWindow == null || !_loginWindow.IsVisible)
+                {
+                    _loginWindow = new LoginWindow();
+                    _loginWindow.Closed += (s, ev) => { _loginWindow = null; };
+                    _loginWindow.Show();
+                }
+            });
+        }
+
+        public void SendAuth()
+        {
+            if (IsLoggedIn)
+            {
+                SendWebSocketMessage(new
+                {
+                    type = "auth",
+                    token = _accountData.Token,
+                    device_name = Environment.MachineName,
+                    device_type = "pc"
+                });
+            }
+        }
+
         public void UpdateAccountData(string login, string token)
         {
             string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\account.json"));
@@ -143,22 +136,14 @@ namespace Friday
             _accountData = new AccountData { Login = login, Token = token };
             File.WriteAllText(filePath, JsonConvert.SerializeObject(_accountData, Formatting.Indented), Encoding.UTF8);
 
-            CheckAccountSync();
+            SendAuth();
         }
 
         public void CheckAccountSync()
         {
-            if (_accountData != null && !string.IsNullOrEmpty(_accountData.Token))
-            {
-                var syncData = new
-                {
-                    type = "account_sync",
-                    token = _accountData.Token,
-                    mac = GetMacAddress()
-                };
-                SendWebSocketMessage(syncData);
-            }
+            SendAuth();
         }
+
         public void ResetAccountData()
         {
             _accountData = null;
@@ -224,6 +209,11 @@ namespace Friday
                 _webSocket = new ClientWebSocket();
                 await _webSocket.ConnectAsync(new Uri("wss://friday-assistant.ru/ws"), _cancellationTokenSource.Token);
                 _isConnectionActive = true;
+
+                if (IsLoggedIn)
+                {
+                    SendAuth();
+                }
 
                 // ФИКС ЗДЕСЬ: Выталкиваем из очереди сообщения, которые скопились, пока мы подключались!
                 await ProcessCommandQueue();
@@ -300,53 +290,26 @@ namespace Friday
                     return;
                 }
 
-                if (answer.Contains("Это имя устройства уже занято"))
-                {
-                    Application.Current.Dispatcher.Invoke(() => { _mainWindow?.ShowSystemMessage("Имя устройства занято."); });
-                    if (_registrationWindow == null) OpenRegistrationWindow();
-                    return;
-                }
-
-                // 1. УСПЕШНАЯ СИНХРОНИЗАЦИЯ АККАУНТА (Пришла глобальная история)
-                if (answer.Contains("\"type\":\"account_sync_success\"") || answer.Contains("\"type\": \"account_sync_success\""))
+                // 1. УСПЕШНАЯ АВТОРИЗАЦИЯ И СИНХРОНИЗАЦИЯ АККАУНТА
+                if (answer.Contains("\"type\":\"account_sync_success\"") || answer.Contains("\"type\": \"account_sync_success\"") || answer.Contains("Данные успешно обработаны!"))
                 {
                     var response = JsonConvert.DeserializeObject<dynamic>(answer);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        if (_mainWindow != null)
-                        {
-                            // ВЫЗЫВАЕМ НАШ НОВЫЙ МЕТОД: Обновляем интерфейс БЕЗ пересоздания окна!
-                            _mainWindow.SyncAccountData(response);
-                            _mainWindow.ShowSystemMessage("Аккаунт синхронизирован!");
-                        }
-                    });
-                    return;
-                }
-
-                // 2. УСПЕШНАЯ РЕГИСТРАЦИЯ ЖЕЛЕЗА (Пришла локальная история)
-                if (answer.Contains("Данные успешно обработаны!"))
-                {
-                    var response = JsonConvert.DeserializeObject<dynamic>(answer);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        // Если открыто окно регистрации железа - сохраняем данные и закрываем его
-                        if (_registrationWindow != null && _registrationWindow.IsVisible)
-                        {
-                            UpdateDeviceDataFile(_registrationWindow.DeviceName, _registrationWindow.Password);
-                            _registrationWindow.Close();
-                            _registrationWindow = null;
-                        }
-
                         if (!_isMainWindowOpened)
                         {
                             OpenMainWindow(response);
                             _isMainWindowOpened = true;
-                            // Как только железо зарегалось, проверяем, есть ли аккаунт
-                            CheckAccountSync();
+                            if (_loginWindow != null)
+                            {
+                                _loginWindow.Close();
+                                _loginWindow = null;
+                            }
                         }
-                        else
+                        else if (_mainWindow != null)
                         {
-                            _mainWindow.UpdateData(response);
+                            _mainWindow.SyncAccountData(response);
+                            _mainWindow.ShowSystemMessage("Аккаунт синхронизирован!");
                         }
                     });
                     return;
@@ -654,8 +617,16 @@ namespace Friday
                 await _webSocket.ConnectAsync(new Uri("wss://friday-assistant.ru/ws"), _cancellationTokenSource.Token);
                 _isConnectionActive = true;
 
-                if (_deviceData != null)
-                    await SendDataInternal(new { MAC = GetMacAddress(), DeviceName = _deviceData.DeviceName, Password = _deviceData.Password });
+                if (IsLoggedIn)
+                {
+                    await SendDataInternal(new
+                    {
+                        type = "auth",
+                        token = _accountData.Token,
+                        device_name = Environment.MachineName,
+                        device_type = "pc"
+                    });
+                }
 
                 await ProcessCommandQueue();
                 _ = Task.Run(async () => await ReceiveMessages(_cancellationTokenSource.Token));

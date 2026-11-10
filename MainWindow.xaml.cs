@@ -85,6 +85,7 @@ namespace Friday
 
             InitializeUserInterface();
             LoadSettings();
+            VoiceTypeComboBox.SelectionChanged += VoiceTypeComboBox_SelectionChanged;
             UpdateMicrophoneIcon(false);
 
             _voiceService = new VoiceService(_settingManager, this);
@@ -475,7 +476,13 @@ namespace Friday
                 {
                     foreach (ComboBoxItem item in VoiceTypeComboBox.Items)
                     {
-                        if (item.Content.ToString() == e.VoiceType) { VoiceTypeComboBox.SelectedItem = item; break; }
+                        if (item.Content.ToString() == e.VoiceType)
+                        {
+                            VoiceTypeComboBox.SelectionChanged -= VoiceTypeComboBox_SelectionChanged;
+                            VoiceTypeComboBox.SelectedItem = item;
+                            VoiceTypeComboBox.SelectionChanged += VoiceTypeComboBox_SelectionChanged;
+                            break;
+                        }
                     }
                 }
             });
@@ -953,22 +960,23 @@ namespace Friday
         private void ChooseMusicFolderButton_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFolderDialog { Title = "Выберите папку с музыкой", InitialDirectory = Directory.Exists(MusicFolderPathTextBox.Text) ? MusicFolderPathTextBox.Text : Environment.GetFolderPath(Environment.SpecialFolder.MyMusic) };
-            if (dialog.ShowDialog() == true) MusicFolderPathTextBox.Text = dialog.FolderName;
+            if (dialog.ShowDialog() == true)
+            {
+                MusicFolderPathTextBox.Text = dialog.FolderName;
+                _settingManager.UpdateSettings(SettingManager.Setting.VoiceType, dialog.FolderName);
+            }
         }
 
-        public void Save_Button_Click(object sender, RoutedEventArgs e)
+        private void VoiceTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            string voiceType = (VoiceTypeComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
-            string musicFolder = MusicFolderPathTextBox.Text;
-
-            if (string.IsNullOrEmpty(voiceType))
+            if (VoiceTypeComboBox.SelectedItem is ComboBoxItem item)
             {
-                MessageBox.Show("Поля не могут быть пустыми", "Ошибка!", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                string voiceType = item.Content?.ToString();
+                if (!string.IsNullOrEmpty(voiceType) && voiceType != SettingManager.Setting.VoiceType)
+                {
+                    _settingManager.UpdateSettings(voiceType, SettingManager.Setting.MusicFolderPath);
+                }
             }
-
-            _settingManager.UpdateSettings(voiceType, musicFolder);
-            MessageBox.Show("Настройки успешно обновлены!", "Успех!", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         public void ClearHistoryButton_Click(object sender, RoutedEventArgs e) => ClearHistory();
@@ -993,6 +1001,7 @@ namespace Friday
 
         protected override void OnClosed(EventArgs e)
         {
+            VoiceTypeComboBox.SelectionChanged -= VoiceTypeComboBox_SelectionChanged;
             _settingManager.SettingsChanged -= SettingManager_SettingsChanged;
             StopVideo(); // Выключаем камеру при закрытии
             ((App)Application.Current).DecrementWindowCount();

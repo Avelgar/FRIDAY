@@ -1,4 +1,4 @@
-﻿using Friday.Services;
+using Friday.Services;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using System.Diagnostics;
@@ -343,6 +343,20 @@ namespace Friday
                     return;
                 }
 
+                // === ДИАЛОГ УДАЛЕН НА СЕРВЕРЕ / ДРУГОМ УСТРОЙСТВЕ ===
+                if (answer.Contains("\"type\":\"dialog_deleted\"") || answer.Contains("\"type\": \"dialog_deleted\""))
+                {
+                    try
+                    {
+                        var d = JsonConvert.DeserializeObject<dynamic>(answer);
+                        long delId = (long)d.dialog_id;
+                        Application.Current.Dispatcher.Invoke(() => _mainWindow?.OnDialogDeleted(delId));
+                    }
+                    catch (Exception ex) { Console.WriteLine($"Ошибка dialog_deleted: {ex.Message}"); }
+                    return;
+                }
+
+
                 if (answer.Contains("\"type\":\"msg_id_map\"") || answer.Contains("\"type\": \"msg_id_map\""))
                 {
                     try
@@ -394,9 +408,9 @@ namespace Friday
                     try
                     {
                         var delData = JsonConvert.DeserializeObject<dynamic>(answer);
-                        string uiMsgId = delData.ui_msg_id?.ToString();
+                        string delId = delData.message_id?.ToString() ?? delData.ui_msg_id?.ToString();
                         Application.Current.Dispatcher.Invoke(() => {
-                            var msg = _mainWindow?.ChatMessages.FirstOrDefault(m => m.UiMsgId == uiMsgId);
+                            var msg = _mainWindow?.ChatMessages.FirstOrDefault(m => m.Id == delId || m.UiMsgId == delId);
                             if (msg != null) _mainWindow?.ChatMessages.Remove(msg);
                         });
                         VoiceService?.ServerFinishedResponse();
@@ -515,13 +529,30 @@ namespace Friday
                                     }
                                 }
 
+                                if (cmdResp.DialogId.HasValue && _mainWindow?.CurrentDialogId.HasValue == true && cmdResp.DialogId.Value != _mainWindow.CurrentDialogId.Value)
+                                {
+                                    return;
+                                }
+
                                 if (!string.IsNullOrEmpty(cmdResp.Text) && currentMsgId != _ignoredMessageId)
                                 {
-                                    var existingMsg = _mainWindow?.ChatMessages.FirstOrDefault(m => !m.IsUser && (m.Id == cmdResp.MessageId?.ToString() || (m.UiMsgId != null && m.UiMsgId == cmdResp.UiMsgId)));
+                                    bool isUserMsg = (cmdResp.Sender == "Вы" || cmdResp.Sender?.ToLower() == "user");
+                                    var existingMsg = _mainWindow?.ChatMessages.FirstOrDefault(m => 
+                                        (!isUserMsg && !m.IsUser && (m.Id == cmdResp.MessageId?.ToString() || (m.UiMsgId != null && m.UiMsgId == cmdResp.UiMsgId))) ||
+                                        (isUserMsg && m.IsUser && (m.Id == cmdResp.MessageId?.ToString() || (m.UiMsgId != null && m.UiMsgId == cmdResp.UiMsgId)))
+                                    );
                                     if (existingMsg != null)
                                     {
-                                        existingMsg.Text += cmdResp.Text;
-                                        existingMsg.DisplayText = existingMsg.Text;
+                                        if (isUserMsg || existingMsg.Text.Contains("[Аудиосообщение]") || existingMsg.Text.Contains("⏳") || existingMsg.Text.Contains("🎤"))
+                                        {
+                                            existingMsg.Text = cmdResp.Text;
+                                            existingMsg.DisplayText = cmdResp.Text;
+                                        }
+                                        else
+                                        {
+                                            existingMsg.Text += cmdResp.Text;
+                                            existingMsg.DisplayText = existingMsg.Text;
+                                        }
                                     }
                                     else
                                     {
@@ -657,6 +688,7 @@ namespace Friday
             [JsonProperty("user_msg_id")] public long? UserMsgId { get; set; }
             [JsonProperty("ui_msg_id")] public string UiMsgId { get; set; }
             [JsonProperty("message_id")] public long? MessageId { get; set; }
+            [JsonProperty("dialog_id")] public long? DialogId { get; set; }
             [JsonProperty("audio_base64")] public string AudioBase64 { get; set; }
         }
 

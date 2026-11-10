@@ -7,16 +7,7 @@
     </ApplicationDefinition>
   </ItemGroup>
   <ItemGroup>
-    <Compile Update="Services\ScreenshotForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="Windows\ChangeDataWindow.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Update="Windows\ChangePasswordWindow.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Windows\ConnectDeviceWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Windows\LoginWindow.xaml.cs">
@@ -26,11 +17,7 @@
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Update="Services\ScreenshotForm.resx">
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <Page Update="MainWindow.xaml">
       <SubType>Designer</SubType>

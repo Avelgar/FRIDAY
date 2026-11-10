@@ -452,10 +452,6 @@ namespace Friday
                 case "изменение громкости": new AppProcessService().SetVolume(safeActionText); break;
                 case "изменение яркости": new AppProcessService().SetBrightness(safeActionText); break;
                 case "открытие ссылки": new BrowserService().OpenLink(safeActionText); break;
-                case "напечатать текст": new KeyboardService().TypeText(safeActionText); break;
-                case "уведомление": new NotificationService().SendNotification(safeActionText); break;
-                case "нажать кнопку мыши": new MouseService().PressMouseButton(safeActionText); break;
-                case "переместить мышь": new MouseService().MoveMouse(safeActionText); break;
                 case "смена голоса": _changeVoiceService.ChangeVoice(safeActionText); break;
                 case "музыка":
                     try

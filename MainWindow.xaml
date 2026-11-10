@@ -1155,8 +1155,6 @@
 
                             <WrapPanel>
                                 <Button Content="Сохранить" Width="130" Margin="0,0,8,0" Click="Save_Button_Click"/>
-                                <Button Content="Изменить данные" Width="160" Style="{StaticResource DarkButtonStyle}"
-                                            Margin="0,0,8,0" Click="ChangedataButton_Click"/>
                                 <Button Content="Управление приложениями" Width="200"
                                             Style="{StaticResource DarkButtonStyle}" Click="ManageAppsButton_Click"/>
                             </WrapPanel>

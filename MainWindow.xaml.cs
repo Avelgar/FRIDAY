@@ -859,7 +859,20 @@ namespace Friday
 
         public async void OnDialogCreated(long dialogId, string name)
         {
-            CurrentDialogId = dialogId;
+            if (!CurrentDialogId.HasValue)
+            {
+                CurrentDialogId = dialogId;
+            }
+            await LoadDialogsAsync();
+        }
+
+        public async void OnDialogDeleted(long dialogId)
+        {
+            if (CurrentDialogId.HasValue && CurrentDialogId.Value == dialogId)
+            {
+                CurrentDialogId = null;
+                Dispatcher.Invoke(() => ChatMessages.Clear());
+            }
             await LoadDialogsAsync();
         }
 
@@ -871,6 +884,7 @@ namespace Friday
                 if (d != null) d.Name = name;
             });
         }
+
 
         private void LoginButton_Click(object sender, RoutedEventArgs e) => new LoginWindow().ShowDialog();
         private void RegisterButton_Click(object sender, RoutedEventArgs e) => new RegisterWindow().ShowDialog();
@@ -890,7 +904,7 @@ namespace Friday
                 SaveGuestHistory();
             });
         }
-        public void ShowSystemMessage(string message) { Dispatcher.Invoke(() => { try { new NotificationService().SendNotification(message); } catch { } }); }
+        public void ShowSystemMessage(string message) { Dispatcher.Invoke(() => { try { MessageBox.Show(message, "Friday"); } catch { } }); }
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -976,7 +990,6 @@ namespace Friday
 
         public void ManageAppsButton_Click(object sender, RoutedEventArgs e) => new Friday.Windows.AppPathsWindow().ShowDialog();
         public void ClearAttachedFile() { _attachedFile = null; ThumbnailContainer.Items.Clear(); }
-        public void ChangedataButton_Click(object sender, RoutedEventArgs e) => new ChangeDataWindow().Show();
 
         protected override void OnClosed(EventArgs e)
         {

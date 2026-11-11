@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System.Net.Http;
 using System.Text;
 using System.Windows;
@@ -21,6 +21,13 @@ namespace Friday
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
+            ((App)Application.Current).OpenLoginWindow();
+            this.Close();
+        }
+
+        private void LoginLink_Click(object sender, RoutedEventArgs e)
+        {
+            ((App)Application.Current).OpenLoginWindow();
             this.Close();
         }
 
@@ -72,10 +79,9 @@ namespace Friday
 
                     if (response.IsSuccessStatusCode)
                     {
-
-                        MessageBox.Show("Регистрация прошла успешно!", "Успех",
+                        MessageBox.Show("Регистрация прошла успешно! Теперь вы можете войти в систему.", "Успех",
                                       MessageBoxButton.OK, MessageBoxImage.Information);
-                        this.DialogResult = true;
+                        ((App)Application.Current).OpenLoginWindow();
                         this.Close();
                     }
                     else

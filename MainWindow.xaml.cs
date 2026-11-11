@@ -1,4 +1,4 @@
-﻿using Friday.Managers;
+using Friday.Managers;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
@@ -63,9 +63,7 @@ namespace Friday
 
         public AttachedFile GetAttachedFile() => _attachedFile;
         private dynamic _userData;
-
-        // ПУТЬ ДЛЯ ИСТОРИИ ГОСТЯ
-        private readonly string _guestHistoryPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\guest_history.json"));
+        public bool IsLoggingOut { get; set; } = false;
 
         // ПЕРЕМЕННЫЕ ДЛЯ ВИДЕОСТРИМА
         private VideoCaptureDevice _videoSource;
@@ -113,43 +111,8 @@ namespace Friday
             }
         }
 
-        // ================= ЛОГИКА ИСТОРИИ ГОСТЯ =================
-        private void SaveGuestHistory()
-        {
-            if (!IsGuest) return;
-            try
-            {
-                string dir = Path.GetDirectoryName(_guestHistoryPath);
-                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-                var json = JsonConvert.SerializeObject(ChatMessages);
-                File.WriteAllText(_guestHistoryPath, json);
-            }
-            catch (Exception ex) { Console.WriteLine("Ошибка сохранения истории: " + ex.Message); }
-        }
-
-        private void LoadGuestHistory()
-        {
-            if (!IsGuest) return;
-            try
-            {
-                if (File.Exists(_guestHistoryPath))
-                {
-                    var json = File.ReadAllText(_guestHistoryPath);
-                    var msgs = JsonConvert.DeserializeObject<ObservableCollection<ChatMessage>>(json);
-                    if (msgs != null)
-                    {
-                        ChatMessages.Clear();
-                        foreach (var m in msgs) ChatMessages.Add(m);
-                        if (ChatMessages.Count > 0)
-                        {
-                            ChatListBox.UpdateLayout();
-                            ChatListBox.ScrollIntoView(ChatMessages.Last());
-                        }
-                    }
-                }
-            }
-            catch (Exception ex) { Console.WriteLine("Ошибка загрузки истории: " + ex.Message); }
-        }
+        private void SaveGuestHistory() { }
+        private void LoadGuestHistory() { }
 
         public List<object> GetGuestMessageHistory()
         {
@@ -556,22 +519,7 @@ namespace Friday
             catch (Exception ex) { ShowSystemMessage($"Ошибка истории: {ex.Message}"); }
         }
 
-        private void AnimateTabContent()
-        {
-            if (MainTabControl?.Template?.FindName("ContentHost", MainTabControl) is FrameworkElement host)
-            {
-                var tt = new System.Windows.Media.TranslateTransform(0, 12);
-                host.RenderTransform = tt;
-                host.BeginAnimation(UIElement.OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.25)) { EasingFunction = new System.Windows.Media.Animation.QuadraticEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } });
-                tt.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, new System.Windows.Media.Animation.DoubleAnimation(12, 0, TimeSpan.FromSeconds(0.3)) { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } });
-            }
-        }
 
-        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (e.AddedItems.Count == 0) return;
-            if (e.AddedItems[0] is TabItem) AnimateTabContent();
-        }
 
 
 
@@ -631,26 +579,29 @@ namespace Friday
 
         private void InitializeUserInterface()
         {
-            if (_userData != null && _userData.user_login != null && !string.IsNullOrEmpty(_userData.user_login.ToString())) ShowUserButton(_userData.user_login.ToString());
-            else ShowAuthButtons();
-            if (_userData != null && _userData.history != null) ProcessHistoryMessages(_userData.history);
+            string login = null;
+            if (_userData != null && _userData.user_login != null && !string.IsNullOrEmpty(_userData.user_login.ToString()))
+                login = _userData.user_login.ToString();
+            else if (!string.IsNullOrEmpty(((App)Application.Current).AccountLogin))
+                login = ((App)Application.Current).AccountLogin;
+
+            if (!string.IsNullOrEmpty(login))
+                ShowUserButton(login);
+
+            if (_userData != null && _userData.history != null)
+                ProcessHistoryMessages(_userData.history);
         }
 
         public void ShowUserButton(string username)
         {
             UserButtonText.Text = username;
             UserButton.Visibility = Visibility.Visible;
-            LoginButton.Visibility = Visibility.Collapsed;
-            RegisterButton.Visibility = Visibility.Collapsed;
             ApplyAccountMode();
         }
 
         public void ShowAuthButtons()
         {
-            UserButton.Visibility = Visibility.Collapsed;
-            LoginButton.Visibility = Visibility.Visible;
-            RegisterButton.Visibility = Visibility.Visible;
-            ApplyGuestMode();
+            // Авторизация управляется через LoginWindow, не сбрасывать аккаунт здесь
         }
 
         public void ApplyAccountMode()
@@ -659,7 +610,9 @@ namespace Friday
             {
                 DialogsPanel.Visibility = Visibility.Visible;
                 DialogsSplitter.Visibility = Visibility.Visible;
-                DialogsColumn.Width = new GridLength(_dialogsPanelWidth);
+                DialogsColumn.MinWidth = 220;
+                DialogsColumn.Width = new GridLength(Math.Max(220, _dialogsPanelWidth));
+                ChatColumn.Width = new GridLength(1, GridUnitType.Star);
                 ClearHistoryButton.Visibility = Visibility.Collapsed;
             });
         }
@@ -668,17 +621,38 @@ namespace Friday
         {
             Dispatcher.Invoke(() =>
             {
-                if (DialogsPanel.Visibility == Visibility.Visible && DialogsColumn.ActualWidth > 1)
+                if (DialogsPanel.Visibility == Visibility.Visible && DialogsColumn.ActualWidth >= 220)
                     _dialogsPanelWidth = DialogsColumn.ActualWidth;
 
+                DialogsColumn.MinWidth = 0;
                 DialogsPanel.Visibility = Visibility.Collapsed;
                 DialogsSplitter.Visibility = Visibility.Collapsed;
                 DialogsColumn.Width = new GridLength(0);
+                ChatColumn.Width = new GridLength(1, GridUnitType.Star);
                 ClearHistoryButton.Visibility = Visibility.Visible;
                 Dialogs.Clear();
                 CurrentDialogId = null;
                 UpdateDialogsCount();
             });
+        }
+
+        private void DialogsSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        {
+            ChatColumn.Width = new GridLength(1, GridUnitType.Star);
+            if (DialogsColumn.ActualWidth >= 220)
+            {
+                _dialogsPanelWidth = DialogsColumn.ActualWidth;
+            }
+        }
+
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            SettingsOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void CloseSettings_Click(object sender, RoutedEventArgs e)
+        {
+            SettingsOverlay.Visibility = Visibility.Collapsed;
         }
 
         private void UserButton_Click(object sender, RoutedEventArgs e)
@@ -698,24 +672,19 @@ namespace Friday
                 var logoutCommand = new { MAC = GetMacAddress(), Command = "logout" };
                 using (var client = new HttpClient())
                 {
-                    var json = JsonConvert.SerializeObject(logoutCommand);
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    var response = await client.PostAsync("https://friday-assistant.ru/logout", content);
-                    response.EnsureSuccessStatusCode();
-
-                    string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\account.json"));
-                    if (File.Exists(filePath)) File.Delete(filePath);
-
-                    ((App)Application.Current).ResetAccountData();
-                    ShowAuthButtons();
-                    ChatMessages.Clear();
-                    SaveGuestHistory();
-                    Dialogs.Clear();
-                    CurrentDialogId = null;
-                    ShowSystemMessage("Вы вышли из аккаунта. Включен гостевой режим.");
+                    try
+                    {
+                        var json = JsonConvert.SerializeObject(logoutCommand);
+                        var content = new StringContent(json, Encoding.UTF8, "application/json");
+                        await client.PostAsync("https://friday-assistant.ru/logout", content);
+                    }
+                    catch { }
                 }
             }
-            catch (Exception ex) { ShowSystemMessage($"Произошла ошибка: {ex.Message}"); }
+            catch { }
+
+            // Полностью закрываем MainWindow, удаляем файл аккаунта и открываем окно логина
+            ((App)Application.Current).HandleLogout();
         }
 
         public void SyncAccountData(dynamic responseData)
@@ -893,8 +862,7 @@ namespace Friday
         }
 
 
-        private void LoginButton_Click(object sender, RoutedEventArgs e) => new LoginWindow().ShowDialog();
-        private void RegisterButton_Click(object sender, RoutedEventArgs e) => new RegisterWindow().ShowDialog();
+
 
         public void UpdateAfterRegistration(string username)
         {
@@ -996,7 +964,6 @@ namespace Friday
             ShowSystemMessage("История успешно очищена");
         }
 
-        public void ManageAppsButton_Click(object sender, RoutedEventArgs e) => new Friday.Windows.AppPathsWindow().ShowDialog();
         public void ClearAttachedFile() { _attachedFile = null; ThumbnailContainer.Items.Clear(); }
 
         protected override void OnClosed(EventArgs e)
@@ -1006,7 +973,10 @@ namespace Friday
             StopVideo(); // Выключаем камеру при закрытии
             ((App)Application.Current).DecrementWindowCount();
             base.OnClosed(e);
-            Application.Current.Shutdown();
+            if (!IsLoggingOut)
+            {
+                Application.Current.Shutdown();
+            }
         }
 
         private void ChatListBox_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
@@ -1127,10 +1097,9 @@ namespace Friday
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            // ИСПРАВЛЕНО: Явное указание System.Windows.Media.Color и ColorConverter
             return value is string text && text.StartsWith("Вы:", StringComparison.OrdinalIgnoreCase)
-                ? new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#6A3D8B"))
-                : new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#625B71"));
+                ? new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2478B4"))
+                : new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
         }
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
     }

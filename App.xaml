@@ -1,7 +1,6 @@
-﻿<Application x:Class="Friday.App"
+<Application x:Class="Friday.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Friday">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources>
          
     </Application.Resources>

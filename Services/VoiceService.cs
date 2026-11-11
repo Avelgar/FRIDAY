@@ -440,17 +440,12 @@ namespace Friday
             string safeActionText = action.ActionText ?? string.Empty;
             switch (action.ActionType.ToLower())
             {
-                case "очистка истории":
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        if (((App)Application.Current).IsLoggedIn) return;
-                        _mainWindow.ClearHistory();
-                    });
-                    break;
-                case "открытие файла": new AppProcessService().OpenFile(safeActionText); break;
-                case "завершение процесса": new AppProcessService().KillProcess(safeActionText); break;
-                case "изменение громкости": new AppProcessService().SetVolume(safeActionText); break;
-                case "изменение яркости": new AppProcessService().SetBrightness(safeActionText); break;
+                case "открытие приложений":
+                case "открытие приложения":
+                case "открытие файла": new AppLaunchService().OpenFile(safeActionText); break;
+                case "завершение процесса": new ProcessKillService().KillProcess(safeActionText); break;
+                case "изменение громкости": new VolumeService().SetVolume(safeActionText); break;
+                case "изменение яркости": new BrightnessService().SetBrightness(safeActionText); break;
                 case "открытие ссылки": new BrowserService().OpenLink(safeActionText); break;
                 case "смена голоса": _changeVoiceService.ChangeVoice(safeActionText); break;
                 case "музыка":

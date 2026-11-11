@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System.Net.Http;
 using System.Text;
 using System.Windows;
@@ -22,12 +22,12 @@ namespace Friday
         private void OpenLoginWindowLink_Click(object sender, RoutedEventArgs e)
         {
             // Закрываем окно восстановления пароля и открываем окно логина
-            var loginWindow = new LoginWindow();
-            loginWindow.Show();
+            ((App)Application.Current).OpenLoginWindow();
             this.Close();
         }
         private void Close_Click(object sender, RoutedEventArgs e)
         {
+            ((App)Application.Current).OpenLoginWindow();
             this.Close();
         }
 

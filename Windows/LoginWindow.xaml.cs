@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System.Net.Http;
 using System.Text;
 using System.Windows;
@@ -9,6 +9,8 @@ namespace Friday
 {
     public partial class LoginWindow : Window
     {
+        public bool IsNavigatingAway { get; set; } = false;
+
         public LoginWindow()
         {
             InitializeComponent();
@@ -16,7 +18,8 @@ namespace Friday
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e) { if (e.ChangedButton == MouseButton.Left) this.DragMove(); }
         private void Close_Click(object sender, RoutedEventArgs e) { this.Close(); }
-        private void ForgotPasswordLink_Click(object sender, RoutedEventArgs e) { new ChangePasswordWindow().Show(); this.Close(); }
+        private void RegisterLink_Click(object sender, RoutedEventArgs e) { IsNavigatingAway = true; ((App)Application.Current).OpenRegisterWindow(); this.Close(); }
+        private void ForgotPasswordLink_Click(object sender, RoutedEventArgs e) { IsNavigatingAway = true; new ChangePasswordWindow().Show(); this.Close(); }
         private void ShowError(string message) { ErrorTextBlock.Text = message; ErrorTextBlock.Visibility = Visibility.Visible; }
 
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
@@ -43,11 +46,9 @@ namespace Friday
                             string token = responseObject.token.ToString();
                             string userLogin = responseObject.user_login.ToString();
 
-                            // Передаем логин и токен в App, он сам сохранит файл и запустит синхронизацию
+                            IsNavigatingAway = true;
+                            // Передаем логин и токен в App, он сохранит файл, откроет MainWindow и закроет LoginWindow
                             ((App)Application.Current).UpdateAccountData(userLogin, token);
-
-                            this.DialogResult = true;
-                            this.Close();
                         }
                         else ShowError(responseObject.message?.ToString() ?? "Ошибка входа");
                     }

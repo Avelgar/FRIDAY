@@ -13,16 +13,15 @@
 
     <Window.Triggers>
         <EventTrigger RoutedEvent="Window.Loaded">
-
             <!-- 1. АНИМАЦИЯ ПОЯВЛЕНИЯ ИНТЕРФЕЙСА (ОДИН РАЗ) -->
             <BeginStoryboard>
                 <Storyboard>
                     <DoubleAnimation Storyboard.TargetName="RootGrid"
                                      Storyboard.TargetProperty="Opacity"
-                                     From="0" To="1" Duration="0:0:0.45"/>
+                                     From="0" To="1" Duration="0:0:0.4"/>
                     <DoubleAnimation Storyboard.TargetName="RootGrid"
                                      Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                                     From="18" To="0" Duration="0:0:0.45">
+                                     From="16" To="0" Duration="0:0:0.4">
                         <DoubleAnimation.EasingFunction>
                             <CubicEase EasingMode="EaseOut"/>
                         </DoubleAnimation.EasingFunction>
@@ -33,18 +32,19 @@
             <!-- 2. АНИМАЦИЯ КОЛЕЦ МИКРОФОНА (БЕСКОНЕЧНО) -->
             <BeginStoryboard>
                 <Storyboard RepeatBehavior="Forever">
-                    <DoubleAnimation Storyboard.TargetName="OrbRing1" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" From="0.3" To="1.4" Duration="0:0:2.6"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing1" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" From="0.3" To="1.4" Duration="0:0:2.6"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing1" Storyboard.TargetProperty="Opacity" From="0.6" To="0" Duration="0:0:2.6"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing2" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" From="0.3" To="1.4" Duration="0:0:2.6" BeginTime="0:0:0.85"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing2" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" From="0.3" To="1.4" Duration="0:0:2.6" BeginTime="0:0:0.85"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing2" Storyboard.TargetProperty="Opacity" From="0.4" To="0" Duration="0:0:2.6" BeginTime="0:0:0.85"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing3" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" From="0.3" To="1.4" Duration="0:0:2.6" BeginTime="0:0:1.7"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing3" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" From="0.3" To="1.4" Duration="0:0:2.6" BeginTime="0:0:1.7"/>
-                    <DoubleAnimation Storyboard.TargetName="OrbRing3" Storyboard.TargetProperty="Opacity" From="0.2" To="0" Duration="0:0:2.6" BeginTime="0:0:1.7"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing1" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" From="0.4" To="1.45" Duration="0:0:2.8"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing1" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" From="0.4" To="1.45" Duration="0:0:2.8"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing1" Storyboard.TargetProperty="Opacity" From="0.55" To="0" Duration="0:0:2.8"/>
+
+                    <DoubleAnimation Storyboard.TargetName="OrbRing2" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" From="0.4" To="1.45" Duration="0:0:2.8" BeginTime="0:0:0.9"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing2" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" From="0.4" To="1.45" Duration="0:0:2.8" BeginTime="0:0:0.9"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing2" Storyboard.TargetProperty="Opacity" From="0.4" To="0" Duration="0:0:2.8" BeginTime="0:0:0.9"/>
+
+                    <DoubleAnimation Storyboard.TargetName="OrbRing3" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" From="0.4" To="1.45" Duration="0:0:2.8" BeginTime="0:0:1.8"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing3" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" From="0.4" To="1.45" Duration="0:0:2.8" BeginTime="0:0:1.8"/>
+                    <DoubleAnimation Storyboard.TargetName="OrbRing3" Storyboard.TargetProperty="Opacity" From="0.25" To="0" Duration="0:0:2.8" BeginTime="0:0:1.8"/>
                 </Storyboard>
             </BeginStoryboard>
-
         </EventTrigger>
     </Window.Triggers>
 
@@ -54,35 +54,47 @@
         <local:MessageTextConverter x:Key="TextConverter"/>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
-        <FontFamily x:Key="BrandFont">pack://FRIDAY//Assets//IntroFriday.ttf</FontFamily>
-        <FontFamily x:Key="UI">Gill Sans MT</FontFamily>
+        <FontFamily x:Key="BrandFont">Segoe UI, Montserrat, Inter</FontFamily>
+        <FontFamily x:Key="UI">Segoe UI, Inter</FontFamily>
         <FontFamily x:Key="Icons">Segoe MDL2 Assets</FontFamily>
 
-        <SolidColorBrush x:Key="Bg"           Color="#091510"/>
-        <SolidColorBrush x:Key="BgSidebar"    Color="#071210"/>
-        <SolidColorBrush x:Key="BgPanel"      Color="#0E2018"/>
-        <SolidColorBrush x:Key="BgInput"      Color="#0A1A11"/>
-        <SolidColorBrush x:Key="BgUserBubble" Color="#133A1E"/>
-        <SolidColorBrush x:Key="BorderDim"    Color="#1A3D28"/>
-        <SolidColorBrush x:Key="BorderFocus"  Color="#16A34A"/>
-        <SolidColorBrush x:Key="Accent"       Color="#16A34A"/>
-        <SolidColorBrush x:Key="AccentBright" Color="#22C55E"/>
-        <SolidColorBrush x:Key="AccentGlow"   Color="#4ADE80"/>
-        <SolidColorBrush x:Key="TextHigh"     Color="#C8F0DC"/>
-        <SolidColorBrush x:Key="TextMid"      Color="#5BA07A"/>
-        <SolidColorBrush x:Key="TextLow"      Color="#2D5A40"/>
-        <SolidColorBrush x:Key="Danger"       Color="#F87171"/>
+        <!-- FRIDAY SERVER LIGHT DESIGN SYSTEM -->
+        <SolidColorBrush x:Key="Bg"           Color="#F2F8FD"/>
+        <SolidColorBrush x:Key="BgSidebar"    Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="BgPanel"      Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="BgInput"      Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="BorderDim"    Color="#DCE6F0"/>
+        <SolidColorBrush x:Key="BorderStrong" Color="#C9D7E5"/>
+        <SolidColorBrush x:Key="BorderFocus"  Color="#3A98D8"/>
+        <SolidColorBrush x:Key="Accent"       Color="#3A98D8"/>
+        <SolidColorBrush x:Key="AccentBright" Color="#2478B4"/>
+        <SolidColorBrush x:Key="AccentGlow"   Color="#755BC8"/>
+        <SolidColorBrush x:Key="TextHigh"     Color="#1E2330"/>
+        <SolidColorBrush x:Key="TextMid"      Color="#667085"/>
+        <SolidColorBrush x:Key="TextLow"      Color="#98A2B3"/>
+        <SolidColorBrush x:Key="Danger"       Color="#B83C54"/>
 
-        <LinearGradientBrush x:Key="OrbFill" StartPoint="0.3,0.1" EndPoint="0.8,0.9">
-            <GradientStop Color="#86EFAC" Offset="0"/>
-            <GradientStop Color="#16A34A" Offset="0.55"/>
-            <GradientStop Color="#064722" Offset="1"/>
+        <!-- GRADIENTS -->
+        <LinearGradientBrush x:Key="BrandGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#3A98D8" Offset="0"/>
+            <GradientStop Color="#755BC8" Offset="1"/>
+        </LinearGradientBrush>
+
+        <LinearGradientBrush x:Key="BgUserBubble" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#2478B4" Offset="0"/>
+            <GradientStop Color="#6850B7" Offset="1"/>
+        </LinearGradientBrush>
+
+        <LinearGradientBrush x:Key="OrbFill" StartPoint="0.1,0.1" EndPoint="0.9,0.9">
+            <GradientStop Color="#3A98D8" Offset="0"/>
+            <GradientStop Color="#5A7CD0" Offset="0.5"/>
+            <GradientStop Color="#755BC8" Offset="1"/>
         </LinearGradientBrush>
 
         <!-- SCROLLBAR -->
         <Style TargetType="{x:Type ScrollBar}">
             <Setter Property="OverridesDefaultStyle" Value="True"/>
-            <Setter Property="Width" Value="4"/>
+            <Setter Property="Width" Value="6"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -93,7 +105,7 @@
                                     <Thumb>
                                         <Thumb.Template>
                                             <ControlTemplate TargetType="Thumb">
-                                                <Border CornerRadius="2" Background="#1A3D28" Margin="1"/>
+                                                <Border CornerRadius="3" Background="#C9D7E5" Margin="1"/>
                                             </ControlTemplate>
                                         </Thumb.Template>
                                     </Thumb>
@@ -105,72 +117,30 @@
             </Setter>
         </Style>
 
-        <!-- PRIMARY BUTTON — smooth hover + press scale -->
+        <!-- PRIMARY BUTTON -->
         <Style TargetType="Button">
-            <Setter Property="Foreground"       Value="{StaticResource TextHigh}"/>
+            <Setter Property="Foreground"       Value="#FFFFFF"/>
             <Setter Property="BorderBrush"      Value="{x:Null}"/>
             <Setter Property="FontFamily"       Value="{StaticResource UI}"/>
             <Setter Property="FontSize"         Value="13"/>
             <Setter Property="FontWeight"       Value="SemiBold"/>
-            <Setter Property="Height"           Value="38"/>
-            <Setter Property="Padding"          Value="16,0"/>
+            <Setter Property="Height"           Value="40"/>
+            <Setter Property="Padding"          Value="18,0"/>
             <Setter Property="Cursor"           Value="Hand"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="b" CornerRadius="0" RenderTransformOrigin="0.5,0.5">
-                            <Border.Background>
-                                <SolidColorBrush x:Name="BtnBg" Color="#16A34A"/>
-                            </Border.Background>
-                            <Border.RenderTransform>
-                                <ScaleTransform x:Name="BtnScale"/>
-                            </Border.RenderTransform>
+                        <Border x:Name="b" CornerRadius="10" Background="{StaticResource BgUserBubble}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
                                               Margin="{TemplateBinding Padding}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="BtnBg" Storyboard.TargetProperty="Color"
-                                                            To="#15803D" Duration="0:0:0.15"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="BtnBg" Storyboard.TargetProperty="Color"
-                                                            To="#16A34A" Duration="0:0:0.25"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
+                                <Setter TargetName="b" Property="Opacity" Value="0.92"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="BtnBg" Storyboard.TargetProperty="Color"
-                                                            To="#14532D" Duration="0:0:0.07"/>
-                                            <DoubleAnimation Storyboard.TargetName="BtnScale" Storyboard.TargetProperty="ScaleX"
-                                                             To="0.96" Duration="0:0:0.07"/>
-                                            <DoubleAnimation Storyboard.TargetName="BtnScale" Storyboard.TargetProperty="ScaleY"
-                                                             To="0.96" Duration="0:0:0.07"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="BtnScale" Storyboard.TargetProperty="ScaleX"
-                                                             To="1.0" Duration="0:0:0.12"/>
-                                            <DoubleAnimation Storyboard.TargetName="BtnScale" Storyboard.TargetProperty="ScaleY"
-                                                             To="1.0" Duration="0:0:0.12"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
+                                <Setter TargetName="b" Property="Opacity" Value="0.80"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="b" Property="Opacity" Value="0.4"/>
@@ -181,11 +151,12 @@
             </Setter>
         </Style>
 
-        <!-- SECONDARY BUTTON -->
+        <!-- SECONDARY BUTTON (White card with border) -->
         <Style x:Key="DarkButtonStyle" TargetType="Button">
             <Setter Property="Foreground"       Value="{StaticResource TextHigh}"/>
             <Setter Property="FontFamily"       Value="{StaticResource UI}"/>
             <Setter Property="FontSize"         Value="13"/>
+            <Setter Property="FontWeight"       Value="SemiBold"/>
             <Setter Property="Height"           Value="38"/>
             <Setter Property="Padding"          Value="16,0"/>
             <Setter Property="Cursor"           Value="Hand"/>
@@ -193,55 +164,19 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="b" CornerRadius="0" BorderThickness="1" RenderTransformOrigin="0.5,0.5">
-                            <Border.Background>
-                                <SolidColorBrush x:Name="DkBg" Color="#0E2018"/>
-                            </Border.Background>
-                            <Border.BorderBrush>
-                                <SolidColorBrush x:Name="DkBorder" Color="#1A3D28"/>
-                            </Border.BorderBrush>
-                            <Border.RenderTransform>
-                                <ScaleTransform x:Name="DkScale"/>
-                            </Border.RenderTransform>
+                        <Border x:Name="b" CornerRadius="10" BorderThickness="1" BorderBrush="{StaticResource BorderDim}" Background="{StaticResource BgPanel}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
                                               Margin="{TemplateBinding Padding}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="DkBg"     Storyboard.TargetProperty="Color" To="#142E1E" Duration="0:0:0.15"/>
-                                            <ColorAnimation Storyboard.TargetName="DkBorder" Storyboard.TargetProperty="Color" To="#2D6A4F" Duration="0:0:0.15"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="DkBg"     Storyboard.TargetProperty="Color" To="#0E2018" Duration="0:0:0.25"/>
-                                            <ColorAnimation Storyboard.TargetName="DkBorder" Storyboard.TargetProperty="Color" To="#1A3D28" Duration="0:0:0.25"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
+                                <Setter TargetName="b" Property="Background" Value="#F2F8FD"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                <Setter Property="Foreground" Value="{StaticResource AccentBright}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="DkScale" Storyboard.TargetProperty="ScaleX" To="0.97" Duration="0:0:0.07"/>
-                                            <DoubleAnimation Storyboard.TargetName="DkScale" Storyboard.TargetProperty="ScaleY" To="0.97" Duration="0:0:0.07"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="DkScale" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.12"/>
-                                            <DoubleAnimation Storyboard.TargetName="DkScale" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.12"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
+                                <Setter TargetName="b" Property="Background" Value="#E2EFFB"/>
+                                <Setter TargetName="b" Property="Opacity" Value="0.85"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -249,44 +184,59 @@
             </Setter>
         </Style>
 
-        <!-- CHROME BUTTONS -->
-        <Style x:Key="ChromeBtn" TargetType="Button">
-            <Setter Property="Width"            Value="44"/>
+        <!-- TOGGLE BUTTON -->
+        <Style x:Key="ToggleOutline" TargetType="{x:Type ToggleButton}">
+            <Setter Property="Foreground"       Value="{StaticResource TextMid}"/>
+            <Setter Property="FontFamily"       Value="{StaticResource UI}"/>
+            <Setter Property="FontSize"         Value="12"/>
+            <Setter Property="FontWeight"       Value="SemiBold"/>
             <Setter Property="Height"           Value="36"/>
-            <Setter Property="Background"       Value="Transparent"/>
-            <Setter Property="Foreground"       Value="{StaticResource TextLow}"/>
+            <Setter Property="Padding"          Value="14,0"/>
+            <Setter Property="Cursor"           Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border x:Name="b" CornerRadius="10" BorderThickness="1" BorderBrush="{StaticResource BorderDim}" Background="{StaticResource BgPanel}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#F2F8FD"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                <Setter Property="Foreground" Value="{StaticResource AccentBright}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#EBF5FD"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                <Setter Property="Foreground" Value="{StaticResource AccentBright}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- WINDOW CHROME BUTTONS -->
+        <Style x:Key="ChromeBtn" TargetType="Button">
+            <Setter Property="Width"            Value="42"/>
+            <Setter Property="Height"           Value="32"/>
+            <Setter Property="Foreground"       Value="{StaticResource TextMid}"/>
             <Setter Property="FontFamily"       Value="{StaticResource Icons}"/>
-            <Setter Property="FontSize"         Value="10"/>
+            <Setter Property="FontSize"         Value="11"/>
             <Setter Property="Cursor"           Value="Hand"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="b">
-                            <Border.Background>
-                                <SolidColorBrush x:Name="ChrBg" Color="Transparent"/>
-                            </Border.Background>
+                        <Border x:Name="b" Background="Transparent" CornerRadius="6" Margin="1">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="ChrBg" Storyboard.TargetProperty="Color"
-                                                            To="#1A3D28" Duration="0:0:0.12"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="ChrBg" Storyboard.TargetProperty="Color"
-                                                            To="Transparent" Duration="0:0:0.2"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                                <Setter Property="Foreground" Value="{StaticResource TextMid}"/>
+                                <Setter TargetName="b" Property="Background" Value="#E2E8F0"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextHigh}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -295,41 +245,23 @@
         </Style>
 
         <Style x:Key="CloseBtn" TargetType="Button">
-            <Setter Property="Width"            Value="44"/>
-            <Setter Property="Height"           Value="36"/>
-            <Setter Property="Foreground"       Value="{StaticResource TextLow}"/>
+            <Setter Property="Width"            Value="42"/>
+            <Setter Property="Height"           Value="32"/>
+            <Setter Property="Foreground"       Value="{StaticResource TextMid}"/>
             <Setter Property="FontFamily"       Value="{StaticResource Icons}"/>
-            <Setter Property="FontSize"         Value="10"/>
+            <Setter Property="FontSize"         Value="11"/>
             <Setter Property="Cursor"           Value="Hand"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="b">
-                            <Border.Background>
-                                <SolidColorBrush x:Name="ClsBg" Color="Transparent"/>
-                            </Border.Background>
+                        <Border x:Name="b" Background="Transparent" CornerRadius="6" Margin="1">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="ClsBg" Storyboard.TargetProperty="Color"
-                                                            To="#7F1D1D" Duration="0:0:0.12"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="ClsBg" Storyboard.TargetProperty="Color"
-                                                            To="Transparent" Duration="0:0:0.2"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                                <Setter Property="Foreground" Value="#FCA5A5"/>
+                                <Setter TargetName="b" Property="Background" Value="#FEE2E2"/>
+                                <Setter Property="Foreground" Value="#DC2626"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -337,65 +269,32 @@
             </Setter>
         </Style>
 
-        <!-- TEXTBOX — animated focus border -->
+        <!-- TEXTBOX -->
         <Style TargetType="TextBox">
             <Setter Property="Background"               Value="{StaticResource BgInput}"/>
             <Setter Property="Foreground"               Value="{StaticResource TextHigh}"/>
             <Setter Property="CaretBrush"               Value="{StaticResource AccentBright}"/>
-            <Setter Property="SelectionBrush"           Value="#1A3D28"/>
+            <Setter Property="SelectionBrush"           Value="#D0E7F9"/>
             <Setter Property="FontFamily"               Value="{StaticResource UI}"/>
             <Setter Property="FontSize"                 Value="13"/>
-            <Setter Property="Padding"                  Value="12,0"/>
-            <Setter Property="Height"                   Value="38"/>
+            <Setter Property="Padding"                  Value="14,0"/>
+            <Setter Property="Height"                   Value="40"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="FocusVisualStyle"         Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
-                        <Border x:Name="Root" CornerRadius="0" BorderThickness="1"
+                        <Border x:Name="Root" CornerRadius="10" BorderThickness="1" BorderBrush="{StaticResource BorderDim}"
                                 Background="{TemplateBinding Background}">
-                            <Border.BorderBrush>
-                                <SolidColorBrush x:Name="TbBorder" Color="#1A3D28"/>
-                            </Border.BorderBrush>
                             <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center"
                                           Padding="{TemplateBinding Padding}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="TbBorder" Storyboard.TargetProperty="Color"
-                                                            To="#2D6A4F" Duration="0:0:0.15"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="TbBorder" Storyboard.TargetProperty="Color"
-                                                            To="#1A3D28" Duration="0:0:0.2"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource BorderStrong}"/>
                             </Trigger>
                             <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="TbBorder" Storyboard.TargetProperty="Color"
-                                                            To="#16A34A" Duration="0:0:0.2"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="TbBorder" Storyboard.TargetProperty="Color"
-                                                            To="#1A3D28" Duration="0:0:0.3"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource Accent}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -412,37 +311,16 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type ToggleButton}">
-                        <Border x:Name="r" CornerRadius="0" BorderThickness="1">
-                            <Border.Background>
-                                <SolidColorBrush x:Name="CbBg" Color="#0E2018"/>
-                            </Border.Background>
-                            <Border.BorderBrush>
-                                <SolidColorBrush x:Name="CbBorder" Color="#1A3D28"/>
-                            </Border.BorderBrush>
+                        <Border x:Name="r" CornerRadius="10" BorderThickness="1" BorderBrush="{StaticResource BorderDim}" Background="{StaticResource BgPanel}">
                             <Grid>
-                                <ContentPresenter VerticalAlignment="Center" Margin="12,0,28,0"/>
+                                <ContentPresenter VerticalAlignment="Center" Margin="14,0,28,0"/>
                                 <Path Data="M 0 0 L 4 4 L 8 0 Z" Fill="{StaticResource TextMid}"
-                                      HorizontalAlignment="Right" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                      HorizontalAlignment="Right" Margin="0,0,12,0" VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="CbBorder" Storyboard.TargetProperty="Color"
-                                                            To="#16A34A" Duration="0:0:0.15"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="CbBorder" Storyboard.TargetProperty="Color"
-                                                            To="#1A3D28" Duration="0:0:0.2"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
+                                <Setter TargetName="r" Property="BorderBrush" Value="{StaticResource Accent}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="r" Property="BorderBrush" Value="{StaticResource Accent}"/>
@@ -453,42 +331,64 @@
             </Setter>
         </Style>
 
-        <ControlTemplate x:Key="CbTemplate" TargetType="{x:Type ComboBox}">
-            <Grid>
-                <Popup x:Name="PART_Popup" AllowsTransparency="True"
-                       IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                       Placement="Bottom" PopupAnimation="Fade">
-                    <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderFocus}"
-                            BorderThickness="1" Margin="0,2,0,0">
-                        <ScrollViewer Margin="2">
-                            <ItemsPresenter/>
-                        </ScrollViewer>
-                    </Border>
-                </Popup>
-                <ToggleButton Style="{StaticResource CbToggle}"
-                              IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
-                <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
-                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                  HorizontalAlignment="Left" VerticalAlignment="Center"
-                                  IsHitTestVisible="False" Margin="12,0,28,0"
-                                  TextElement.Foreground="{StaticResource TextHigh}"/>
-            </Grid>
-        </ControlTemplate>
+        <Style TargetType="{x:Type ComboBox}">
+            <Setter Property="Foreground"       Value="{StaticResource TextHigh}"/>
+            <Setter Property="FontFamily"       Value="{StaticResource UI}"/>
+            <Setter Property="FontSize"         Value="13"/>
+            <Setter Property="Height"           Value="40"/>
+            <Setter Property="Cursor"           Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBox}">
+                        <Grid>
+                            <ToggleButton Style="{StaticResource CbToggle}"
+                                          IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <ContentPresenter IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              VerticalAlignment="Center" Margin="14,0,32,0"/>
+                            <Popup x:Name="PART_Popup" AllowsTransparency="True"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   Placement="Bottom" PopupAnimation="Slide">
+                                <Border Background="{StaticResource BgPanel}"
+                                        BorderBrush="{StaticResource BorderDim}"
+                                        BorderThickness="1" CornerRadius="10" Margin="0,4,0,0" Padding="4">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="#1E2330" BlurRadius="18" ShadowDepth="4" Opacity="0.1"/>
+                                    </Border.Effect>
+                                    <ScrollViewer MaxHeight="200" SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
         <Style TargetType="{x:Type ComboBoxItem}">
             <Setter Property="Foreground" Value="{StaticResource TextHigh}"/>
             <Setter Property="FontFamily" Value="{StaticResource UI}"/>
-            <Setter Property="Padding"    Value="12,8"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="FontSize"   Value="13"/>
+            <Setter Property="Height"     Value="36"/>
+            <Setter Property="Cursor"     Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type ComboBoxItem}">
-                        <Border x:Name="bd" Background="Transparent" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter/>
+                        <Border x:Name="bd" CornerRadius="8" Padding="12,0" Background="Transparent">
+                            <ContentPresenter VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#1A3D28"/>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#F2F8FD"/>
+                                <Setter Property="Foreground" Value="{StaticResource AccentBright}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#EBF5FD"/>
+                                <Setter Property="Foreground" Value="{StaticResource AccentBright}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -496,57 +396,58 @@
             </Setter>
         </Style>
 
-        <Style TargetType="{x:Type ComboBox}">
+        <!-- FLOATING ACTION ICON BUTTON (ДЛЯ ВСПЛЫВАШЕК СООБЩЕНИЙ) -->
+        <Style x:Key="FloatingActionIconBtn" TargetType="Button">
+            <Setter Property="Width"            Value="28"/>
+            <Setter Property="Height"           Value="26"/>
+            <Setter Property="Background"       Value="Transparent"/>
+            <Setter Property="BorderThickness"  Value="0"/>
+            <Setter Property="Cursor"           Value="Hand"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="FontFamily" Value="{StaticResource UI}"/>
-            <Setter Property="FontSize"   Value="13"/>
-            <Setter Property="Height"     Value="38"/>
-            <Setter Property="Template"   Value="{StaticResource CbTemplate}"/>
+            <Setter Property="Foreground"       Value="{StaticResource TextMid}"/>
+            <Setter Property="FontFamily"       Value="{StaticResource Icons}"/>
+            <Setter Property="FontSize"         Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="Transparent" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#F2F8FD"/>
+                                <Setter Property="Foreground" Value="{StaticResource AccentBright}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#E2EFFB"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
-        <!-- TOGGLEBUTTON -->
-        <Style x:Key="ToggleOutline" TargetType="ToggleButton">
+        <!-- BUBBLE ACTION BUTTON -->
+        <Style x:Key="BubbleActionBtn" TargetType="Button">
             <Setter Property="Foreground"       Value="{StaticResource TextMid}"/>
             <Setter Property="FontFamily"       Value="{StaticResource UI}"/>
-            <Setter Property="FontSize"         Value="13"/>
-            <Setter Property="Height"           Value="38"/>
-            <Setter Property="Padding"          Value="14,0"/>
+            <Setter Property="FontSize"         Value="11"/>
+            <Setter Property="FontWeight"       Value="SemiBold"/>
+            <Setter Property="Height"           Value="26"/>
+            <Setter Property="Padding"          Value="10,0"/>
+            <Setter Property="Margin"           Value="0,0,6,0"/>
             <Setter Property="Cursor"           Value="Hand"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Border x:Name="b" CornerRadius="0" BorderThickness="1">
-                            <Border.Background>
-                                <SolidColorBrush x:Name="TglBg" Color="#0E2018"/>
-                            </Border.Background>
-                            <Border.BorderBrush>
-                                <SolidColorBrush x:Name="TglBorder" Color="#1A3D28"/>
-                            </Border.BorderBrush>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" CornerRadius="6" Background="#F2F8FD" BorderBrush="{StaticResource BorderDim}" BorderThickness="1">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
                                               Margin="{TemplateBinding Padding}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="TglBorder" Storyboard.TargetProperty="Color"
-                                                            To="#2D6A4F" Duration="0:0:0.15"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="TglBorder" Storyboard.TargetProperty="Color"
-                                                            To="#1A3D28" Duration="0:0:0.2"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                            </Trigger>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="b" Property="Background" Value="#133A1E"/>
+                                <Setter TargetName="b" Property="Background" Value="#E2EFFB"/>
                                 <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource Accent}"/>
                                 <Setter Property="Foreground" Value="{StaticResource AccentBright}"/>
                             </Trigger>
@@ -556,615 +457,460 @@
             </Setter>
         </Style>
 
-        <!-- BUBBLE ACTION -->
-        <Style x:Key="BubbleActionBtn" TargetType="Button">
-            <Setter Property="Foreground"       Value="{StaticResource TextMid}"/>
-            <Setter Property="FontFamily"       Value="{StaticResource UI}"/>
-            <Setter Property="FontSize"         Value="11"/>
-            <Setter Property="Height"           Value="24"/>
-            <Setter Property="Padding"          Value="8,0"/>
-            <Setter Property="Margin"           Value="0,0,4,0"/>
-            <Setter Property="Cursor"           Value="Hand"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="b" CornerRadius="2">
-                            <Border.Background>
-                                <SolidColorBrush x:Name="BaBg" Color="#20000000"/>
-                            </Border.Background>
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
-                                              Margin="{TemplateBinding Padding}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="BaBg" Storyboard.TargetProperty="Color"
-                                                            To="#40000000" Duration="0:0:0.1"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="BaBg" Storyboard.TargetProperty="Color"
-                                                            To="#20000000" Duration="0:0:0.2"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- TABITEM — animated bar slide + bg fade -->
-        <Style TargetType="{x:Type TabItem}">
-            <Setter Property="OverridesDefaultStyle" Value="True"/>
-            <Setter Property="Foreground" Value="{StaticResource TextLow}"/>
-            <Setter Property="FontFamily" Value="{StaticResource UI}"/>
-            <Setter Property="FontSize"   Value="13"/>
-            <Setter Property="Height"     Value="46"/>
-            <Setter Property="Cursor"     Value="Hand"/>
-            <Setter Property="Margin"     Value="0,1"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type TabItem}">
-                        <Border x:Name="Row" Padding="16,0">
-                            <Border.Background>
-                                <SolidColorBrush x:Name="RowBg" Color="Transparent"/>
-                            </Border.Background>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="3"/>
-                                    <ColumnDefinition Width="20"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Rectangle x:Name="Bar" Grid.Column="0" Width="3" Height="20"
-                                           HorizontalAlignment="Left" VerticalAlignment="Center"
-                                           Margin="-16,0,0,0"
-                                           RenderTransformOrigin="0.5,0.5">
-                                    <Rectangle.Fill>
-                                        <SolidColorBrush x:Name="BarBrush" Color="Transparent"/>
-                                    </Rectangle.Fill>
-                                    <Rectangle.RenderTransform>
-                                        <ScaleTransform x:Name="BarScale" ScaleY="0"/>
-                                    </Rectangle.RenderTransform>
-                                </Rectangle>
-                                <TextBlock x:Name="Icon" Grid.Column="1"
-                                           FontFamily="{StaticResource Icons}" FontSize="14"
-                                           Foreground="{StaticResource TextLow}" VerticalAlignment="Center"/>
-                                <ContentPresenter Grid.Column="2" VerticalAlignment="Center"
-                                                  Margin="10,0,0,0" ContentSource="Header"
-                                                  TextElement.Foreground="{TemplateBinding Foreground}"/>
-                            </Grid>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="Header" Value="Home">
-                                <Setter TargetName="Icon" Property="Text" Value="&#xE80F;"/>
-                            </Trigger>
-                            <Trigger Property="Header" Value="Команды">
-                                <Setter TargetName="Icon" Property="Text" Value="&#xE945;"/>
-                            </Trigger>
-                            <Trigger Property="Header" Value="Настройки">
-                                <Setter TargetName="Icon" Property="Text" Value="&#xE713;"/>
-                            </Trigger>
-
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="RowBg" Storyboard.TargetProperty="Color"
-                                                            To="#0D1E15" Duration="0:0:0.15"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="RowBg" Storyboard.TargetProperty="Color"
-                                                            To="Transparent" Duration="0:0:0.25"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                                <Setter Property="Foreground" Value="{StaticResource TextHigh}"/>
-                                <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource TextMid}"/>
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="RowBg"    Storyboard.TargetProperty="Color" To="#132E1C" Duration="0:0:0.18"/>
-                                            <ColorAnimation Storyboard.TargetName="BarBrush" Storyboard.TargetProperty="Color" To="#16A34A" Duration="0:0:0.2"/>
-                                            <DoubleAnimation Storyboard.TargetName="BarScale" Storyboard.TargetProperty="ScaleY"
-                                                             From="0" To="1" Duration="0:0:0.22">
-                                                <DoubleAnimation.EasingFunction>
-                                                    <QuadraticEase EasingMode="EaseOut"/>
-                                                </DoubleAnimation.EasingFunction>
-                                            </DoubleAnimation>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="RowBg"    Storyboard.TargetProperty="Color" To="Transparent" Duration="0:0:0.25"/>
-                                            <ColorAnimation Storyboard.TargetName="BarBrush" Storyboard.TargetProperty="Color" To="Transparent" Duration="0:0:0.2"/>
-                                            <DoubleAnimation Storyboard.TargetName="BarScale" Storyboard.TargetProperty="ScaleY"
-                                                             To="0" Duration="0:0:0.15"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                                <Setter Property="Foreground" Value="{StaticResource TextHigh}"/>
-                                <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource AccentBright}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- TABCONTROL -->
-        <Style TargetType="{x:Type TabControl}">
-            <Setter Property="Background"       Value="{StaticResource Bg}"/>
-            <Setter Property="BorderThickness"  Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type TabControl}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="210"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <!-- SIDEBAR -->
-                            <Border Grid.Column="0" Background="{StaticResource BgSidebar}"
-                                    BorderBrush="{StaticResource BorderDim}" BorderThickness="0,0,1,0">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="64"/>
-                                        <RowDefinition Height="1"/>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-
-                                    <StackPanel Grid.Row="0" VerticalAlignment="Center" Margin="18,0">
-                                        <TextBlock Text="FRIDAY" FontFamily="{StaticResource BrandFont}"
-                                                   FontSize="26" Foreground="{StaticResource TextMid}"/>
-                                        <StackPanel Orientation="Horizontal" Margin="1,3,0,0">
-                                            <Ellipse x:Name="StatusDot" Width="6" Height="6"
-                                                     Fill="{StaticResource Accent}" VerticalAlignment="Center">
-                                                <Ellipse.Triggers>
-                                                    <EventTrigger RoutedEvent="Ellipse.Loaded">
-                                                        <BeginStoryboard>
-                                                            <Storyboard RepeatBehavior="Forever">
-                                                                <DoubleAnimation Storyboard.TargetName="StatusDot"
-                                                                                 Storyboard.TargetProperty="Opacity"
-                                                                                 From="0.3" To="1.0" Duration="0:0:1.8"
-                                                                                 AutoReverse="True"/>
-                                                            </Storyboard>
-                                                        </BeginStoryboard>
-                                                    </EventTrigger>
-                                                </Ellipse.Triggers>
-                                            </Ellipse>
-                                            <TextBlock Text=" voice assistant" FontFamily="{StaticResource UI}"
-                                                       FontSize="10" Foreground="{StaticResource TextLow}"
-                                                       VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </StackPanel>
-
-                                    <Rectangle Grid.Row="1" Fill="{StaticResource BorderDim}"/>
-                                    <StackPanel Grid.Row="2" IsItemsHost="True" Margin="0,10,0,0"/>
-
-                                    <Border Grid.Row="3" Margin="14,0,14,16"
-                                            Background="{StaticResource BgPanel}"
-                                            BorderBrush="{StaticResource BorderDim}"
-                                            BorderThickness="1" Padding="12,10">
-                                        <TextBlock Text="v 1.0 · Ready" FontFamily="{StaticResource UI}"
-                                                   FontSize="11" Foreground="{StaticResource TextLow}"/>
-                                    </Border>
-                                </Grid>
-                            </Border>
-
-                            <!-- CONTENT -->
-                            <Grid Grid.Column="1">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="36"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-
-                                <!-- Top bar with scan-line animation -->
-                                <Border Grid.Row="0" Background="{StaticResource BgSidebar}"
-                                        BorderBrush="{StaticResource BorderDim}"
-                                        BorderThickness="0,0,0,1" ClipToBounds="True">
-                                    <Rectangle x:Name="ScanLine" Width="320" Height="36"
-                                               HorizontalAlignment="Left">
-                                        <Rectangle.Fill>
-                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                <GradientStop Color="Transparent"  Offset="0"/>
-                                                <GradientStop Color="#0D22C55E"    Offset="0.4"/>
-                                                <GradientStop Color="#1A22C55E"    Offset="0.5"/>
-                                                <GradientStop Color="#0D22C55E"    Offset="0.6"/>
-                                                <GradientStop Color="Transparent"  Offset="1"/>
-                                            </LinearGradientBrush>
-                                        </Rectangle.Fill>
-                                        <Rectangle.RenderTransform>
-                                            <TranslateTransform x:Name="ScanTranslate" X="-320"/>
-                                        </Rectangle.RenderTransform>
-                                        <Rectangle.Triggers>
-                                            <EventTrigger RoutedEvent="Rectangle.Loaded">
-                                                <BeginStoryboard>
-                                                    <Storyboard RepeatBehavior="Forever">
-                                                        <DoubleAnimation Storyboard.TargetName="ScanTranslate"
-                                                                         Storyboard.TargetProperty="X"
-                                                                         From="-320" To="1100"
-                                                                         Duration="0:0:4.5" BeginTime="0:0:1.5">
-                                                            <DoubleAnimation.EasingFunction>
-                                                                <SineEase EasingMode="EaseInOut"/>
-                                                            </DoubleAnimation.EasingFunction>
-                                                        </DoubleAnimation>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </EventTrigger>
-                                        </Rectangle.Triggers>
-                                    </Rectangle>
-                                </Border>
-
-                                <Border Grid.Row="1" Background="{StaticResource Bg}" Padding="28,20,28,20">
-                                    <Border x:Name="ContentHost">
-                                        <Border.RenderTransform>
-                                            <TranslateTransform/>
-                                        </Border.RenderTransform>
-                                        <ContentPresenter x:Name="PART_SelectedContentHost"
-                                                          ContentSource="SelectedContent"/>
-                                    </Border>
-                                </Border>
-                            </Grid>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </Window.Resources>
-    <Border CornerRadius="12" Background="#091510" ClipToBounds="True">
+
+    <!-- WINDOW FRAME WITH SHADOW & CORNER RADIUS -->
+    <Border CornerRadius="16" Background="{StaticResource Bg}" BorderBrush="{StaticResource BorderDim}" BorderThickness="1" ClipToBounds="True">
         <Border.Effect>
-            <DropShadowEffect Color="#000000" BlurRadius="30" ShadowDepth="5" Opacity="0.5"/>
+            <DropShadowEffect Color="#1E2330" BlurRadius="40" ShadowDepth="10" Opacity="0.14"/>
         </Border.Effect>
         <Grid x:Name="RootGrid">
             <Grid.RenderTransform>
                 <TranslateTransform/>
             </Grid.RenderTransform>
-            <!-- Window chrome -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top"
-                            Panel.ZIndex="10" Height="36">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
-                    <Button x:Name="LoginButton" Content="Войти" Width="80" Height="28"
-                                Style="{StaticResource DarkButtonStyle}"
-                                Click="LoginButton_Click" Visibility="Collapsed" Margin="0,0,6,0"/>
-                    <Button x:Name="RegisterButton" Content="Регистрация" Width="110" Height="28"
-                                Style="{StaticResource DarkButtonStyle}"
-                                Click="RegisterButton_Click" Visibility="Collapsed" Margin="0,0,6,0"/>
-                    <Button x:Name="UserButton" Height="28" Style="{StaticResource DarkButtonStyle}"
-                                Click="UserButton_Click" Visibility="Collapsed" Padding="12,0">
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="50"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- 1. TOP TITLEBAR -->
+            <Grid Grid.Row="0" Margin="16,0,10,0">
+                <!-- LEFT: BRAND LOGO & STATUS -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Viewbox Width="28" Height="28" Margin="0,0,10,0">
+                        <Canvas Width="132" Height="132">
+                            <Canvas.Resources>
+                                <LinearGradientBrush x:Key="LogoGrad" StartPoint="0.14,0.14" EndPoint="0.86,0.89">
+                                    <GradientStop Color="#3A98D8" Offset="0"/>
+                                    <GradientStop Color="#755BC8" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Canvas.Resources>
+                            <Path Data="M42.4285 30.1714H89.5714C104.657 30.1714 113.143 38.6571 113.143 53.7429V88.6286C113.143 103.714 104.657 112.2 89.5714 112.2H67.8857L49.0285 126.343V112.2H42.4285C27.3428 112.2 18.8571 103.714 18.8571 88.6286V53.7429C18.8571 38.6571 27.3428 30.1714 42.4285 30.1714Z"
+                                  Stroke="{StaticResource LogoGrad}" StrokeThickness="8" StrokeLineJoin="Round"/>
+                            <Path Data="M66 30.1714V16.9714" Stroke="{StaticResource LogoGrad}" StrokeThickness="8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                            <Path Data="M66 18.8571C70.1658 18.8571 73.5429 15.4801 73.5429 11.3143C73.5429 7.14848 70.1658 3.77142 66 3.77142C61.8342 3.77142 58.4572 7.14848 58.4572 11.3143C58.4572 15.4801 61.8342 18.8571 66 18.8571Z"
+                                  Fill="{StaticResource LogoGrad}"/>
+                            <Path Data="M48.0857 80.1428C53.2929 80.1428 57.5142 75.9215 57.5142 70.7143C57.5142 65.507 53.2929 61.2857 48.0857 61.2857C42.8784 61.2857 38.6571 65.507 38.6571 70.7143C38.6571 75.9215 42.8784 80.1428 48.0857 80.1428Z"
+                                  Fill="{StaticResource LogoGrad}"/>
+                            <Path Data="M84.8572 80.1428C90.0644 80.1428 94.2857 75.9215 94.2857 70.7143C94.2857 65.507 90.0644 61.2857 84.8572 61.2857C79.6499 61.2857 75.4286 65.507 75.4286 70.7143C75.4286 75.9215 79.6499 80.1428 84.8572 80.1428Z"
+                                  Fill="{StaticResource LogoGrad}"/>
+                        </Canvas>
+                    </Viewbox>
+                    <TextBlock Text="Пятница" FontFamily="{StaticResource BrandFont}"
+                               FontSize="17" FontWeight="Bold" Foreground="{StaticResource TextHigh}" VerticalAlignment="Center"/>
+                    <Ellipse x:Name="StatusDot" Width="6" Height="6" Margin="10,0,6,0"
+                             Fill="{StaticResource Accent}" VerticalAlignment="Center"/>
+                    <TextBlock Text="WINDOWS КЛИЕНТ" FontFamily="{StaticResource UI}"
+                               FontSize="9" FontWeight="Bold" Foreground="{StaticResource TextLow}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- RIGHT: CONTROLS & CHROME -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button x:Name="SettingsButton" Content="&#xE713;" FontFamily="{StaticResource Icons}" FontSize="14" ToolTip="Настройки" Width="36" Height="30" Cursor="Hand" FocusVisualStyle="{x:Null}" Margin="0,0,6,0" Click="SettingsButton_Click">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="b" CornerRadius="10" BorderThickness="1" BorderBrush="{StaticResource BorderDim}" Background="{StaticResource BgPanel}">
+                                    <TextBlock Text="{TemplateBinding Content}" FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" Foreground="{StaticResource TextHigh}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="b" Property="Background" Value="#F2F8FD"/>
+                                        <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter TargetName="b" Property="Background" Value="#E2EFFB"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <Button x:Name="UserButton" Height="30" Style="{StaticResource DarkButtonStyle}"
+                            Click="UserButton_Click" Padding="12,0" Margin="0,0,6,0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE77B;" FontFamily="{StaticResource Icons}"
-                                           FontSize="12" Foreground="{StaticResource AccentBright}"
-                                           VerticalAlignment="Center"/>
+                                       FontSize="12" Foreground="{StaticResource AccentBright}"
+                                       VerticalAlignment="Center"/>
                             <TextBlock x:Name="UserButtonText" Text="Пользователь"
-                                           Margin="8,0,0,0" VerticalAlignment="Center"
-                                           FontFamily="{StaticResource UI}" FontSize="12"
-                                           Foreground="{StaticResource TextHigh}"/>
+                                       Margin="8,0,0,0" VerticalAlignment="Center"
+                                       FontFamily="{StaticResource UI}" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextHigh}"/>
                         </StackPanel>
                     </Button>
+                    <Button Content="&#xE921;" Click="Minimize_Click" Style="{StaticResource ChromeBtn}"/>
+                    <Button Content="&#xE922;" Click="Maximize_Click" Style="{StaticResource ChromeBtn}"/>
+                    <Button Content="&#xE8BB;" Click="Close_Click"    Style="{StaticResource CloseBtn}"/>
                 </StackPanel>
-                <Button Content="&#xE921;" Click="Minimize_Click" Style="{StaticResource ChromeBtn}"/>
-                <Button Content="&#xE922;" Click="Maximize_Click" Style="{StaticResource ChromeBtn}"/>
-                <Button Content="&#xE8BB;" Click="Close_Click"    Style="{StaticResource CloseBtn}"/>
-            </StackPanel>
+            </Grid>
 
-            <TabControl x:Name="MainTabControl" SelectionChanged="TabControl_SelectionChanged">
+            <!-- 2. MAIN WORKSPACE (DIALOGS ON LEFT, CHAT ON RIGHT) -->
+            <Grid Grid.Row="1" Margin="16,0,16,16">
+                <Grid.ColumnDefinitions>
+                    <!-- 0: Панель диалогов (слева) | 1: Сплиттер | 2: Область чата (справа) -->
+                    <ColumnDefinition x:Name="DialogsColumn" Width="280" MinWidth="220" MaxWidth="500"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition x:Name="ChatColumn" Width="*" MinWidth="500"/>
+                </Grid.ColumnDefinitions>
 
-                <!-- HOME -->
-                <!-- HOME -->
-                <TabItem Header="Home">
+                <!-- БОКОВАЯ ПАНЕЛЬ ДИАЛОГОВ (СЛЕВА) -->
+                <Border x:Name="DialogsPanel" Grid.Column="0" Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}" BorderThickness="1" CornerRadius="16" Visibility="Collapsed">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#1E2330" BlurRadius="18" ShadowDepth="4" Opacity="0.04"/>
+                    </Border.Effect>
                     <Grid>
-                        <Grid.ColumnDefinitions>
-                            <!-- 0: Чат (растягивается) | 1: Сплиттер | 2: Панель диалогов (зафиксирована справа) -->
-                            <ColumnDefinition Width="*" MinWidth="500"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition x:Name="DialogsColumn" Width="0" MinWidth="0" MaxWidth="500"/>
-                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="1"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
-                        <!-- ОБЛАСТЬ ЧАТА -->
-                        <Grid Grid.Column="0" Margin="0,0,10,0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
+                        <Button x:Name="NewChatButton" Grid.Row="0" Content="+  НОВЫЙ ЧАТ" Height="38" Style="{StaticResource DarkButtonStyle}" Margin="12,14,12,10" FontSize="12" FontWeight="Bold" Click="NewChatButton_Click"/>
 
-                            <!-- Шапка чата с кнопками -->
-                            <Grid Grid.Row="0" Margin="0,0,0,16">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-
-                                <!-- Orb -->
-                                <Grid Grid.Column="0" Width="72" Height="72" Margin="0,0,20,0">
-                                    <Ellipse x:Name="OrbRing1" Width="72" Height="72" Stroke="{StaticResource AccentBright}" StrokeThickness="1" Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
-                                        <Ellipse.RenderTransform>
-                                            <ScaleTransform/>
-                                        </Ellipse.RenderTransform>
-                                    </Ellipse>
-                                    <Ellipse x:Name="OrbRing2" Width="72" Height="72" Stroke="{StaticResource AccentBright}" StrokeThickness="1" Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
-                                        <Ellipse.RenderTransform>
-                                            <ScaleTransform/>
-                                        </Ellipse.RenderTransform>
-                                    </Ellipse>
-                                    <Ellipse x:Name="OrbRing3" Width="72" Height="72" Stroke="{StaticResource AccentBright}" StrokeThickness="1" Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
-                                        <Ellipse.RenderTransform>
-                                            <ScaleTransform/>
-                                        </Ellipse.RenderTransform>
-                                    </Ellipse>
-                                    <Ellipse Width="56" Height="56" Stroke="#1E4A32" StrokeThickness="1" Fill="Transparent"/>
-                                    <Button x:Name="ListenButton" Width="44" Height="44" Click="ListenButton_Click" ToolTip="Голосовой ввод" Background="Transparent" BorderBrush="{x:Null}" FocusVisualStyle="{x:Null}" Cursor="Hand">
-                                        <Button.Template>
-                                            <ControlTemplate TargetType="Button">
-                                                <Grid>
-                                                    <Ellipse x:Name="OrbCore" Fill="{StaticResource OrbFill}">
-                                                        <Ellipse.Effect>
-                                                            <DropShadowEffect Color="#22C55E" BlurRadius="22" ShadowDepth="0" Opacity="0.9"/>
-                                                        </Ellipse.Effect>
-                                                    </Ellipse>
-                                                    <TextBlock Text="🎤" FontFamily="Segoe UI Emoji" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Grid>
-                                            </ControlTemplate>
-                                        </Button.Template>
-                                    </Button>
-                                </Grid>
-
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="Голосовой ассистент" FontFamily="{StaticResource BrandFont}" FontSize="24" Foreground="{StaticResource TextHigh}"/>
-                                    <TextBlock Text="Нажми на орб или напечатай сообщение" FontFamily="{StaticResource UI}" FontSize="12" Foreground="{StaticResource TextLow}" Margin="1,4,0,0"/>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <ToggleButton x:Name="CameraBtn" Content="📷 Камера" Style="{StaticResource ToggleOutline}" Width="100" Margin="0,0,8,0" Click="CameraBtn_Click"/>
-                                    <ToggleButton x:Name="ScreenBtn" Content="🖥 Экран" Style="{StaticResource ToggleOutline}" Width="100" Margin="0,0,8,0" Click="ScreenBtn_Click"/>
-                                    <Button x:Name="ClearHistoryButton" Content="Очистить" Style="{StaticResource DarkButtonStyle}" Click="ClearHistoryButton_Click" Width="100"/>
-                                </StackPanel>
-                            </Grid>
-
-                            <!-- Список сообщений чата (Зафиксирован, не прыгает по ширине) -->
-                            <Border Grid.Row="1" Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}" BorderThickness="1" CornerRadius="4,4,0,0">
-                                <Grid>
-                                    <ListBox x:Name="ChatListBox" Background="Transparent" BorderThickness="0"
-                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                             ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                             HorizontalContentAlignment="Stretch"
-                                             VirtualizingPanel.ScrollUnit="Pixel" 
-                                             SelectionChanged="ChatListBox_SelectionChanged">
-                                        <ListBox.ItemContainerStyle>
-                                            <Style TargetType="ListBoxItem">
-                                                <Setter Property="Padding" Value="0"/>
-                                                <Setter Property="Margin" Value="0"/>
-                                                <Setter Property="BorderThickness" Value="0"/>
-                                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                                <Setter Property="Background" Value="Transparent"/>
-                                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                                                <Setter Property="Template">
-                                                    <Setter.Value>
-                                                        <ControlTemplate TargetType="ListBoxItem">
-                                                            <Border Background="Transparent">
-                                                                <ContentPresenter/>
-                                                            </Border>
-                                                        </ControlTemplate>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Style>
-                                        </ListBox.ItemContainerStyle>
-                                        <ListBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <Grid Margin="16,6,16,6">
-                                                    <Border x:Name="MessageBorder" Padding="15,11" MaxWidth="850"
-                                                            HorizontalAlignment="Left" CornerRadius="18,18,18,4"
-                                                            Background="{StaticResource BgInput}">
-                                                        <StackPanel>
-                                                            <TextBlock x:Name="SenderLabel" Text="{Binding Sender}" FontFamily="{StaticResource UI}" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,5"/>
-                                                            <TextBlock Text="{Binding DisplayText}" FontFamily="{StaticResource UI}" FontSize="14" Foreground="{StaticResource TextHigh}" TextWrapping="Wrap" LineHeight="22"/>
-                                                            <StackPanel x:Name="ActionButtons" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0" Visibility="Collapsed">
-                                                                <Button Content="Удалить" Style="{StaticResource BubbleActionBtn}" Click="DeleteChatMessage_Click"/>
-                                                                <Button Content="Правка" Style="{StaticResource BubbleActionBtn}" Click="EditChatMessage_Click"/>
-                                                                <Button Content="Копировать" Style="{StaticResource BubbleActionBtn}" Click="CopyChatMessage_Click"/>
-                                                            </StackPanel>
-                                                        </StackPanel>
-                                                    </Border>
-                                                </Grid>
-                                                <DataTemplate.Triggers>
-                                                    <DataTrigger Binding="{Binding IsUser}" Value="True">
-                                                        <Setter TargetName="MessageBorder" Property="HorizontalAlignment" Value="Right"/>
-                                                        <Setter TargetName="MessageBorder" Property="Background" Value="{StaticResource BgUserBubble}"/>
-                                                        <Setter TargetName="MessageBorder" Property="CornerRadius" Value="18,18,4,18"/>
-                                                        <Setter TargetName="SenderLabel" Property="Foreground" Value="{StaticResource AccentBright}"/>
-                                                    </DataTrigger>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="ActionButtons" Property="Visibility" Value="Visible"/>
-                                                    </Trigger>
-                                                </DataTemplate.Triggers>
-                                            </DataTemplate>
-                                        </ListBox.ItemTemplate>
-                                    </ListBox>
-
-                                    <!-- Превью камеры/экрана над чатом -->
-                                    <Border x:Name="VideoPreviewContainer" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,10" Background="#1a1a1a" CornerRadius="8" Padding="5" Visibility="Collapsed">
-                                        <Grid>
-                                            <Image x:Name="VideoPreviewImage" Height="150" Stretch="Uniform" RenderTransformOrigin="0.5,0.5"/>
-                                            <Button Content="✕" Width="24" Height="24" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,5,0" Background="#99000000" Foreground="White" BorderThickness="0" Cursor="Hand" FontWeight="Bold" Click="CloseVideoPreview_Click" ToolTip="Скрыть превью">
-                                                <Button.Resources>
-                                                    <Style TargetType="Border">
-                                                        <Setter Property="CornerRadius" Value="12"/>
-                                                    </Style>
-                                                </Button.Resources>
-                                            </Button>
-                                        </Grid>
-                                    </Border>
-                                </Grid>
-                            </Border>
-
-                            <!-- Поле ввода (зафиксировано внизу, растягивается по ширине окна) -->
-                            <Border Grid.Row="2" Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}" BorderThickness="1,0,1,1" CornerRadius="0,0,4,4">
-                                <Grid Height="52">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="52"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="120"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Button x:Name="AttachFileButton" Grid.Column="0" Content="📎" FontFamily="Segoe UI Emoji" FontSize="16" Height="52" Width="52" Click="AttachFileButton_Click" ToolTip="Прикрепить файл" Background="Transparent" BorderBrush="{StaticResource BorderDim}" BorderThickness="0,0,1,0" FocusVisualStyle="{x:Null}" Cursor="Hand"/>
-                                    <TextBox x:Name="MessageTextBox" Grid.Column="1" Height="52" FontSize="14" Padding="16,0" BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center" KeyDown="MessageTextBox_KeyDown"/>
-                                    <Button x:Name="SendMessageButton" Grid.Column="2" Content="ОТПРАВИТЬ" Height="52" FontSize="12" FontWeight="Bold" Click="SendMessageButton_Click"/>
-                                </Grid>
-                            </Border>
-
-                            <StackPanel Grid.Row="3" Margin="0,6,0,0">
-                                <ItemsControl x:Name="ThumbnailContainer">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <WrapPanel Orientation="Horizontal"/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                </ItemsControl>
-                            </StackPanel>
+                        <Grid Grid.Row="1" Margin="16,4,16,10">
+                            <TextBlock Text="ДИАЛОГИ" FontFamily="{StaticResource UI}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMid}"/>
+                            <TextBlock x:Name="DialogsCountText" HorizontalAlignment="Right" FontFamily="{StaticResource UI}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextLow}"/>
                         </Grid>
 
-                        <!-- Разделитель колонок -->
-                        <GridSplitter x:Name="DialogsSplitter" Grid.Column="1" Width="8" HorizontalAlignment="Center" VerticalAlignment="Stretch" ShowsPreview="True" ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Visibility="Collapsed" Cursor="SizeWE" Background="Transparent"/>
+                        <Rectangle Grid.Row="2" Fill="{StaticResource BorderDim}"/>
 
-                        <!-- ПАНЕЛЬ ДИАЛОГОВ (СПРАВА) -->
-                        <Border x:Name="DialogsPanel" Grid.Column="2" MinWidth="220" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}" BorderThickness="1" CornerRadius="4" Visibility="Collapsed">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="1"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-
-                                <Grid Grid.Row="0" Margin="14,12,14,0">
-                                    <TextBlock Text="ДИАЛОГИ" FontFamily="{StaticResource UI}" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMid}"/>
-                                    <TextBlock x:Name="DialogsCountText" HorizontalAlignment="Right" FontFamily="{StaticResource UI}" FontSize="10" Foreground="{StaticResource TextLow}"/>
-                                </Grid>
-
-                                <Button x:Name="NewChatButton" Grid.Row="1" Content="+  НОВЫЙ ЧАТ" Height="34" Style="{StaticResource DarkButtonStyle}" Margin="10,10,10,10" FontSize="11" FontWeight="Bold" Click="NewChatButton_Click"/>
-                                <Rectangle Grid.Row="2" Fill="{StaticResource BorderDim}"/>
-
-                                <ListBox x:Name="DialogListBox" Grid.Row="3" Background="Transparent" BorderThickness="0" Margin="6,6,6,8" VerticalAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="False" VirtualizingPanel.ScrollUnit="Pixel" SelectionChanged="DialogListBox_SelectionChanged">
-                                    <ListBox.ItemContainerStyle>
-                                        <Style TargetType="ListBoxItem">
-                                            <Setter Property="Padding" Value="0"/>
-                                            <Setter Property="Margin" Value="0,2,0,2"/>
-                                            <Setter Property="BorderThickness" Value="0"/>
-                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                            <Setter Property="Background" Value="Transparent"/>
-                                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                                            <Setter Property="Cursor" Value="Hand"/>
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="ListBoxItem">
-                                                        <Border x:Name="DlgBorder" CornerRadius="4" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" Padding="8,7">
-                                                            <ContentPresenter/>
-                                                        </Border>
-                                                        <ControlTemplate.Triggers>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter TargetName="DlgBorder" Property="Background" Value="{StaticResource BgInput}"/>
-                                                            </Trigger>
-                                                            <Trigger Property="IsSelected" Value="True">
-                                                                <Setter TargetName="DlgBorder" Property="Background" Value="{StaticResource BgUserBubble}"/>
-                                                                <Setter TargetName="DlgBorder" Property="BorderBrush" Value="{StaticResource Accent}"/>
-                                                            </Trigger>
-                                                        </ControlTemplate.Triggers>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </ListBox.ItemContainerStyle>
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" Text="{Binding Name}" ToolTip="{Binding Name}" FontFamily="{StaticResource UI}" FontSize="12" Foreground="{StaticResource TextHigh}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                                <Button Grid.Column="1" Content="✕" Style="{StaticResource BubbleActionBtn}" ToolTip="Удалить диалог" Margin="6,0,0,0" Click="DeleteDialogButton_Click"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                            </Grid>
-                        </Border>
-                    </Grid>
-                </TabItem>
-
-                <!-- НАСТРОЙКИ -->
-                <TabItem Header="Настройки">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel MaxWidth="560" HorizontalAlignment="Left">
-                            <TextBlock Text="Настройки" FontFamily="{StaticResource BrandFont}"
-                                           FontSize="24" Foreground="{StaticResource TextHigh}" Margin="0,0,0,20"/>
-
-                            <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}"
-                            BorderThickness="1" Padding="20" Margin="0,0,0,10">
-                                                <StackPanel>
-                                                    <Border Background="{StaticResource Accent}" Height="2" Margin="0,0,0,16"/>
-                                                    <TextBlock Text="Голос" FontFamily="{StaticResource UI}" FontSize="11"
-                                       FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
-                                    <ComboBox x:Name="VoiceTypeComboBox" Margin="0,0,0,14">
-                                        <ComboBoxItem Content="Aoede"/>
-                                        <ComboBoxItem Content="Puck"/>
-                                        <ComboBoxItem Content="Kore"/>
-                                        <ComboBoxItem Content="Charon"/>
-                                    </ComboBox>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}"
-                                        BorderThickness="1" Padding="20" Margin="0,0,0,16">
-                                <StackPanel>
-                                    <Border Background="{StaticResource Accent}" Height="2" Margin="0,0,0,16"/>
-                                    <TextBlock Text="Папка с музыкой" FontFamily="{StaticResource UI}" FontSize="11"
-                                                   FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,6"/>
+                        <ListBox x:Name="DialogListBox" Grid.Row="3" Background="Transparent" BorderThickness="0" Margin="8,8,8,10" VerticalAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="False" VirtualizingPanel.ScrollUnit="Pixel" SelectionChanged="DialogListBox_SelectionChanged">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="0,3,0,3"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border x:Name="DlgBorder" CornerRadius="10" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" Padding="12,9">
+                                                    <ContentPresenter/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="DlgBorder" Property="Background" Value="#F2F8FD"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="DlgBorder" Property="Background" Value="#EBF5FD"/>
+                                                        <Setter TargetName="DlgBorder" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBox x:Name="MusicFolderPathTextBox" IsReadOnly="True"/>
-                                        <Button Grid.Column="1" Content="Выбрать"
-                                                    Style="{StaticResource DarkButtonStyle}"
-                                                    Margin="8,0,0,0" Width="110"
-                                                    Click="ChooseMusicFolderButton_Click"/>
+                                        <TextBlock Grid.Column="0" Text="{Binding Name}" ToolTip="{Binding Name}" FontFamily="{StaticResource UI}" FontSize="13" Foreground="{StaticResource TextHigh}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="1" Content="✕" Style="{StaticResource BubbleActionBtn}" ToolTip="Удалить диалог" Margin="6,0,0,0" Click="DeleteDialogButton_Click"/>
                                     </Grid>
-                                </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </Border>
+
+                <!-- РАЗДЕЛИТЕЛЬ КОЛОНОК -->
+                <GridSplitter x:Name="DialogsSplitter" Grid.Column="1" Width="8" HorizontalAlignment="Center" VerticalAlignment="Stretch" ShowsPreview="False" ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Visibility="Collapsed" Cursor="SizeWE" Background="Transparent" DragCompleted="DialogsSplitter_DragCompleted"/>
+
+                <!-- ОБЛАСТЬ ЧАТА (СПРАВА) -->
+                <Grid Grid.Column="2" Margin="10,0,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- ВЕРХНЯЯ ШАПКА ЧАТА -->
+                    <Border Grid.Row="0" Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}" BorderThickness="1" CornerRadius="16" Padding="18,14" Margin="0,0,0,14">
+                        <Border.Effect>
+                            <DropShadowEffect Color="#1E2330" BlurRadius="18" ShadowDepth="4" Opacity="0.04"/>
+                        </Border.Effect>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- GLOWING MICROPHONE ORB -->
+                            <Grid Grid.Column="0" Width="68" Height="68" Margin="0,0,18,0">
+                                <Ellipse x:Name="OrbRing1" Width="68" Height="68" Stroke="{StaticResource Accent}" StrokeThickness="1.5" Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse.RenderTransform>
+                                        <ScaleTransform/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                                <Ellipse x:Name="OrbRing2" Width="68" Height="68" Stroke="{StaticResource AccentGlow}" StrokeThickness="1.5" Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse.RenderTransform>
+                                        <ScaleTransform/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                                <Ellipse x:Name="OrbRing3" Width="68" Height="68" Stroke="{StaticResource AccentBright}" StrokeThickness="1.5" Fill="Transparent" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse.RenderTransform>
+                                        <ScaleTransform/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                                <Ellipse Width="54" Height="54" Stroke="{StaticResource BorderDim}" StrokeThickness="1" Fill="Transparent"/>
+
+                                <Button x:Name="ListenButton" Width="44" Height="44" Click="ListenButton_Click" ToolTip="Голосовой ввод" Background="Transparent" BorderBrush="{x:Null}" FocusVisualStyle="{x:Null}" Cursor="Hand">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Grid>
+                                                <Ellipse x:Name="OrbCore" Fill="{StaticResource OrbFill}">
+                                                    <Ellipse.Effect>
+                                                        <DropShadowEffect Color="#3A98D8" BlurRadius="22" ShadowDepth="0" Opacity="0.75"/>
+                                                    </Ellipse.Effect>
+                                                </Ellipse>
+                                                <TextBlock Text="🎤" FontFamily="Segoe UI Emoji" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </Grid>
+
+                            <!-- HEADER TITLES -->
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="Голосовой ассистент" FontFamily="{StaticResource BrandFont}" FontSize="22" FontWeight="Bold" Foreground="{StaticResource TextHigh}"/>
+                                <TextBlock Text="Нажми на орб или напечатай сообщение" FontFamily="{StaticResource UI}" FontSize="12" Foreground="{StaticResource TextMid}" Margin="1,4,0,0"/>
+                            </StackPanel>
+
+                            <!-- HEADER ACTION BUTTONS -->
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <ToggleButton x:Name="CameraBtn" Content="📷 Камера" Style="{StaticResource ToggleOutline}" Width="100" Margin="0,0,8,0" Click="CameraBtn_Click"/>
+                                <ToggleButton x:Name="ScreenBtn" Content="🖥 Экран" Style="{StaticResource ToggleOutline}" Width="100" Margin="0,0,8,0" Click="ScreenBtn_Click"/>
+                                <Button x:Name="ClearHistoryButton" Content="Очистить" Style="{StaticResource DarkButtonStyle}" Click="ClearHistoryButton_Click" Width="100"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- СПИСОК СООБЩЕНИЙ ЧАТА -->
+                    <Border Grid.Row="1" Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}" BorderThickness="1,1,1,0" CornerRadius="16,16,0,0">
+                        <Border.Effect>
+                            <DropShadowEffect Color="#1E2330" BlurRadius="18" ShadowDepth="4" Opacity="0.04"/>
+                        </Border.Effect>
+                        <Grid>
+                            <ListBox x:Name="ChatListBox" Background="Transparent" BorderThickness="0"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     HorizontalContentAlignment="Stretch"
+                                     VirtualizingPanel.ScrollUnit="Pixel" 
+                                     SelectionChanged="ChatListBox_SelectionChanged">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding" Value="0"/>
+                                        <Setter Property="Margin" Value="0"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border Background="Transparent">
+                                                        <ContentPresenter/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="18,6,18,6">
+                                            <!-- CONTAINER ДЛЯ СООБЩЕНИЯ И ВСПЛЫВАШКИ -->
+                                            <Grid x:Name="BubbleBox" HorizontalAlignment="Left" MaxWidth="850">
+                                                <!-- MESSAGE BUBBLE -->
+                                                <Border x:Name="MessageBorder" Padding="16,12"
+                                                        CornerRadius="18,18,18,4"
+                                                        Background="#FFFFFF" BorderBrush="{StaticResource BorderDim}" BorderThickness="1">
+                                                    <Border.Effect>
+                                                        <DropShadowEffect Color="#1E2330" BlurRadius="10" ShadowDepth="2" Opacity="0.04"/>
+                                                    </Border.Effect>
+                                                    <StackPanel>
+                                                        <TextBlock x:Name="SenderLabel" Text="{Binding Sender}" FontFamily="{StaticResource UI}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentGlow}" Margin="0,0,0,5"/>
+                                                        <TextBlock x:Name="MessageText" Text="{Binding DisplayText}" FontFamily="{StaticResource UI}" FontSize="14" Foreground="{StaticResource TextHigh}" TextWrapping="Wrap" LineHeight="22"/>
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <!-- FLOATING ACTION TOOLBAR (ВСПЛЫВАШКА) -->
+                                                <Border x:Name="ActionButtons"
+                                                        Visibility="Collapsed"
+                                                        HorizontalAlignment="Right"
+                                                        VerticalAlignment="Top"
+                                                        Margin="0,-12,8,0"
+                                                        Background="#FFFFFF"
+                                                        BorderBrush="{StaticResource BorderDim}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="8"
+                                                        Padding="3,2"
+                                                        Panel.ZIndex="10">
+                                                    <Border.Effect>
+                                                        <DropShadowEffect Color="#1E2330" BlurRadius="12" ShadowDepth="3" Opacity="0.14"/>
+                                                    </Border.Effect>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Button Content="&#xE8C8;" ToolTip="Копировать" Style="{StaticResource FloatingActionIconBtn}" Click="CopyChatMessage_Click"/>
+                                                        <Button Content="&#xE70F;" ToolTip="Правка" Style="{StaticResource FloatingActionIconBtn}" Click="EditChatMessage_Click"/>
+                                                        <Button Content="&#xE74D;" ToolTip="Удалить" Style="{StaticResource FloatingActionIconBtn}" Click="DeleteChatMessage_Click"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </Grid>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <!-- USER MESSAGE STYLING -->
+                                            <DataTrigger Binding="{Binding IsUser}" Value="True">
+                                                <Setter TargetName="BubbleBox" Property="HorizontalAlignment" Value="Right"/>
+                                                <Setter TargetName="MessageBorder" Property="Background" Value="{StaticResource BgUserBubble}"/>
+                                                <Setter TargetName="MessageBorder" Property="BorderThickness" Value="0"/>
+                                                <Setter TargetName="MessageBorder" Property="CornerRadius" Value="18,18,4,18"/>
+                                                <Setter TargetName="SenderLabel" Property="Foreground" Value="#E2EFFB"/>
+                                                <Setter TargetName="MessageText" Property="Foreground" Value="#FFFFFF"/>
+                                            </DataTrigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="ActionButtons" Property="Visibility" Value="Visible"/>
+                                            </Trigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <!-- ПРЕВЬЮ ВИДЕО/ЭКРАНА -->
+                            <Border x:Name="VideoPreviewContainer" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,12" Background="#1E2330" CornerRadius="12" Padding="6" Visibility="Collapsed">
+                                <Border.Effect>
+                                    <DropShadowEffect Color="#000000" BlurRadius="20" ShadowDepth="6" Opacity="0.3"/>
+                                </Border.Effect>
+                                <Grid>
+                                    <Image x:Name="VideoPreviewImage" Height="160" Stretch="Uniform" RenderTransformOrigin="0.5,0.5"/>
+                                    <Button Content="✕" Width="26" Height="26" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0" Background="#99000000" Foreground="White" BorderThickness="0" Cursor="Hand" FontWeight="Bold" Click="CloseVideoPreview_Click" ToolTip="Скрыть превью">
+                                        <Button.Resources>
+                                            <Style TargetType="Border">
+                                                <Setter Property="CornerRadius" Value="13"/>
+                                            </Style>
+                                        </Button.Resources>
+                                    </Button>
+                                </Grid>
                             </Border>
+                        </Grid>
+                    </Border>
 
-                            <WrapPanel>
-                                <Button Content="Управление приложениями" Width="200"
-                                            Style="{StaticResource DarkButtonStyle}" Click="ManageAppsButton_Click"/>
-                            </WrapPanel>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
+                    <!-- ПОЛЕ ВВОДА (ВНИЗУ ЧАТА) -->
+                    <Border Grid.Row="2" Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}" BorderThickness="1,1,1,1" CornerRadius="0,0,16,16">
+                        <Border.Effect>
+                            <DropShadowEffect Color="#1E2330" BlurRadius="18" ShadowDepth="4" Opacity="0.04"/>
+                        </Border.Effect>
+                        <Grid Height="56">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="56"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="130"/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="AttachFileButton" Grid.Column="0" Content="&#xE723;" FontFamily="{StaticResource Icons}" FontSize="18" Foreground="{StaticResource TextMid}" Height="42" Width="42" Click="AttachFileButton_Click" ToolTip="Прикрепить файл" Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}" Cursor="Hand">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="b" Background="Transparent" CornerRadius="8">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="b" Property="Background" Value="#F2F8FD"/>
+                                                <Setter Property="Foreground" Value="{StaticResource AccentBright}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter TargetName="b" Property="Background" Value="#E2EFFB"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <TextBox x:Name="MessageTextBox" Grid.Column="1" Height="56" FontSize="14" Padding="12,0" BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center" KeyDown="MessageTextBox_KeyDown" Foreground="{StaticResource TextHigh}"/>
+                            <Button x:Name="SendMessageButton" Grid.Column="2" Content="ОТПРАВИТЬ" Height="44" Margin="0,0,8,0" FontSize="12" FontWeight="Bold" Click="SendMessageButton_Click"/>
+                        </Grid>
+                    </Border>
 
-                <!-- УСТРОЙСТВА -->
-                
+                    <StackPanel Grid.Row="3" Margin="0,8,0,0">
+                        <ItemsControl x:Name="ThumbnailContainer">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+                </Grid>
+            </Grid>
 
-            </TabControl>
+            <!-- 3. НАСТРОЙКИ (MODAL OVERLAY) -->
+            <Grid x:Name="SettingsOverlay" Grid.RowSpan="2" Visibility="Collapsed" Panel.ZIndex="100">
+                <Border Background="#591E2330" MouseDown="CloseSettings_Click"/>
+                <Border Width="500" VerticalAlignment="Center" HorizontalAlignment="Center"
+                        Background="#FFFFFF" BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                        CornerRadius="18" Padding="28,24,28,26">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#1E2330" BlurRadius="40" ShadowDepth="10" Opacity="0.18"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <!-- HEADER -->
+                        <Grid Margin="0,0,0,20">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="&#xE713;" FontFamily="{StaticResource Icons}" FontSize="18"
+                                           Foreground="{StaticResource Accent}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Text="Настройки" FontFamily="{StaticResource BrandFont}"
+                                           FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextHigh}"/>
+                            </StackPanel>
+                            <Button Content="&#xE8BB;" Click="CloseSettings_Click" Style="{StaticResource ChromeBtn}"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center" Width="32" Height="32"/>
+                        </Grid>
+
+                        <!-- CARD 1: ГОЛОС -->
+                        <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}"
+                                BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Text="Голос ассистента" FontFamily="{StaticResource UI}" FontSize="12"
+                                           FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,8"/>
+                                <ComboBox x:Name="VoiceTypeComboBox" Height="38">
+                                    <ComboBoxItem Content="Aoede"/>
+                                    <ComboBoxItem Content="Puck"/>
+                                    <ComboBoxItem Content="Kore"/>
+                                    <ComboBoxItem Content="Charon"/>
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- CARD 2: МУЗЫКА -->
+                        <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderDim}"
+                                BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,0,0,20">
+                            <StackPanel>
+                                <TextBlock Text="Папка с музыкой" FontFamily="{StaticResource UI}" FontSize="12"
+                                           FontWeight="Bold" Foreground="{StaticResource TextMid}" Margin="0,0,0,8"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="MusicFolderPathTextBox" IsReadOnly="True" Height="38" Padding="12,0"/>
+                                    <Button Grid.Column="1" Content="Выбрать"
+                                            Style="{StaticResource DarkButtonStyle}"
+                                            Margin="10,0,0,0" Width="100" Height="38"
+                                            Click="ChooseMusicFolderButton_Click"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Button Content="Готово" Click="CloseSettings_Click" HorizontalAlignment="Right" Width="110" Height="38"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Grid>
     </Border>
 </Window>

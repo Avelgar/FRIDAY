@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -10,7 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Assets\IntroFriday.ttf" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,7 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Assets\IntroFriday.ttf" />
   </ItemGroup>
 
   <ItemGroup>

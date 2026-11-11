@@ -28,8 +28,6 @@ namespace Friday
         private readonly object _reconnectLock = new object();
         private readonly Queue<object> _commandQueue = new Queue<object>();
         private readonly object _queueLock = new object();
-
-        public List<string> InstalledApplications { get; private set; }
         private CancellationTokenSource _cancellationTokenSource;
         private static Mutex _mutex;
 
@@ -62,7 +60,7 @@ namespace Friday
             settingManager.LoadSettings();
             AppServices.Init();
 
-            Application.Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
+            Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
             bool createdNew;
             _mutex = new Mutex(true, appName, out createdNew);
@@ -86,10 +84,15 @@ namespace Friday
             // 2. ИНИЦИАЛИЗИРУЕМ СОКЕТ
             InitializeWebSocket();
 
-            // 3. ЕСЛИ ТОКЕНА НЕТ - ОТКРЫВАЕМ ОКНО ВХОДА В АККАУНТ
+            // 3. ЕСЛИ ТОКЕНА НЕТ - ОТКРЫВАЕМ ОКНО ВХОДА В АККАУНТ (БЕЗ MAIN WINDOW)
             if (!IsLoggedIn)
             {
                 OpenLoginWindow();
+            }
+            else
+            {
+                OpenMainWindow();
+                _isMainWindowOpened = true;
             }
 
             _keepAliveTimer = new System.Timers.Timer(15000);
@@ -109,9 +112,59 @@ namespace Friday
                 if (_loginWindow == null || !_loginWindow.IsVisible)
                 {
                     _loginWindow = new LoginWindow();
-                    _loginWindow.Closed += (s, ev) => { _loginWindow = null; };
+                    _loginWindow.Closed += (s, ev) =>
+                    {
+                        var closedWin = s as LoginWindow;
+                        _loginWindow = null;
+                        if (closedWin != null && closedWin.IsNavigatingAway) return;
+                        if (!_isMainWindowOpened && (_mainWindow == null || !_mainWindow.IsVisible))
+                        {
+                            Application.Current.Shutdown();
+                        }
+                    };
                     _loginWindow.Show();
                 }
+            });
+        }
+
+        private RegisterWindow _registerWindow;
+        public void OpenRegisterWindow()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (_registerWindow == null || !_registerWindow.IsVisible)
+                {
+                    _registerWindow = new RegisterWindow();
+                    _registerWindow.Closed += (s, ev) =>
+                    {
+                        _registerWindow = null;
+                    };
+                    _registerWindow.Show();
+                }
+            });
+        }
+
+        public void HandleLogout()
+        {
+            _accountData = null;
+            _isMainWindowOpened = false;
+            string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\account.json"));
+            if (File.Exists(filePath))
+            {
+                try { File.Delete(filePath); }
+                catch { }
+            }
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (_mainWindow != null)
+                {
+                    var win = _mainWindow;
+                    _mainWindow = null;
+                    win.IsLoggingOut = true;
+                    win.Close();
+                }
+                OpenLoginWindow();
             });
         }
 
@@ -137,6 +190,22 @@ namespace Friday
             File.WriteAllText(filePath, JsonConvert.SerializeObject(_accountData, Formatting.Indented), Encoding.UTF8);
 
             SendAuth();
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (!_isMainWindowOpened)
+                {
+                    OpenMainWindow();
+                    _isMainWindowOpened = true;
+                    if (_loginWindow != null)
+                    {
+                        var lw = _loginWindow;
+                        lw.IsNavigatingAway = true;
+                        _loginWindow = null;
+                        lw.Close();
+                    }
+                }
+            });
         }
 
         public void CheckAccountSync()
@@ -279,14 +348,7 @@ namespace Friday
 
                 if (answer.Contains("Недействительный токен"))
                 {
-                    Application.Current.Dispatcher.Invoke(() => { _mainWindow?.ShowSystemMessage("Токен устарел. Выполните вход в аккаунт заново."); });
-                    // Сбрасываем токен, но не закрываем программу, так как Гостевой режим работает!
-                    _accountData = null;
-                    string filePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Assets\account.json"));
-                    if (File.Exists(filePath)) File.Delete(filePath);
-                    // Токен протух -> уходим в гостевой режим: прячем панель диалогов,
-                    // возвращаем кнопку "Очистить".
-                    Application.Current.Dispatcher.Invoke(() => _mainWindow?.ApplyGuestMode());
+                    HandleLogout();
                     return;
                 }
 
@@ -302,8 +364,10 @@ namespace Friday
                             _isMainWindowOpened = true;
                             if (_loginWindow != null)
                             {
-                                _loginWindow.Close();
+                                var lw = _loginWindow;
+                                lw.IsNavigatingAway = true;
                                 _loginWindow = null;
+                                lw.Close();
                             }
                         }
                         else if (_mainWindow != null)
@@ -440,8 +504,7 @@ namespace Friday
                             {
                                 bool needsDataResponse = false;
                                 bool needProcesses = false;
-                                bool needPrograms = false;
-                                bool needScreenshot = false; // <--- ДОБАВИЛИ
+                                bool needScreenshot = false;
 
                                 foreach (var action in cmdResp.Actions)
                                 {
@@ -450,14 +513,11 @@ namespace Friday
                                         _ignoredMessageId = currentMsgId;
                                     }
 
-                                    // ДОБАВИЛИ request_screenshot В ПРОВЕРКУ
                                     if (action.ActionType?.ToLower() == "get_running_processes" ||
-                                        action.ActionType?.ToLower() == "get_installed_programs" ||
                                         action.ActionType?.ToLower() == "request_screenshot")
                                     {
                                         needsDataResponse = true;
                                         if (action.ActionType?.ToLower() == "get_running_processes") needProcesses = true;
-                                        if (action.ActionType?.ToLower() == "get_installed_programs") needPrograms = true;
                                         if (action.ActionType?.ToLower() == "request_screenshot") needScreenshot = true;
                                     }
                                     else
@@ -482,7 +542,6 @@ namespace Friday
                                     string screenshotB64 = null;
                                     string screenRes = "";
 
-                                    if (needPrograms) InstalledApplications = GetInstalledApplications();
                                     if (needProcesses)
                                     {
                                         var userApps = System.Diagnostics.Process.GetProcesses()
@@ -506,7 +565,7 @@ namespace Friday
                                         command = "",         // <--- ОБЯЗАТЕЛЬНОЕ ПОЛЕ ДЛЯ СЕРВЕРА
                                         command_to_device = cmdResp.OriginalCommand,
                                         processes = processOutput,
-                                        programs = InstalledApplications,
+                                        programs = new List<string>(),
                                         screenshot_base64_received = screenshotB64,
                                         screen_resolution = screenRes,
                                         source_name = cmdResp.SourceDevice,
@@ -628,14 +687,6 @@ namespace Friday
 
         public void IncrementWindowCount() => _openWindowsCount++;
         public void DecrementWindowCount() { _openWindowsCount--; if (_openWindowsCount < 0) _openWindowsCount = 0; }
-
-        public List<string> GetInstalledApplications()
-        {
-            var appList = new List<string>();
-            var customApps = Friday.Managers.AppPathManager.LoadApps();
-            foreach (var app in customApps) { if (File.Exists(app.Path)) appList.Add(app.Path); }
-            return appList;
-        }
 
         private async Task ReconnectWebSocket()
         {
